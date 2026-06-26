@@ -1,8 +1,5 @@
 # THub V3
 **一个功能强大的 Roblox 多功能工具集，集成现代化 UI 框架与丰富的游戏功能**  
-
-![](https://img.shields.io/badge/-FF0000)![](https://img.shields.io/badge/-FF1A00)![](https://img.shields.io/badge/-FF3300)![](https://img.shields.io/badge/-FF4D00)![](https://img.shields.io/badge/-FF6600)![](https://img.shields.io/badge/-FF8000)![](https://img.shields.io/badge/-FF9900)![](https://img.shields.io/badge/-FFB300)![](https://img.shields.io/badge/-FFCC00)![](https://img.shields.io/badge/-FFE600)![](https://img.shields.io/badge/-FFFF00)![](https://img.shields.io/badge/-E6FF00)![](https://img.shields.io/badge/-CCFF00)![](https://img.shields.io/badge/-B3FF00)![](https://img.shields.io/badge/-99FF00)![](https://img.shields.io/badge/-80FF00)![](https://img.shields.io/badge/-66FF00)![](https://img.shields.io/badge/-4DFF00)![](https://img.shields.io/badge/-33FF00)![](https://img.shields.io/badge/-1AFF00)![](https://img.shields.io/badge/-00FF00)![](https://img.shields.io/badge/-00FF1A)![](https://img.shields.io/badge/-00FF33)![](https://img.shields.io/badge/-00FF4D)![](https://img.shields.io/badge/-00FF66)![](https://img.shields.io/badge/-00FF80)![](https://img.shields.io/badge/-00FF99)![](https://img.shields.io/badge/-00FFB3)![](https://img.shields.io/badge/-00FFCC)![](https://img.shields.io/badge/-00FFE6)![](https://img.shields.io/badge/-00FFFF)![](https://img.shields.io/badge/-00E6FF)![](https://img.shields.io/badge/-00CCFF)![](https://img.shields.io/badge/-00B3FF)![](https://img.shields.io/badge/-0099FF)![](https://img.shields.io/badge/-0080FF)![](https://img.shields.io/badge/-0066FF)![](https://img.shields.io/badge/-004DFF)![](https://img.shields.io/badge/-0033FF)![](https://img.shields.io/badge/-001AFF)![](https://img.shields.io/badge/-0000FF)![](https://img.shields.io/badge/-1A00FF)![](https://img.shields.io/badge/-3300FF)![](https://img.shields.io/badge/-4D00FF)![](https://img.shields.io/badge/-6600FF)![](https://img.shields.io/badge/-8000FF)![](https://img.shields.io/badge/-9900FF)![](https://img.shields.io/badge/-B300FF)![](https://img.shields.io/badge/-CC00FF)![](https://img.shields.io/badge/-E600FF)![](https://img.shields.io/badge/-FF00FF)
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](https://opensource.org/licenses/MIT)  ![Version](https://img.shields.io/badge/Version-v3-blue.svg)
 
 ---
@@ -10,7 +7,6 @@
 ## 🎮 简介
 
 **THub V3** 是一个为 Roblox 平台设计的现代化多功能工具集，包含完整的 UI 框架（ChronixUI）和丰富的游戏专用功能。fork 自 [ChronixHub V3](https://atomgit.com/Furrycalin/ChronixHub)
-**⚠️ 该脚本仅为工具辅助类脚本，不要与其他脚本比较**
 
 
 ## 🚀 快速开始
