@@ -15,7 +15,6 @@ unloadTHub = function()
     end
     toggleInteraction("TouchTransmitter", false); toggleInteraction("ClickDetector", false); toggleInteraction("ProximityPrompt", false)
     waypointDisplayEnabled = false
-    task.spawn(function() pcall(function() if WebSocket.connect and genv.wsManager then genv.wsManager:Disconnect() end end) end)
     _G.THubisLoaded = false; _G.THubLoading = false; loadingTimedOut = true
     data["basicdata"]["releasetools"]["noclip"] = false
     data["basicdata"]["releasetools"]["infjump"] = false
