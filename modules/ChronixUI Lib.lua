@@ -167,6 +167,11 @@ end
 IconModule:LoadAll()
 -- ========== 多图标库集成结束 ==========
 
+-- 辅助：判断是否为点击/触摸输入
+local function isClickInput(input)
+    return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+end
+
 -- 设备类型判断
 local function GetDeviceType()
     if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
@@ -222,13 +227,17 @@ ChronixUI.Themes = {
 ChronixUI.CurrentTheme = "Default"
 
 -- 音效
-local function PlayClickSound()
+local function PlaySound(soundId, volume)
     local sound = Instance.new("Sound")
-    sound.SoundId = "rbxassetid://535716488"
-    sound.Volume = 0.3
+    sound.SoundId = soundId
+    sound.Volume = volume or 0.3
     sound.Parent = SoundService
     sound:Play()
     game.Debris:AddItem(sound, 2)
+end
+
+local function PlayClickSound()
+    PlaySound("rbxassetid://535716488", 0.3)
 end
 
 -- 获取玩家头像
@@ -482,12 +491,35 @@ local function playNotificationSound(notifType)
     elseif notifType == "success" then
         soundsid = "rbxassetid://129485210015224"
     end
-    local sound = Instance.new("Sound")
-    sound.SoundId = soundsid
-    sound.Volume = 0.5
-    sound.Parent = SoundService
-    sound:Play()
-    game.Debris:AddItem(sound, 2)
+    PlaySound(soundsid, 0.5)
+end
+
+-- 动画辅助函数：滑入/滑出
+local function animateSlide(frame, fromX, toX, easing)
+    local startTime = tick()
+    local duration = 0.5
+    while tick() - startTime < duration do
+        local alpha = (tick() - startTime) / duration
+        local easedAlpha = easing(alpha)
+        local currentX = fromX + (toX - fromX) * easedAlpha
+        if frame and frame.Parent then
+            frame.Position = UDim2.new(currentX, 0, 0, 0)
+        end
+        RunService.Heartbeat:Wait()
+    end
+    if frame and frame.Parent then
+        frame.Position = UDim2.new(toX, 0, 0, 0)
+    end
+end
+
+-- 辅助函数：从列表中移除通知
+local function removeNotification(notification)
+    local index = table.find(notifications, notification)
+    if index then
+        table.remove(notifications, index)
+        return true
+    end
+    return false
 end
 
 -- 核心通知函数
@@ -528,30 +560,9 @@ function ChronixUI:Notify(config)
     -- 等待一帧确保渲染完成
     RunService.Heartbeat:Wait()
     
-    -- 使用 RunService 实现自定义动画（替代 TweenService）
-    local startTime = tick()
-    local animationDuration = 0.5
-    local startX = 1
-    local endX = 0
-    
+    -- 入场动画（easeOutQuad）
     coroutine.wrap(function()
-        while tick() - startTime < animationDuration do
-            local alpha = (tick() - startTime) / animationDuration
-            -- 缓动函数：easeOutQuad
-            local easedAlpha = 1 - (1 - alpha) * (1 - alpha)
-            local currentX = startX + (endX - startX) * easedAlpha
-            
-            if innerFrame and innerFrame.Parent then
-                innerFrame.Position = UDim2.new(currentX, 0, 0, 0)
-            end
-            
-            RunService.Heartbeat:Wait()
-        end
-        
-        -- 确保最终位置正确
-        if innerFrame and innerFrame.Parent then
-            innerFrame.Position = UDim2.new(0, 0, 0, 0)
-        end
+        animateSlide(innerFrame, 1, 0, function(a) return 1 - (1 - a) * (1 - a) end)
     end)()
     
     -- 处理通知生命周期
@@ -561,45 +572,19 @@ function ChronixUI:Notify(config)
         
         -- 检查通知是否仍然有效
         if not clipFrame or not clipFrame.Parent then
-            local index = table.find(notifications, notification)
-            if index then
-                table.remove(notifications, index)
-                updateAllPositions()
-            end
+            removeNotification(notification)
+            updateAllPositions()
             return
         end
         
-        -- 使用自定义动画滑出
-        local exitStartTime = tick()
-        local exitDuration = 0.5
-        local exitStartX = 0
-        local exitEndX = 1
+        -- 出场动画（easeInQuad）
+        animateSlide(innerFrame, 0, 1, function(a) return a * a end)
         
-        while tick() - exitStartTime < exitDuration do
-            local alpha = (tick() - exitStartTime) / exitDuration
-            -- 缓动函数：easeInQuad
-            local easedAlpha = alpha * alpha
-            local currentX = exitStartX + (exitEndX - exitStartX) * easedAlpha
-            
-            if innerFrame and innerFrame.Parent then
-                innerFrame.Position = UDim2.new(currentX, 0, 0, 0)
-            end
-            
-            RunService.Heartbeat:Wait()
-        end
-        
-        -- 从列表中移除
-        local index = table.find(notifications, notification)
-        if index then
-            table.remove(notifications, index)
-        end
-        
-        -- 销毁通知
+        -- 从列表中移除并销毁
+        removeNotification(notification)
         if clipFrame and clipFrame.Parent then
             clipFrame:Destroy()
         end
-        
-        -- 更新其他通知位置
         updateAllPositions()
     end)()
     
@@ -613,7 +598,7 @@ local function MakeDraggable(frame, dragHandle)
     local dragStart, startPos
 
     local function beginDrag(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if isClickInput(input) then
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
@@ -621,7 +606,7 @@ local function MakeDraggable(frame, dragHandle)
     end
 
     local function endDrag(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if isClickInput(input) then
             dragging = false
             dragStart = nil
             startPos = nil
@@ -769,50 +754,65 @@ function ChronixUI:CreateWindow(config)
     local btnSize = math.floor(32 * scale)
     local btnOffset = math.floor(38 * scale)
 
+    -- 辅助函数：创建元素右侧图标
+    local function createElementIcon(cfg)
+        local parent = cfg.Parent
+        if not parent then return end
+        local hasIcon = cfg.HasIcon
+        local iconName = cfg.IconName
+        local iconType = cfg.IconType
+        local iconColor = cfg.IconColor
+        local name = cfg.Name or "ElementIcon"
+        local position = cfg.Position or UDim2.new(1, -28 * scale, 0.5, -10 * scale)
+        local size = cfg.Size or UDim2.new(0, 20 * scale, 0, 20 * scale)
+        if hasIcon and iconName ~= "" then
+            local iconLabel = IconModule:CreateIcon(iconName, size, iconColor, iconType)
+            if iconLabel then
+                iconLabel.Name = name
+                iconLabel.Position = position
+                iconLabel.Parent = parent
+            else
+                IconModule:WaitForIcon(iconName, iconType, function(iconId)
+                    if iconId and parent and parent.Parent then
+                        local newIcon = Instance.new("ImageLabel")
+                        newIcon.Name = name
+                        newIcon.Size = size
+                        newIcon.Position = position
+                        newIcon.BackgroundTransparency = 1
+                        newIcon.Image = iconId
+                        newIcon.ScaleType = Enum.ScaleType.Fit
+                        if iconColor then newIcon.ImageColor3 = iconColor end
+                        newIcon.Parent = parent
+                    end
+                end)
+            end
+        end
+    end
+
+    -- 辅助函数：创建标题栏按钮
+    local function createTitleButton(position, text, textSize)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0, btnSize, 0, btnSize)
+        btn.Position = position
+        btn.Text = text
+        btn.TextColor3 = self.Themes[self.CurrentTheme].Text
+        btn.TextSize = textSize
+        btn.BackgroundColor3 = self.Themes[self.CurrentTheme].Card
+        btn.BorderSizePixel = 0
+        btn.Parent = buttonContainer
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, math.floor(6 * scale))
+        corner.Parent = btn
+        AddStroke(btn, self.Themes[self.CurrentTheme].Border)
+        return btn
+    end
+
     -- 设置按钮
-    local settingsBtn = Instance.new("TextButton")
-    settingsBtn.Size = UDim2.new(0, btnSize, 0, btnSize)
-    settingsBtn.Position = UDim2.new(0, 0, 0.5, -btnSize/2)
-    settingsBtn.Text = "≡"
-    settingsBtn.TextColor3 = self.Themes[self.CurrentTheme].Text
-    settingsBtn.TextSize = math.floor(20 * scale)
-    settingsBtn.BackgroundColor3 = self.Themes[self.CurrentTheme].Card
-    settingsBtn.BorderSizePixel = 0
-    settingsBtn.Parent = buttonContainer
-    local settingsCorner = Instance.new("UICorner")
-    settingsCorner.CornerRadius = UDim.new(0, math.floor(6 * scale))
-    settingsCorner.Parent = settingsBtn
-    AddStroke(settingsBtn, self.Themes[self.CurrentTheme].Border)
-
+    local settingsBtn = createTitleButton(UDim2.new(0, 0, 0.5, -btnSize/2), "≡", math.floor(20 * scale))
     -- 最小化按钮
-    local minBtn = Instance.new("TextButton")
-    minBtn.Size = UDim2.new(0, btnSize, 0, btnSize)
-    minBtn.Position = UDim2.new(0, btnOffset, 0.5, -btnSize/2)
-    minBtn.Text = "−"
-    minBtn.TextColor3 = self.Themes[self.CurrentTheme].Text
-    minBtn.TextSize = math.floor(24 * scale)
-    minBtn.BackgroundColor3 = self.Themes[self.CurrentTheme].Card
-    minBtn.BorderSizePixel = 0
-    minBtn.Parent = buttonContainer
-    local minCorner = Instance.new("UICorner")
-    minCorner.CornerRadius = UDim.new(0, math.floor(6 * scale))
-    minCorner.Parent = minBtn
-    AddStroke(minBtn, self.Themes[self.CurrentTheme].Border)
-
+    local minBtn = createTitleButton(UDim2.new(0, btnOffset, 0.5, -btnSize/2), "−", math.floor(24 * scale))
     -- 关闭按钮
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, btnSize, 0, btnSize)
-    closeBtn.Position = UDim2.new(0, btnOffset*2, 0.5, -btnSize/2)
-    closeBtn.Text = "×"
-    closeBtn.TextColor3 = self.Themes[self.CurrentTheme].Text
-    closeBtn.TextSize = math.floor(20 * scale)
-    closeBtn.BackgroundColor3 = self.Themes[self.CurrentTheme].Card
-    closeBtn.BorderSizePixel = 0
-    closeBtn.Parent = buttonContainer
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, math.floor(6 * scale))
-    closeCorner.Parent = closeBtn
-    AddStroke(closeBtn, self.Themes[self.CurrentTheme].Border)
+    local closeBtn = createTitleButton(UDim2.new(0, btnOffset*2, 0.5, -btnSize/2), "×", math.floor(20 * scale))
 
     -- 底部玩家信息栏
     local playerBarHeight = math.floor(50 * scale)
@@ -1064,6 +1064,43 @@ function ChronixUI:CreateWindow(config)
             self.ParticleSystem:setColor(theme.Accent)
         end
         
+        -- 递归更新元素颜色（供Tab内容和设置页共用）
+        local function updateElementColors(obj)
+            if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+                if obj:IsA("TextButton") then
+                    local isSpecial = false
+                    for _, tab in pairs(self.Tabs) do
+                        if obj == tab.Button then
+                            isSpecial = true
+                            break
+                        end
+                    end
+                    if not isSpecial then
+                        obj.BackgroundColor3 = theme.Card
+                    end
+                elseif obj:IsA("TextBox") then
+                    obj.BackgroundColor3 = theme.Input
+                end
+                
+                if obj:FindFirstChild("IsTitle") then
+                    obj.TextColor3 = theme.Accent
+                elseif obj:FindFirstChild("IsDark") then
+                    obj.TextColor3 = theme.TextDark
+                else
+                    obj.TextColor3 = theme.Text
+                end
+            end
+            
+            local stroke = obj:FindFirstChildOfClass("UIStroke")
+            if stroke then
+                stroke.Color = theme.Border
+            end
+            
+            for _, child in ipairs(obj:GetChildren()) do
+                updateElementColors(child)
+            end
+        end
+        
         -- 7. 更新所有Tab按钮样式
         for _, tabData in pairs(self.Tabs) do
             if tabData.Button then
@@ -1077,68 +1114,12 @@ function ChronixUI:CreateWindow(config)
                 tabData.Button.TextColor3 = Color3.fromRGB(0, 0, 0)
             end
             
-            -- 递归更新Tab内容区域
-            local function updateElementColors(obj)
-                if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-                    if obj:IsA("TextButton") then
-                        local isSpecial = false
-                        for _, tab in pairs(self.Tabs) do
-                            if obj == tab.Button then
-                                isSpecial = true
-                                break
-                            end
-                        end
-                        if not isSpecial then
-                            obj.BackgroundColor3 = theme.Card
-                        end
-                    elseif obj:IsA("TextBox") then
-                        obj.BackgroundColor3 = theme.Input
-                    end
-                    
-                    if obj:FindFirstChild("IsTitle") then
-                        obj.TextColor3 = theme.Accent
-                    elseif obj:FindFirstChild("IsDark") then
-                        obj.TextColor3 = theme.TextDark
-                    else
-                        obj.TextColor3 = theme.Text
-                    end
-                end
-                
-                local stroke = obj:FindFirstChildOfClass("UIStroke")
-                if stroke then
-                    stroke.Color = theme.Border
-                end
-                
-                for _, child in ipairs(obj:GetChildren()) do
-                    updateElementColors(child)
-                end
-            end
-            
             updateElementColors(tabData.Content)
         end
         
         -- 8. 单独处理设置页
         if self.SettingsTabContent then
-            local function updateSettingsColors(obj)
-                if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-                    if obj:IsA("TextButton") then
-                        obj.BackgroundColor3 = theme.Card
-                    elseif obj:IsA("TextBox") then
-                        obj.BackgroundColor3 = theme.Input
-                    end
-                    obj.TextColor3 = theme.Text
-                end
-                
-                local stroke = obj:FindFirstChildOfClass("UIStroke")
-                if stroke then
-                    stroke.Color = theme.Border
-                end
-                
-                for _, child in ipairs(obj:GetChildren()) do
-                    updateSettingsColors(child)
-                end
-            end
-            updateSettingsColors(self.SettingsTabContent)
+            updateElementColors(self.SettingsTabContent)
         end
         
         return true
@@ -1163,6 +1144,23 @@ function ChronixUI:CreateWindow(config)
         end
     end
     -- ========== 粒子系统添加结束 ==========
+
+    -- Tab 切换方法（供局部 SelectTab 和设置按钮共用）
+    function windowData:SelectTab(name)
+        for _, tab in pairs(self.Tabs) do
+            if tab.Name == name then
+                tab.Button.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Accent
+                tab.Button.TextColor3 = Color3.fromRGB(0, 0, 0)
+                tab.Content.Visible = true
+            else
+                tab.Button.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Background
+                tab.Button.TextColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].TextDark
+                tab.Content.Visible = false
+            end
+        end
+        self.CurrentTab = { Name = name }
+        updateContentCanvas()
+    end
 
     -- 最小化功能
     minBtn.MouseButton1Click:Connect(function()
@@ -1293,16 +1291,7 @@ function ChronixUI:CreateWindow(config)
         local tabLayout = AddListLayout(tabContent, math.floor(12 * scale))
 
         local function SelectTab()
-            for _, otherTab in pairs(windowData.Tabs) do
-                otherTab.Button.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Background
-                otherTab.Button.TextColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].TextDark
-                otherTab.Content.Visible = false
-            end
-            tabBtn.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Accent
-            tabBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
-            tabContent.Visible = true
-            windowData.CurrentTab = tabConfig
-            updateContentCanvas()
+            windowData:SelectTab(tabName)
         end
 
         tabBtn.MouseButton1Click:Connect(SelectTab)
@@ -1358,31 +1347,14 @@ function ChronixUI:CreateWindow(config)
             btnCorner.Parent = btn
             AddStroke(btn, ChronixUI.Themes[ChronixUI.CurrentTheme].Border)
 
-            -- === 新增：右侧图标 ===
-            if hasIcon and iconName ~= "" then
-                local iconLabel = IconModule:CreateIcon(iconName, UDim2.new(0, 20 * scale, 0, 20 * scale), iconColor, iconType)
-                if iconLabel then
-                    iconLabel.Name = "ButtonIcon"
-                    iconLabel.Position = UDim2.new(1, -28 * scale, 0.5, -10 * scale)
-                    iconLabel.Parent = btn
-                else
-                    -- 异步加载
-                    IconModule:WaitForIcon(iconName, iconType, function(iconId)
-                        if iconId and btn and btn.Parent then
-                            local newIcon = Instance.new("ImageLabel")
-                            newIcon.Name = "ButtonIcon"
-                            newIcon.Size = UDim2.new(0, 20 * scale, 0, 20 * scale)
-                            newIcon.Position = UDim2.new(1, -28 * scale, 0.5, -10 * scale)
-                            newIcon.BackgroundTransparency = 1
-                            newIcon.Image = iconId
-                            newIcon.ScaleType = Enum.ScaleType.Fit
-                            if iconColor then newIcon.ImageColor3 = iconColor end
-                            newIcon.Parent = btn
-                        end
-                    end)
-                end
-            end
-            -- =====================
+            createElementIcon({
+                HasIcon = hasIcon,
+                IconName = iconName,
+                IconType = iconType,
+                IconColor = iconColor,
+                Parent = btn,
+                Name = "ButtonIcon",
+            })
 
             btn.MouseButton1Click:Connect(function()
                 PlayClickSound()
@@ -1439,31 +1411,14 @@ function ChronixUI:CreateWindow(config)
             btnCorner.Parent = dropdownBtn
             AddStroke(dropdownBtn, ChronixUI.Themes[ChronixUI.CurrentTheme].Border)
 
-            -- === 新增：右侧图标 ===
-            if hasIcon and iconName ~= "" then
-                local iconLabel = IconModule:CreateIcon(iconName, UDim2.new(0, 20 * scale, 0, 20 * scale), iconColor, iconType)
-                if iconLabel then
-                    iconLabel.Name = "ButtonIcon"
-                    iconLabel.Position = UDim2.new(1, -28 * scale, 0.5, -10 * scale)
-                    iconLabel.Parent = dropdownBtn
-                else
-                    -- 异步加载
-                    IconModule:WaitForIcon(iconName, iconType, function(iconId)
-                        if iconId and dropdownBtn and dropdownBtn.Parent then
-                            local newIcon = Instance.new("ImageLabel")
-                            newIcon.Name = "ButtonIcon"
-                            newIcon.Size = UDim2.new(0, 20 * scale, 0, 20 * scale)
-                            newIcon.Position = UDim2.new(1, -28 * scale, 0.5, -10 * scale)
-                            newIcon.BackgroundTransparency = 1
-                            newIcon.Image = iconId
-                            newIcon.ScaleType = Enum.ScaleType.Fit
-                            if iconColor then newIcon.ImageColor3 = iconColor end
-                            newIcon.Parent = dropdownBtn
-                        end
-                    end)
-                end
-            end
-            -- =====================
+            createElementIcon({
+                HasIcon = hasIcon,
+                IconName = iconName,
+                IconType = iconType,
+                IconColor = iconColor,
+                Parent = dropdownBtn,
+                Name = "ButtonIcon",
+            })
 
             local dropdownList = Instance.new("Frame")
             dropdownList.Parent = container
@@ -1480,6 +1435,11 @@ function ChronixUI:CreateWindow(config)
             local listLayout = AddListLayout(dropdownList, 0)
 
             local expanded = false
+            local function collapseDropdown()
+                TweenService:Create(dropdownList, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, 0)}):Play()
+                task.wait(0.2)
+                dropdownList.Visible = false
+            end
             for _, option in ipairs(options) do
                 local optBtn = Instance.new("TextButton")
                 optBtn.Parent = dropdownList
@@ -1497,9 +1457,7 @@ function ChronixUI:CreateWindow(config)
                     dropdownBtn.Text = "  " .. option
                     callback(option)
                     expanded = false
-                    TweenService:Create(dropdownList, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, 0)}):Play()
-                    task.wait(0.2)
-                    dropdownList.Visible = false
+                    collapseDropdown()
                 end)
             end
 
@@ -1507,13 +1465,11 @@ function ChronixUI:CreateWindow(config)
                 PlayClickSound()
                 expanded = not expanded
                 dropdownList.Visible = true
-                local totalHeight = #options * math.floor(32 * scale)
                 if expanded then
+                    local totalHeight = #options * math.floor(32 * scale)
                     TweenService:Create(dropdownList, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, totalHeight)}):Play()
                 else
-                    TweenService:Create(dropdownList, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, 0)}):Play()
-                    task.wait(0.2)
-                    dropdownList.Visible = false
+                    collapseDropdown()
                 end
             end)
 
@@ -1600,9 +1556,7 @@ function ChronixUI:CreateWindow(config)
             end
 
             sliderHitbox.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    startDrag(input)
-                end
+                if isClickInput(input) then startDrag(input) end
             end)
 
             local function stopDrag()
@@ -1615,9 +1569,7 @@ function ChronixUI:CreateWindow(config)
 
             sliderHitbox.InputEnded:Connect(stopDrag)
             UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    stopDrag()
-                end
+                if isClickInput(input) then stopDrag() end
             end)
 
             return wrap(container)
@@ -1659,15 +1611,14 @@ function ChronixUI:CreateWindow(config)
 
             local toggled = default
             toggleBtn.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    PlayClickSound()
-                    toggled = not toggled
-                    local targetColor = toggled and ChronixUI.Themes[ChronixUI.CurrentTheme].Accent or Color3.fromRGB(80, 80, 80)
-                    local targetPos = toggled and UDim2.new(1, -26*scale, 0.5, -math.floor(11 * scale)) or UDim2.new(0, math.floor(4 * scale), 0.5, -math.floor(11 * scale))
-                    TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
-                    TweenService:Create(toggleHandle, TweenInfo.new(0.2), {Position = targetPos}):Play()
-                    callback(toggled)
-                end
+                if not isClickInput(input) then return end
+                PlayClickSound()
+                toggled = not toggled
+                local targetColor = toggled and ChronixUI.Themes[ChronixUI.CurrentTheme].Accent or Color3.fromRGB(80, 80, 80)
+                local targetPos = toggled and UDim2.new(1, -26*scale, 0.5, -math.floor(11 * scale)) or UDim2.new(0, math.floor(4 * scale), 0.5, -math.floor(11 * scale))
+                TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
+                TweenService:Create(toggleHandle, TweenInfo.new(0.2), {Position = targetPos}):Play()
+                callback(toggled)
             end)
 
             return wrap(container)
@@ -1727,41 +1678,16 @@ function ChronixUI:CreateWindow(config)
             inputCorner.Parent = inputBox
             AddStroke(inputBox, ChronixUI.Themes[ChronixUI.CurrentTheme].Border)
 
-            -- === 新增：右侧图标 ===
-            if hasIcon and iconName ~= "" then
-                local iconLabel = IconModule:CreateIcon(iconName, UDim2.new(0, 20 * scale, 0, 20 * scale), iconColor, iconType)
-                if iconLabel then
-                    iconLabel.Name = "InputIcon"
-                    if isMultiLine then
-                        -- 多行模式：图标放在右上角
-                        iconLabel.Position = UDim2.new(1, -28 * scale, 0, 8 * scale)
-                    else
-                        -- 默认模式：图标垂直居中
-                        iconLabel.Position = UDim2.new(1, -28 * scale, 0.5, -10 * scale)
-                    end
-                    iconLabel.Parent = inputBox
-                else
-                    -- 异步加载
-                    IconModule:WaitForIcon(iconName, iconType, function(iconId)
-                        if iconId and inputBox and inputBox.Parent then
-                            local newIcon = Instance.new("ImageLabel")
-                            newIcon.Name = "InputIcon"
-                            newIcon.Size = UDim2.new(0, 20 * scale, 0, 20 * scale)
-                            if isMultiLine then
-                                newIcon.Position = UDim2.new(1, -28 * scale, 0, 8 * scale)
-                            else
-                                newIcon.Position = UDim2.new(1, -28 * scale, 0.5, -10 * scale)
-                            end
-                            newIcon.BackgroundTransparency = 1
-                            newIcon.Image = iconId
-                            newIcon.ScaleType = Enum.ScaleType.Fit
-                            if iconColor then newIcon.ImageColor3 = iconColor end
-                            newIcon.Parent = inputBox
-                        end
-                    end)
-                end
-            end
-            -- =====================
+            local iconPosition = isMultiLine and UDim2.new(1, -28 * scale, 0, 8 * scale) or UDim2.new(1, -28 * scale, 0.5, -10 * scale)
+            createElementIcon({
+                HasIcon = hasIcon,
+                IconName = iconName,
+                IconType = iconType,
+                IconColor = iconColor,
+                Parent = inputBox,
+                Name = "InputIcon",
+                Position = iconPosition,
+            })
 
             inputBox.FocusLost:Connect(function()
                 callback(inputBox.Text)
@@ -1839,31 +1765,14 @@ function ChronixUI:CreateWindow(config)
             btnCorner.Parent = keyBtn
             AddStroke(keyBtn, ChronixUI.Themes[ChronixUI.CurrentTheme].Border)
 
-            -- === 新增：右侧图标 ===
-            if hasIcon and iconName ~= "" then
-                local iconLabel = IconModule:CreateIcon(iconName, UDim2.new(0, 20 * scale, 0, 20 * scale), iconColor, iconType)
-                if iconLabel then
-                    iconLabel.Name = "ButtonIcon"
-                    iconLabel.Position = UDim2.new(1, -28 * scale, 0.5, -10 * scale)
-                    iconLabel.Parent = keyBtn
-                else
-                    -- 异步加载
-                    IconModule:WaitForIcon(iconName, iconType, function(iconId)
-                        if iconId and keyBtn and keyBtn.Parent then
-                            local newIcon = Instance.new("ImageLabel")
-                            newIcon.Name = "ButtonIcon"
-                            newIcon.Size = UDim2.new(0, 20 * scale, 0, 20 * scale)
-                            newIcon.Position = UDim2.new(1, -28 * scale, 0.5, -10 * scale)
-                            newIcon.BackgroundTransparency = 1
-                            newIcon.Image = iconId
-                            newIcon.ScaleType = Enum.ScaleType.Fit
-                            if iconColor then newIcon.ImageColor3 = iconColor end
-                            newIcon.Parent = keyBtn
-                        end
-                    end)
-                end
-            end
-            -- =====================
+            createElementIcon({
+                HasIcon = hasIcon,
+                IconName = iconName,
+                IconType = iconType,
+                IconColor = iconColor,
+                Parent = keyBtn,
+                Name = "ButtonIcon",
+            })
 
             local listening = false
             keyBtn.MouseButton1Click:Connect(function()
@@ -2054,67 +1963,38 @@ function ChronixUI:CreateWindow(config)
                 updateColor()
             end
             
-            -- 色相条拖动逻辑
-            local hueDragging = false
-            local hueConnection = nil
-            
-            local function startHueDrag(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    hueDragging = true
-                    updateFromHueMouse(input.Position.Y)
-                    
-                    if hueConnection then hueConnection:Disconnect() end
-                    hueConnection = RunService.RenderStepped:Connect(function()
-                        if hueDragging then
-                            updateFromHueMouse(Mouse.Y)
-                        end
+            -- 拖动辅助函数
+            local function createDragHandler(target, onStart, onDrag)
+                local dragging = false
+                local connection = nil
+                target.InputBegan:Connect(function(input)
+                    if not isClickInput(input) then return end
+                    dragging = true
+                    onStart(input)
+                    if connection then connection:Disconnect() end
+                    connection = RunService.RenderStepped:Connect(function()
+                        if dragging then onDrag() end
                     end)
-                end
-            end
-            
-            local function endHueDrag(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    hueDragging = false
-                    if hueConnection then
-                        hueConnection:Disconnect()
-                        hueConnection = nil
+                end)
+                target.InputEnded:Connect(function(input)
+                    if not isClickInput(input) then return end
+                    dragging = false
+                    if connection then
+                        connection:Disconnect()
+                        connection = nil
                     end
-                end
+                end)
             end
             
-            hueGradientBar.InputBegan:Connect(startHueDrag)
-            hueGradientBar.InputEnded:Connect(endHueDrag)
+            createDragHandler(hueGradientBar,
+                function(input) updateFromHueMouse(input.Position.Y) end,
+                function() updateFromHueMouse(Mouse.Y) end
+            )
             
-            -- 色盘拖动逻辑
-            local squareDragging = false
-            local squareConnection = nil
-            
-            local function startSquareDrag(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    squareDragging = true
-                    updateFromSquareMouse(input.Position.X, input.Position.Y)
-                    
-                    if squareConnection then squareConnection:Disconnect() end
-                    squareConnection = RunService.RenderStepped:Connect(function()
-                        if squareDragging then
-                            updateFromSquareMouse(Mouse.X, Mouse.Y)
-                        end
-                    end)
-                end
-            end
-            
-            local function endSquareDrag(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    squareDragging = false
-                    if squareConnection then
-                        squareConnection:Disconnect()
-                        squareConnection = nil
-                    end
-                end
-            end
-            
-            satBrightGradient.InputBegan:Connect(startSquareDrag)
-            satBrightGradient.InputEnded:Connect(endSquareDrag)
+            createDragHandler(satBrightGradient,
+                function(input) updateFromSquareMouse(input.Position.X, input.Position.Y) end,
+                function() updateFromSquareMouse(Mouse.X, Mouse.Y) end
+            )
             
             -- 初始化位置
             local function initializePositions()
@@ -2319,26 +2199,7 @@ function ChronixUI:CreateWindow(config)
 
     settingsBtn.MouseButton1Click:Connect(function()
         PlayClickSound()
-        if windowData.SettingsTabContent then
-            for _, tab in pairs(windowData.Tabs) do
-                if tab.Name == "设置" then
-                    tab.Button.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Accent
-                    tab.Button.TextColor3 = Color3.fromRGB(0, 0, 0)
-                    for _, otherTab in pairs(windowData.Tabs) do
-                        if otherTab ~= tab then
-                            otherTab.Button.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Background
-                            otherTab.Button.TextColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].TextDark
-                            otherTab.Content.Visible = false
-                        end
-                    end
-                    windowData.SettingsTabContent.Visible = true
-                    windowData.CurrentTab = { Name = "设置" }
-                    -- 强制更新滚动区域尺寸
-                    updateContentCanvas()
-                    break
-                end
-            end
-        end
+        windowData:SelectTab("设置")
     end)
 
     table.insert(self.Windows, windowData)
