@@ -12,59 +12,43 @@ local mainWindow = ChronixUI:CreateWindow({
     end
 })
 
+-- Helper functions to reduce duplicate code
+local function sliderLock(tab, sliderLabel, min, max, default, sliderCb, lockLabel, lockCb)
+    tab:AddSlider({ Label = sliderLabel, Min = min, Max = max, Default = default, Callback = sliderCb })
+    tab:AddToggle({ Label = lockLabel, Default = false, Callback = lockCb })
+end
+
+local function enableToggle(tab, label, onFn, offFn)
+    tab:AddToggle({ Label = label, Default = false, Callback = function(v) if v then onFn() else offFn() end end })
+end
+
+local function settingsKeybindInput(tab, bindLabel, defaultKey, setKey, inputLabel, defaultVal, setVal)
+    tab:AddKeybind({ Label = bindLabel, Default = defaultKey, Callback = function(key)
+        if key then local nk = Enum.KeyCode[key]; if nk then setKey(nk) end end
+    end })
+    tab:AddInput({ Label = inputLabel, Placeholder = "", Default = defaultVal, Callback = function(text)
+        local n = tonumber(text); if n then setVal(n) end
+    end })
+end
+
 -- ===== 基础设置 Tab =====
 local basicTab = mainWindow:CreateTab({ Name = "基础设置", HasIcon = true, IconName = "pencil-ruler" })
 basicTab:AddTitle("基础数据修改")
-basicTab:AddSlider({
-    Label = "玩家移速",
-    Min = 0, Max = 1000, Default = data["basicdata"]["player"]["speed"],
-    Callback = function(v) LocalPlayer.Character.Humanoid.WalkSpeed = v; data["basicdata"]["player"]["speed"] = v end
-})
-basicTab:AddToggle({
-    Label = "锁定玩家移速",
-    Default = false,
-    Callback = function(v) data["basicdata"]["player"]["islockspeed"] = v end
-})
-basicTab:AddSlider({
-    Label = "跳跃力量",
-    Min = 0, Max = 1000, Default = data["basicdata"]["player"]["jump"],
-    Callback = function(v) LocalPlayer.Character.Humanoid.JumpPower = v; data["basicdata"]["player"]["jump"] = v end
-})
-basicTab:AddToggle({
-    Label = "锁定跳跃力量",
-    Default = false,
-    Callback = function(v) data["basicdata"]["player"]["islockjump"] = v end
-})
-basicTab:AddSlider({
-    Label = "最大血量",
-    Min = 0, Max = 1000, Default = data["basicdata"]["player"]["maxhealth"],
-    Callback = function(v) LocalPlayer.Character.Humanoid.MaxHealth = v; data["basicdata"]["player"]["maxhealth"] = v end
-})
-basicTab:AddToggle({
-    Label = "锁定最大血量",
-    Default = false,
-    Callback = function(v) data["basicdata"]["player"]["islockmaxhealth"] = v end
-})
-basicTab:AddSlider({
-    Label = "当前血量",
-    Min = 0, Max = 1000, Default = data["basicdata"]["player"]["health"],
-    Callback = function(v) LocalPlayer.Character.Humanoid.Health = v; data["basicdata"]["player"]["health"] = v end
-})
-basicTab:AddToggle({
-    Label = "锁定当前血量",
-    Default = false,
-    Callback = function(v) data["basicdata"]["player"]["islockhealth"] = v end
-})
-basicTab:AddSlider({
-    Label = "世界重力",
-    Min = 0, Max = 1000, Default = data["basicdata"]["player"]["gravity"],
-    Callback = function(v) Workspace.Gravity = v; data["basicdata"]["player"]["gravity"] = v end
-})
-basicTab:AddToggle({
-    Label = "锁定世界重力",
-    Default = false,
-    Callback = function(v) data["basicdata"]["player"]["islockgravity"] = v end
-})
+sliderLock(basicTab, "玩家移速", 0, 1000, data["basicdata"]["player"]["speed"],
+    function(v) LocalPlayer.Character.Humanoid.WalkSpeed = v; data["basicdata"]["player"]["speed"] = v end,
+    "锁定玩家移速", function(v) data["basicdata"]["player"]["islockspeed"] = v end)
+sliderLock(basicTab, "跳跃力量", 0, 1000, data["basicdata"]["player"]["jump"],
+    function(v) LocalPlayer.Character.Humanoid.JumpPower = v; data["basicdata"]["player"]["jump"] = v end,
+    "锁定跳跃力量", function(v) data["basicdata"]["player"]["islockjump"] = v end)
+sliderLock(basicTab, "最大血量", 0, 1000, data["basicdata"]["player"]["maxhealth"],
+    function(v) LocalPlayer.Character.Humanoid.MaxHealth = v; data["basicdata"]["player"]["maxhealth"] = v end,
+    "锁定最大血量", function(v) data["basicdata"]["player"]["islockmaxhealth"] = v end)
+sliderLock(basicTab, "当前血量", 0, 1000, data["basicdata"]["player"]["health"],
+    function(v) LocalPlayer.Character.Humanoid.Health = v; data["basicdata"]["player"]["health"] = v end,
+    "锁定当前血量", function(v) data["basicdata"]["player"]["islockhealth"] = v end)
+sliderLock(basicTab, "世界重力", 0, 1000, data["basicdata"]["player"]["gravity"],
+    function(v) Workspace.Gravity = v; data["basicdata"]["player"]["gravity"] = v end,
+    "锁定世界重力", function(v) data["basicdata"]["player"]["islockgravity"] = v end)
 
 -- ===== 工具 Tab =====
 local ToolsTab = mainWindow:CreateTab({ Name = "工具", HasIcon = true, IconName = "wrench" })
@@ -79,206 +63,56 @@ ToolsTab:AddToggle({
     Default = false,
     Callback = function(v) data["basicdata"]["releasetools"]["keepthub"] = v end
 })
-ToolsTab:AddToggle({
-    Label = "飞行",
-    Default = false,
-    Callback = function(v)
-        if v then
-            FlyModule.enable()
-            ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl+" .. FlyModule.getbindkey().Name .. "开关飞行状态", Type = "info", Duration = 5 })
-        else
-            FlyModule.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "帧飞行",
-    Default = false,
-    Callback = function(v)
-        if v then
-            CframeFly.enable()
-            ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl+" .. CframeFly.getbindkey().Name .. "开关飞行状态", Type = "info", Duration = 5 })
-        else
-            CframeFly.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "载具飞行",
-    Default = false,
-    Callback = function(v)
-        if v then
-            VehicleFly.enable()
-            ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl+" .. VehicleFly.getbindkey().Name .. "开关飞行状态", Type = "info", Duration = 5 })
-        else
-            VehicleFly.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "点击传送",
-    Default = false,
-    Callback = function(v)
-        if v then
-            TeleportModule.enable()
-            ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl并点击来传送", Type = "info", Duration = 5 })
-        else
-            TeleportModule.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "玩家透视",
-    Default = false,
-    Callback = function(v)
-        if v then
-            PlayerESP.enable()
-        else
-            PlayerESP.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "NPC透视",
-    Default = false,
-    Callback = function(v)
-        if v then
-            data["basicdata"]["releasetools"]["npc"]:enable()
-        else
-            data["basicdata"]["releasetools"]["npc"]:disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "TPWalk",
-    Default = false,
-    Callback = function(v) tpWalk:Enabled(v) end
-})
-ToolsTab:AddToggle({
-    Label = "鼠标解锁",
-    Default = false,
-    Callback = function(v)
-        if v then
-            MouseUnlockModule.Enable()
-            ChronixUI:Notify({ Title = "提示", Content = "按下K+L组合键开关解锁鼠标", Type = "info", Duration = 5 })
-        else
-            MouseUnlockModule.Disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "锁定视角",
-    Default = false,
-    Callback = function(v)
-        if v then
-            LockCameraModule.enable()
-            ChronixUI:Notify({ Title = "提示", Content = "按住" .. LockCameraModule.getBindKey().Name .. "键来锁定视角", Type = "info", Duration = 5 })
-        else
-            LockCameraModule.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "瞬间转向",
-    Default = false,
-    Callback = function(v)
-        if v then
-            SnapTurn.Enable()
-        else
-            SnapTurn.Disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "瞬间回头",
-    Default = false,
-    Callback = function(v)
-        if v then
-            SnapReverse.Enable()
-            ChronixUI:Notify({ Title = "提示", Content = "按下" .. SnapReverse.GetKeyBind().Name .. "键来瞬间回头", Type = "info", Duration = 5 })
-        else
-            SnapReverse.Disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "自动瞄准",
-    Default = false,
-    Callback = function(v)
-        if v then
-            AimBotModule.Enable()
-        else
-            AimBotModule.Disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "物品滚轮切换",
-    Default = false,
-    Callback = function(v)
-        if v then
-            ChronixUI:Notify({ Title = "提示", Content = "按住" .. ScrollSwitch:getbind().Name .. "键并滚动鼠标滚轮来切换物品", Type = "info", Duration = 5 })
-            ScrollSwitch:enable()
-        else
-            ScrollSwitch:disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "望远镜",
-    Default = false,
-    Callback = function(v)
-        if v then
-            data["basicdata"]["releasetools"]["zoom"]:Enable()
-            ChronixUI:Notify({ Title = "提示", Content = "按住" .. tostring(data["basicdata"]["releasetools"]["zoom"]:GetBindKey()):gsub("^Enum%.%w+%.", "") .. "键放大", Type = "info", Duration = 5 })
-        else
-            data["basicdata"]["releasetools"]["zoom"]:Disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "隐身",
-    Default = false,
-    Callback = function(v)
-        if v then
-            PlayerVisibleModule.enable()
-        else
-            PlayerVisibleModule.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "查看落脚点",
-    Default = false,
-    Callback = function(v)
-        if v then
-            FootstepHighlighter.enable()
-        else
-            FootstepHighlighter.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "落地特效",
-    Default = false,
-    Callback = function(v)
-        if v then
-            LandingEffect.enable()
-        else
-            LandingEffect.disable()
-        end
-    end
-})
+enableToggle(ToolsTab, "飞行", function()
+    FlyModule.enable()
+    ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl+" .. FlyModule.getbindkey().Name .. "开关飞行状态", Type = "info", Duration = 5 })
+end, function() FlyModule.disable() end)
+enableToggle(ToolsTab, "帧飞行", function()
+    CframeFly.enable()
+    ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl+" .. CframeFly.getbindkey().Name .. "开关飞行状态", Type = "info", Duration = 5 })
+end, function() CframeFly.disable() end)
+enableToggle(ToolsTab, "载具飞行", function()
+    VehicleFly.enable()
+    ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl+" .. VehicleFly.getbindkey().Name .. "开关飞行状态", Type = "info", Duration = 5 })
+end, function() VehicleFly.disable() end)
+enableToggle(ToolsTab, "点击传送", function()
+    TeleportModule.enable()
+    ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl并点击来传送", Type = "info", Duration = 5 })
+end, function() TeleportModule.disable() end)
+enableToggle(ToolsTab, "玩家透视", function() PlayerESP.enable() end, function() PlayerESP.disable() end)
+enableToggle(ToolsTab, "NPC透视", function() data["basicdata"]["releasetools"]["npc"]:enable() end, function() data["basicdata"]["releasetools"]["npc"]:disable() end)
+enableToggle(ToolsTab, "TPWalk", function() tpWalk:Enabled(true) end, function() tpWalk:Enabled(false) end)
+enableToggle(ToolsTab, "鼠标解锁", function()
+    MouseUnlockModule.Enable()
+    ChronixUI:Notify({ Title = "提示", Content = "按下K+L组合键开关解锁鼠标", Type = "info", Duration = 5 })
+end, function() MouseUnlockModule.Disable() end)
+enableToggle(ToolsTab, "锁定视角", function()
+    LockCameraModule.enable()
+    ChronixUI:Notify({ Title = "提示", Content = "按住" .. LockCameraModule.getBindKey().Name .. "键来锁定视角", Type = "info", Duration = 5 })
+end, function() LockCameraModule.disable() end)
+enableToggle(ToolsTab, "瞬间转向", function() SnapTurn.Enable() end, function() SnapTurn.Disable() end)
+enableToggle(ToolsTab, "瞬间回头", function()
+    SnapReverse.Enable()
+    ChronixUI:Notify({ Title = "提示", Content = "按下" .. SnapReverse.GetKeyBind().Name .. "键来瞬间回头", Type = "info", Duration = 5 })
+end, function() SnapReverse.Disable() end)
+enableToggle(ToolsTab, "自动瞄准", function() AimBotModule.Enable() end, function() AimBotModule.Disable() end)
+enableToggle(ToolsTab, "物品滚轮切换", function()
+    ChronixUI:Notify({ Title = "提示", Content = "按住" .. ScrollSwitch:getbind().Name .. "键并滚动鼠标滚轮来切换物品", Type = "info", Duration = 5 })
+    ScrollSwitch:enable()
+end, function() ScrollSwitch:disable() end)
+enableToggle(ToolsTab, "望远镜", function()
+    data["basicdata"]["releasetools"]["zoom"]:Enable()
+    ChronixUI:Notify({ Title = "提示", Content = "按住" .. tostring(data["basicdata"]["releasetools"]["zoom"]:GetBindKey()):gsub("^Enum%.%w+%.", "") .. "键放大", Type = "info", Duration = 5 })
+end, function() data["basicdata"]["releasetools"]["zoom"]:Disable() end)
+enableToggle(ToolsTab, "隐身", function() PlayerVisibleModule.enable() end, function() PlayerVisibleModule.disable() end)
+enableToggle(ToolsTab, "查看落脚点", function() FootstepHighlighter.enable() end, function() FootstepHighlighter.disable() end)
+enableToggle(ToolsTab, "落地特效", function() LandingEffect.enable() end, function() LandingEffect.disable() end)
 ToolsTab:AddToggle({
     Label = "夜视",
     Default = false,
     Callback = function(v)
         data["basicdata"]["releasetools"]["nightvision"] = v
-        if v then
-            game.Lighting.Ambient = Color3.new(1, 1, 1)
-        else
-            game.Lighting.Ambient = Color3.new(0, 0, 0)
-        end
+        game.Lighting.Ambient = v and Color3.new(1, 1, 1) or Color3.new(0, 0, 0)
     end
 })
 ToolsTab:AddToggle({
@@ -335,51 +169,13 @@ ToolsTab:AddToggle({
     Default = false,
     Callback = function(v) FreecamModule.freecamenable = v end
 })
-ToolsTab:AddToggle({
-    Label = "平移",
-    Default = false,
-    Callback = function(v)
-        if v then
-            movementModule.Enable()
-            ChronixUI:Notify({ Title = "提示", Content = "按下↑↓←→键进行平移", Type = "info", Duration = 5 })
-        else
-            movementModule.Disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "空中移动",
-    Default = false,
-    Callback = function(v)
-        if v then
-            AirWalk.enable()
-        else
-            AirWalk.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "无摔落伤害",
-    Default = false,
-    Callback = function(v)
-        if v then
-            NoFall.enable()
-        else
-            NoFall.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "瞬间交互",
-    Default = false,
-    Callback = function(v)
-        if v then
-            InstantInteraction.enable()
-        else
-            InstantInteraction.disable()
-        end
-    end
-})
+enableToggle(ToolsTab, "平移", function()
+    movementModule.Enable()
+    ChronixUI:Notify({ Title = "提示", Content = "按下↑↓←→键进行平移", Type = "info", Duration = 5 })
+end, function() movementModule.Disable() end)
+enableToggle(ToolsTab, "空中移动", function() AirWalk.enable() end, function() AirWalk.disable() end)
+enableToggle(ToolsTab, "无摔落伤害", function() NoFall.enable() end, function() NoFall.disable() end)
+enableToggle(ToolsTab, "瞬间交互", function() InstantInteraction.enable() end, function() InstantInteraction.disable() end)
 noclipConnection = RunService.Stepped:Connect(function()
     if data["basicdata"]["releasetools"]["noclip"] then
         local char = Workspace:FindFirstChild(LocalPlayer.Name)
@@ -430,99 +226,19 @@ ToolsTab:AddToggle({
         end)
     end
 })
-ToolsTab:AddToggle({
-    Label = "固定到世界",
-    Default = false,
-    Callback = function(v)
-        if v then
-            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.Anchored = true
-        else
-            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.Anchored = false
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "旁观模式",
-    Default = false,
-    Callback = function(v)
-        if v then
-            SpectatorModule.start()
-        else
-            SpectatorModule.close()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "摄像头穿墙",
-    Default = false,
-    Callback = function(v)
-        if v then
-            NoclipCam.enable(LocalPlayer)
-        else
-            NoclipCam.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "防击倒",
-    Default = false,
-    Callback = function(v) data["basicdata"]["releasetools"]["antifall"] = v end
-})
-ToolsTab:AddToggle({
-    Label = "晕厥康复",
-    Default = false,
-    Callback = function(v)
-        if v then
-            StandRecovery:enableDetection()
-        else
-            StandRecovery:disableDetection()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "防甩飞",
-    Default = false,
-    Callback = function(v)
-        if v then
-            FlingDetector.enable(LocalPlayer)
-        else
-            FlingDetector.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "反物理劫持",
-    Default = false,
-    Callback = function(v)
-        if v then
-            AntiVoidModule.enable()
-        else
-            AntiVoidModule.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "移除移动部件",
-    Default = false,
-    Callback = function(v)
-        if v then
-            MovingPartCleaner.Enable()
-        else
-            MovingPartCleaner.Disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "防御立场",
-    Default = false,
-    Callback = function(v)
-        if v then
-            DefenseField.Enable()
-        else
-            DefenseField.Disable()
-        end
-    end
-})
+enableToggle(ToolsTab, "固定到世界", function()
+    LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.Anchored = true
+end, function()
+    LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.Anchored = false
+end)
+enableToggle(ToolsTab, "旁观模式", function() SpectatorModule.start() end, function() SpectatorModule.close() end)
+enableToggle(ToolsTab, "摄像头穿墙", function() NoclipCam.enable(LocalPlayer) end, function() NoclipCam.disable() end)
+ToolsTab:AddToggle({ Label = "防击倒", Default = false, Callback = function(v) data["basicdata"]["releasetools"]["antifall"] = v end })
+enableToggle(ToolsTab, "晕厥康复", function() StandRecovery:enableDetection() end, function() StandRecovery:disableDetection() end)
+enableToggle(ToolsTab, "防甩飞", function() FlingDetector.enable(LocalPlayer) end, function() FlingDetector.disable() end)
+enableToggle(ToolsTab, "反物理劫持", function() AntiVoidModule.enable() end, function() AntiVoidModule.disable() end)
+enableToggle(ToolsTab, "移除移动部件", function() MovingPartCleaner.Enable() end, function() MovingPartCleaner.Disable() end)
+enableToggle(ToolsTab, "防御立场", function() DefenseField.Enable() end, function() DefenseField.Disable() end)
 ToolsTab:AddToggle({
     Label = "管理员检测",
     Default = false,
@@ -546,17 +262,7 @@ ToolsTab:AddToggle({
         end
     end
 })
-ToolsTab:AddToggle({
-    Label = "死亡播报",
-    Default = false,
-    Callback = function(v)
-        if v then
-            enableDeathAnnounce()
-        else
-            disableDeathAnnounce()
-        end
-    end
-})
+enableToggle(ToolsTab, "死亡播报", function() enableDeathAnnounce() end, function() disableDeathAnnounce() end)
 ToolsTab:AddToggle({
     Label = "防死亡",
     Default = false,
@@ -570,28 +276,8 @@ ToolsTab:AddToggle({
     Default = false,
     Callback = function(v) data["basicdata"]["releasetools"]["chatresend"] = v end
 })
-ToolsTab:AddToggle({
-    Label = "聊天偷听",
-    Default = false,
-    Callback = function(v)
-        if v then
-            ChatSpy.enable()
-        else
-            ChatSpy.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "坐下",
-    Default = false,
-    Callback = function(v)
-        if v then
-            LocalPlayer.Character:FindFirstChild("Humanoid").Sit = true
-        else
-            LocalPlayer.Character:FindFirstChild("Humanoid").Sit = false
-        end
-    end
-})
+enableToggle(ToolsTab, "聊天偷听", function() ChatSpy.enable() end, function() ChatSpy.disable() end)
+enableToggle(ToolsTab, "坐下", function() LocalPlayer.Character:FindFirstChild("Humanoid").Sit = true end, function() LocalPlayer.Character:FindFirstChild("Humanoid").Sit = false end)
 ToolsTab:AddToggle({
     Label = "防踢出",
     Default = false,
@@ -606,42 +292,18 @@ ToolsTab:AddToggle({
         end
     end
 })
-ToolsTab:AddToggle({
-    Label = "模型删除工具",
-    Default = false,
-    Callback = function(v)
-        if v then
-            DeleteTool.Enable()
-            ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl键点击来删除指向的模型", Type = "info", Duration = 5 })
-        else
-            DeleteTool.Disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "GUI删除工具",
-    Default = false,
-    Callback = function(v)
-        if v then
-            GuiDeleter.enable()
-            ChronixUI:Notify({ Title = "提示", Content = "按下" .. GuiDeleter.getBindKey().Name .. "键来删除鼠标指向的UI", Type = "info", Duration = 5 })
-        else
-            GuiDeleter.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "模型信息查询工具",
-    Default = false,
-    Callback = function(v)
-        if v then
-            ClickInspectModule.Enable()
-            ChronixUI:Notify({ Title = "提示", Content = "按下Ctrl键点击来查看模型信息", Type = "info", Duration = 5 })
-        else
-            ClickInspectModule.Disable()
-        end
-    end
-})
+enableToggle(ToolsTab, "模型删除工具", function()
+    DeleteTool.Enable()
+    ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl键点击来删除指向的模型", Type = "info", Duration = 5 })
+end, function() DeleteTool.Disable() end)
+enableToggle(ToolsTab, "GUI删除工具", function()
+    GuiDeleter.enable()
+    ChronixUI:Notify({ Title = "提示", Content = "按下" .. GuiDeleter.getBindKey().Name .. "键来删除鼠标指向的UI", Type = "info", Duration = 5 })
+end, function() GuiDeleter.disable() end)
+enableToggle(ToolsTab, "模型信息查询工具", function()
+    ClickInspectModule.Enable()
+    ChronixUI:Notify({ Title = "提示", Content = "按下Ctrl键点击来查看模型信息", Type = "info", Duration = 5 })
+end, function() ClickInspectModule.Disable() end)
 ToolsTab:AddToggle({
     Label = "禁用购买提示框",
     Default = false,
@@ -658,66 +320,16 @@ ToolsTab:AddToggle({
     Default = false,
     Callback = function(v) data["basicdata"]["releasetools"]["networkpausedisable"] = v; pcall(function() CoreGui.RobloxGui["CoreScripts/NetworkPause"]:Destroy() end) end
 })
-ToolsTab:AddToggle({
-    Label = "游戏翻译",
-    Default = false,
-    Callback = function(v)
-        if v then
-            TranslationModule.enable()
-            ChronixUI:Notify({ Title = "提示", Content = "正在翻译中，可能会比较慢\n速度限制2次/s", Type = "info", Duration = 10 })
-        else
-            TranslationModule.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "透视触点实例",
-    Default = false,
-    Callback = function(v)
-        if v then
-            TCPHighLight.touchinterest.enable()
-        else
-            TCPHighLight.touchinterest.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "禁用触点实例",
-    Default = false,
-    Callback = function(v) toggleInteraction("TouchTransmitter", v) end
-})
-ToolsTab:AddToggle({
-    Label = "透视点击触发实例",
-    Default = false,
-    Callback = function(v)
-        if v then
-            TCPHighLight.clickdetectors.enable()
-        else
-            TCPHighLight.clickdetectors.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "禁用点击触发实例",
-    Default = false,
-    Callback = function(v) toggleInteraction("ClickDetector", v) end
-})
-ToolsTab:AddToggle({
-    Label = "透视可交互实例",
-    Default = false,
-    Callback = function(v)
-        if v then
-            TCPHighLight.proximityprompts.enable()
-        else
-            TCPHighLight.proximityprompts.disable()
-        end
-    end
-})
-ToolsTab:AddToggle({
-    Label = "禁用可交互实例",
-    Default = false,
-    Callback = function(v) toggleInteraction("ProximityPrompt", v) end
-})
+enableToggle(ToolsTab, "游戏翻译", function()
+    TranslationModule.enable()
+    ChronixUI:Notify({ Title = "提示", Content = "正在翻译中，可能会比较慢\n速度限制2次/s", Type = "info", Duration = 10 })
+end, function() TranslationModule.disable() end)
+enableToggle(ToolsTab, "透视触点实例", function() TCPHighLight.touchinterest.enable() end, function() TCPHighLight.touchinterest.disable() end)
+ToolsTab:AddToggle({ Label = "禁用触点实例", Default = false, Callback = function(v) toggleInteraction("TouchTransmitter", v) end })
+enableToggle(ToolsTab, "透视点击触发实例", function() TCPHighLight.clickdetectors.enable() end, function() TCPHighLight.clickdetectors.disable() end)
+ToolsTab:AddToggle({ Label = "禁用点击触发实例", Default = false, Callback = function(v) toggleInteraction("ClickDetector", v) end })
+enableToggle(ToolsTab, "透视可交互实例", function() TCPHighLight.proximityprompts.enable() end, function() TCPHighLight.proximityprompts.disable() end)
+ToolsTab:AddToggle({ Label = "禁用可交互实例", Default = false, Callback = function(v) toggleInteraction("ProximityPrompt", v) end })
 ToolsTab:AddButton({ Text = "触发所有触点实例", Callback = function()
 	local Root = LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart or LocalPlayer.Character:FindFirstChildWhichIsA("BasePart")
 	if not firetouchinterest then
@@ -1852,17 +1464,7 @@ hankerTab = mainWindow:CreateTab({ Name = "恶劣功能", HasIcon = true, IconNa
 hankerTab:AddTitle("使用此部分的功能会导致封号")
 hankerTab:AddDivider()
 hankerTab:AddLabel("普通功能")
-hankerTab:AddToggle({
-    Label = "循环OOF",
-    Default = false,
-    Callback = function(v)
-        if v then
-            LoopOofModule.enable()
-        else
-            LoopOofModule.disable()
-        end
-    end
-})
+enableToggle(hankerTab, "循环OOF", function() LoopOofModule.enable() end, function() LoopOofModule.disable() end)
 hankerTab:AddButton({ Text = "获得打飞机工具", Callback = function() getjerktool() end })
 hankerTab:AddDivider()
 hankerTab:AddLabel("背起了行囊")
@@ -1875,59 +1477,13 @@ hankerTab:AddInput({
         if SpinModule.isEnabled() then SpinModule.setSpeed(data["basicdata"]["hankermodule"]["spin"]["speed"]) end
     end
 })
-hankerTab:AddToggle({
-    Label = "开始旋转",
-    Default = false,
-    Callback = function(v)
-        if v then
-            SpinModule.enable(data["basicdata"]["hankermodule"]["spin"]["speed"])
-        else
-            SpinModule.disable()
-        end
-    end
-})
+enableToggle(hankerTab, "开始旋转", function() SpinModule.enable(data["basicdata"]["hankermodule"]["spin"]["speed"]) end, function() SpinModule.disable() end)
 hankerTab:AddDivider()
 hankerTab:AddLabel("击飞功能")
-hankerTab:AddToggle({
-    Label = "旋转击飞(Ctrl+G)",
-    Default = false,
-    Callback = function(v)
-        FlingModule.fling.setShortcutEnabled(v)
-    end
-})
-hankerTab:AddToggle({
-    Label = "飞行击飞",
-    Default = false,
-    Callback = function(v)
-        if v then
-            FlingModule.flyfling.enable(2)
-        else
-            FlingModule.flyfling.disable()
-        end
-    end
-})
-hankerTab:AddToggle({
-    Label = "走路击飞",
-    Default = false,
-    Callback = function(v)
-        if v then
-            FlingModule.walkfling.enable()
-        else
-            FlingModule.walkfling.disable()
-        end
-    end
-})
-hankerTab:AddToggle({
-    Label = "隐身击飞",
-    Default = false,
-    Callback = function(v)
-        if v then
-            FlingModule.invisfling.enable()
-        else
-            FlingModule.invisfling.disable()
-        end
-    end
-})
+enableToggle(hankerTab, "旋转击飞(Ctrl+G)", function() FlingModule.fling.setShortcutEnabled(true) end, function() FlingModule.fling.setShortcutEnabled(false) end)
+enableToggle(hankerTab, "飞行击飞", function() FlingModule.flyfling.enable(2) end, function() FlingModule.flyfling.disable() end)
+enableToggle(hankerTab, "走路击飞", function() FlingModule.walkfling.enable() end, function() FlingModule.walkfling.disable() end)
+enableToggle(hankerTab, "隐身击飞", function() FlingModule.invisfling.enable() end, function() FlingModule.invisfling.disable() end)
 hankerTab:AddDivider()
 hankerTab:AddLabel("击杀玩家")
 hankerTab:AddInput({
@@ -2037,35 +1593,14 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
             })
             OtherGameTab:AddButton({ Text = "传送到礼物", Callback = function() TeleportToPresent(tonumber(data["othergamedata"]["AntarcticExpedition"]["giftnumber"])) end })
         elseif GetgameInfo.name == "西部森林" then
-            OtherGameTab:AddToggle({
-                Label = "怪物标签",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["west_wood"]["monster"]:enable() else data["othergamedata"]["west_wood"]["monster"]:disable() end end
-            })
+            enableToggle(OtherGameTab, "怪物标签", function() data["othergamedata"]["west_wood"]["monster"]:enable() end, function() data["othergamedata"]["west_wood"]["monster"]:disable() end)
         elseif GetgameInfo.name == "警笛头:遗产" then
-            OtherGameTab:AddToggle({
-                Label = "透视盒子",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["sirenhead_legacy"]["cratemodule"].apply(); data["othergamedata"]["sirenhead_legacy"]["cratenametagmodule"]:enable() else data["othergamedata"]["sirenhead_legacy"]["cratemodule"].destroy(); data["othergamedata"]["sirenhead_legacy"]["cratenametagmodule"]:disable() end end
-            })
-            OtherGameTab:AddToggle({
-                Label = "透视浆果",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["sirenhead_legacy"]["berrymodule"].apply(); data["othergamedata"]["sirenhead_legacy"]["berrynametagmodule"]:enable() else data["othergamedata"]["sirenhead_legacy"]["berrymodule"].destroy(); data["othergamedata"]["sirenhead_legacy"]["berrynametagmodule"]:disable() end end
-            })
+            local sl = data["othergamedata"]["sirenhead_legacy"]
+            enableToggle(OtherGameTab, "透视盒子", function() sl.cratemodule.apply(); sl.cratenametagmodule:enable() end, function() sl.cratemodule.destroy(); sl.cratenametagmodule:disable() end)
+            enableToggle(OtherGameTab, "透视浆果", function() sl.berrymodule.apply(); sl.berynametagmodule:enable() end, function() sl.berrymodule.destroy(); sl.berynametagmodule:disable() end)
             OtherGameTab:AddButton({ Text = "传送到树顶", Callback = function() TeleportTo(69, 206, -72) end })
         elseif GetgameInfo.name == "噩梦之行" then
-            OtherGameTab:AddToggle({
-                Label = "高亮怪物",
-                Default = false,
-                Callback = function(v)
-                    if v then
-                        data["othergamedata"]["nightmare_run"]["monster"]:enable()
-                    else
-                        data["othergamedata"]["nightmare_run"]["monster"]:disable()
-                    end
-                end
-            })
+            enableToggle(OtherGameTab, "高亮怪物", function() data["othergamedata"]["nightmare_run"]["monster"]:enable() end, function() data["othergamedata"]["nightmare_run"]["monster"]:disable() end)
             OtherGameTab:AddButton({ Text = "高亮芝士", Callback = function() data["othergamedata"]["nightmare_run"]["HLCheese"].apply() end })
             OtherGameTab:AddButton({ Text = "无敌(怪物不追不杀)", Callback = function()
                 local ClientScripts = PlayerGui.ClientScripts
@@ -2093,36 +1628,13 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
             OtherGameTab:AddButton({ Text = "删除地雷", Callback = function() deleteModelsByName("Landmine", "地雷") end })
             OtherGameTab:AddButton({ Text = "删除阔剑地雷", Callback = function() deleteModelsByName("__ClaymorePhysical", "阔剑地雷") end })
             OtherGameTab:AddLabel("透视功能")
-            OtherGameTab:AddToggle({
-                Label = "Bot兽",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["project_transfur"]["bot"].apply(); data["othergamedata"]["project_transfur"]["botnt"]:enable() else data["othergamedata"]["project_transfur"]["bot"].destroy(); data["othergamedata"]["project_transfur"]["botnt"]:disable() end end
-            })
-            OtherGameTab:AddToggle({
-                Label = "小保险箱",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["project_transfur"]["smallsafe"].apply(); data["othergamedata"]["project_transfur"]["smallsafent"]:enable() else data["othergamedata"]["project_transfur"]["smallsafe"].destroy(); data["othergamedata"]["project_transfur"]["smallsafent"]:disable() end end
-            })
-            OtherGameTab:AddToggle({
-                Label = "大保险箱",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["project_transfur"]["largesafe"].apply(); data["othergamedata"]["project_transfur"]["largesafent"]:enable() else data["othergamedata"]["project_transfur"]["largesafe"].destroy(); data["othergamedata"]["project_transfur"]["largesafent"]:disable() end end
-            })
-            OtherGameTab:AddToggle({
-                Label = "金保险箱",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["project_transfur"]["goldensafe"].apply(); data["othergamedata"]["project_transfur"]["goldensafent"]:enable() else data["othergamedata"]["project_transfur"]["goldensafe"].destroy(); data["othergamedata"]["project_transfur"]["goldensafent"]:disable() end end
-            })
-            OtherGameTab:AddToggle({
-                Label = "武器盒",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["project_transfur"]["crate"].apply(); data["othergamedata"]["project_transfur"]["cratent"]:enable() else data["othergamedata"]["project_transfur"]["crate"].destroy(); data["othergamedata"]["project_transfur"]["cratent"]:disable() end end
-            })
-            OtherGameTab:AddToggle({
-                Label = "空投",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["project_transfur"]["sd"].apply(); data["othergamedata"]["project_transfur"]["sdnt"]:enable() else data["othergamedata"]["project_transfur"]["sd"].destroy(); data["othergamedata"]["project_transfur"]["sdnt"]:disable() end end
-            })
+            local pt = data["othergamedata"]["project_transfur"]
+            enableToggle(OtherGameTab, "Bot兽", function() pt.bot.apply(); pt.botnt:enable() end, function() pt.bot.destroy(); pt.botnt:disable() end)
+            enableToggle(OtherGameTab, "小保险箱", function() pt.smallsafe.apply(); pt.smallsafent:enable() end, function() pt.smallsafe.destroy(); pt.smallsafent:disable() end)
+            enableToggle(OtherGameTab, "大保险箱", function() pt.largesafe.apply(); pt.largesafent:enable() end, function() pt.largesafe.destroy(); pt.largesafent:disable() end)
+            enableToggle(OtherGameTab, "金保险箱", function() pt.goldensafe.apply(); pt.goldensafent:enable() end, function() pt.goldensafe.destroy(); pt.goldensafent:disable() end)
+            enableToggle(OtherGameTab, "武器盒", function() pt.crate.apply(); pt.cratent:enable() end, function() pt.crate.destroy(); pt.cratent:disable() end)
+            enableToggle(OtherGameTab, "空投", function() pt.sd.apply(); pt.sdnt:enable() end, function() pt.sd.destroy(); pt.sdnt:disable() end)
         elseif GetgameInfo.name == "妄想办公室" then
             OtherGameTab:AddToggle({
                 Label = "实体警告",
@@ -2156,78 +1668,27 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
             OtherGameTab:AddButton({ Text = "传送到 灯笼商店", Callback = function() TeleportTo(-375, -11932, -504) end })
         elseif GetgameInfo.name == "后院生存" then
             OtherGameTab:AddLabel("透视功能")
-            OtherGameTab:AddToggle({
-                Label = "窃皮者",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["backroomsurvival"]["SkinStealer"].apply(); data["othergamedata"]["backroomsurvival"]["SkinStealernt"]:enable() else data["othergamedata"]["backroomsurvival"]["SkinStealer"].destroy(); data["othergamedata"]["backroomsurvival"]["SkinStealernt"]:disable() end end
-            })
-            OtherGameTab:AddToggle({
-                Label = "瞎子",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["backroomsurvival"]["Shrieker"].apply(); data["othergamedata"]["backroomsurvival"]["Shriekernt"]:enable() else data["othergamedata"]["backroomsurvival"]["Shrieker"].destroy(); data["othergamedata"]["backroomsurvival"]["Shriekernt"]:disable() end end
-            })
-            OtherGameTab:AddToggle({
-                Label = "悲尸",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["backroomsurvival"]["Wretch"].apply(); data["othergamedata"]["backroomsurvival"]["Wretchnt"]:enable() else data["othergamedata"]["backroomsurvival"]["Wretch"].destroy(); data["othergamedata"]["backroomsurvival"]["Wretchnt"]:disable() end end
-            })
-            OtherGameTab:AddToggle({
-                Label = "梦魇",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["backroomsurvival"]["Phantom"].apply(); data["othergamedata"]["backroomsurvival"]["Phantomnt"]:enable() else data["othergamedata"]["backroomsurvival"]["Phantom"].destroy(); data["othergamedata"]["backroomsurvival"]["Phantomnt"]:disable() end end
-            })
-            OtherGameTab:AddToggle({
-                Label = "细菌",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["backroomsurvival"]["Bacteria"].apply(); data["othergamedata"]["backroomsurvival"]["Bacteriant"]:enable() else data["othergamedata"]["backroomsurvival"]["Bacteria"].destroy(); data["othergamedata"]["backroomsurvival"]["Bacteriant"]:disable() end end
-            })
-            OtherGameTab:AddToggle({
-                Label = "侦察兵",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["backroomsurvival"]["Recon"].apply(); data["othergamedata"]["backroomsurvival"]["Reconnt"]:enable() else data["othergamedata"]["backroomsurvival"]["Recon"].destroy(); data["othergamedata"]["backroomsurvival"]["Reconnt"]:disable() end end
-            })
-            OtherGameTab:AddToggle({
-                Label = "修理工",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["backroomsurvival"]["Mechanic"].apply(); data["othergamedata"]["backroomsurvival"]["Mechanicnt"]:enable() else data["othergamedata"]["backroomsurvival"]["Mechanic"].destroy(); data["othergamedata"]["backroomsurvival"]["Mechanicnt"]:disable() end end
-            })
+            local bs = data["othergamedata"]["backroomsurvival"]
+            enableToggle(OtherGameTab, "窃皮者", function() bs.SkinStealer.apply(); bs.SkinStealernt:enable() end, function() bs.SkinStealer.destroy(); bs.SkinStealernt:disable() end)
+            enableToggle(OtherGameTab, "瞎子", function() bs.Shrieker.apply(); bs.Shriekernt:enable() end, function() bs.Shrieker.destroy(); bs.Shriekernt:disable() end)
+            enableToggle(OtherGameTab, "悲尸", function() bs.Wretch.apply(); bs.Wretchnt:enable() end, function() bs.Wretch.destroy(); bs.Wretchnt:disable() end)
+            enableToggle(OtherGameTab, "梦魇", function() bs.Phantom.apply(); bs.Phantomnt:enable() end, function() bs.Phantom.destroy(); bs.Phantomnt:disable() end)
+            enableToggle(OtherGameTab, "细菌", function() bs.Bacteria.apply(); bs.Bacteriant:enable() end, function() bs.Bacteria.destroy(); bs.Bacteriant:disable() end)
+            enableToggle(OtherGameTab, "侦察兵", function() bs.Recon.apply(); bs.Reconnt:enable() end, function() bs.Recon.destroy(); bs.Reconnt:disable() end)
+            enableToggle(OtherGameTab, "修理工", function() bs.Mechanic.apply(); bs.Mechanicnt:enable() end, function() bs.Mechanic.destroy(); bs.Mechanicnt:disable() end)
         elseif GetgameInfo.name == "最黑暗的时刻" then
             OtherGameTab:AddLabel("透视功能")
-            OtherGameTab:AddToggle({
-                Label = "收集物",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["DarkestHours"]["Collectible"].apply(); data["othergamedata"]["DarkestHours"]["Collectiblent"]:enable() else data["othergamedata"]["DarkestHours"]["Collectible"].destroy(); data["othergamedata"]["DarkestHours"]["Collectiblent"]:disable() end end
-            })
+            local dh = data["othergamedata"]["DarkestHours"]
+            enableToggle(OtherGameTab, "收集物", function() dh.Collectible.apply(); dh.Collectiblent:enable() end, function() dh.Collectible.destroy(); dh.Collectiblent:disable() end)
         elseif GetgameInfo.name == "后悔电梯" then
             OtherGameTab:AddLabel("通用")
-            OtherGameTab:AddToggle({
-                Label = "自动舔冰淇凌（确保快捷栏中有冰淇凌）",
-                Default = false,
-                Callback = function(v)
-                    if v then
-                        Regretevator_AutoIceCream:enable()
-                    else
-                        Regretevator_AutoIceCream:disable()
-                    end
-                end
-            })
-            OtherGameTab:AddToggle({
-                Label = "透视硬币",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["Regretevator"]["coins"].apply(); data["othergamedata"]["Regretevator"]["coinsnt"]:enable() else data["othergamedata"]["Regretevator"]["coins"].destroy(); data["othergamedata"]["Regretevator"]["coinsnt"]:disable() end end
-            })
+            enableToggle(OtherGameTab, "自动舔冰淇凌（确保快捷栏中有冰淇凌）", function() Regretevator_AutoIceCream:enable() end, function() Regretevator_AutoIceCream:disable() end)
+            local rg = data["othergamedata"]["Regretevator"]
+            enableToggle(OtherGameTab, "透视硬币", function() rg.coins.apply(); rg.coinsnt:enable() end, function() rg.coins.destroy(); rg.coinsnt:disable() end)
             OtherGameTab:AddLabel("Bugbo楼层")
-            OtherGameTab:AddToggle({
-                Label = "透视石头",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["Regretevator"]["bugbo_rocks"].apply(); data["othergamedata"]["Regretevator"]["bugbo_rocksnt"]:enable() else data["othergamedata"]["Regretevator"]["bugbo_rocks"].destroy(); data["othergamedata"]["Regretevator"]["bugbo_rocksnt"]:disable() end end
-            })
+            enableToggle(OtherGameTab, "透视石头", function() rg.bugbo_rocks.apply(); rg.bugbo_rocksnt:enable() end, function() rg.bugbo_rocks.destroy(); rg.bugbo_rocksnt:disable() end)
             OtherGameTab:AddLabel("森林营地楼层")
-            OtherGameTab:AddToggle({
-                Label = "透视木头",
-                Default = false,
-                Callback = function(v) if v then data["othergamedata"]["Regretevator"]["firewood"].apply(); data["othergamedata"]["Regretevator"]["firewoodnt"]:enable() else data["othergamedata"]["Regretevator"]["firewood"].destroy(); data["othergamedata"]["Regretevator"]["firewoodnt"]:disable() end end
-            })
+            enableToggle(OtherGameTab, "透视木头", function() rg.firewood.apply(); rg.firewoodnt:enable() end, function() rg.firewood.destroy(); rg.firewoodnt:disable() end)
         end
     end
 end
@@ -2390,75 +1851,9 @@ settingsContent:AddKeybind({
     end
 })
 settingsContent:AddDivider()
-settingsContent:AddKeybind({
-    Label = "飞行 (Ctrl+)",
-    Default = FlyModule.getbindkey().Name,
-    Callback = function(key)
-        if key then
-            local newKey = Enum.KeyCode[key]
-            if newKey then
-                FlyModule.setbindkey(newKey)
-            end
-        end
-    end
-})
-settingsContent:AddInput({
-    Label = "飞行速度",
-    Placeholder = "",
-    Default = FlyModule.getflyspeed(),
-    Callback = function(text)
-        local num = tonumber(text)
-        if num then
-            FlyModule.setflyspeed(num)
-        end
-    end
-})
-settingsContent:AddKeybind({
-    Label = "帧飞行 (Ctrl+)",
-    Default = CframeFly.getbindkey().Name,
-    Callback = function(key)
-        if key then
-            local newKey = Enum.KeyCode[key]
-            if newKey then
-                CframeFly.setbindkey(newKey)
-            end
-        end
-    end
-})
-settingsContent:AddInput({
-    Label = "帧飞行速度",
-    Placeholder = "",
-    Default = CframeFly.getspeed(),
-    Callback = function(text)
-        local num = tonumber(text)
-        if num then
-            CframeFly.setspeed(num)
-        end
-    end
-})
-settingsContent:AddKeybind({
-    Label = "载具飞行 (Ctrl+)",
-    Default = VehicleFly.getbindkey().Name,
-    Callback = function(key)
-        if key then
-            local newKey = Enum.KeyCode[key]
-            if newKey then
-                VehicleFly.setbindkey(newKey)
-            end
-        end
-    end
-})
-settingsContent:AddInput({
-    Label = "载具飞行速度",
-    Placeholder = "",
-    Default = VehicleFly.getspeed(),
-    Callback = function(text)
-        local num = tonumber(text)
-        if num then
-            VehicleFly.setspeed(num)
-        end
-    end
-})
+settingsKeybindInput(settingsContent, "飞行 (Ctrl+)", FlyModule.getbindkey().Name, function(k) FlyModule.setbindkey(k) end, "飞行速度", FlyModule.getflyspeed(), function(v) FlyModule.setflyspeed(v) end)
+settingsKeybindInput(settingsContent, "帧飞行 (Ctrl+)", CframeFly.getbindkey().Name, function(k) CframeFly.setbindkey(k) end, "帧飞行速度", CframeFly.getspeed(), function(v) CframeFly.setspeed(v) end)
+settingsKeybindInput(settingsContent, "载具飞行 (Ctrl+)", VehicleFly.getbindkey().Name, function(k) VehicleFly.setbindkey(k) end, "载具飞行速度", VehicleFly.getspeed(), function(v) VehicleFly.setspeed(v) end)
 settingsContent:AddDivider()
 settingsContent:AddKeybind({
     Label = "自动瞄准-绑定按键",
