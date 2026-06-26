@@ -2001,90 +2001,6 @@ for _, exec in ipairs(executors) do
     weaoapiTab:AddDivider()
 end
 
--- ===== ChatGLM Tab =====
-aichatTab = mainWindow:CreateTab({ Name = "ChatGLM", HasIcon = true, IconName = "bot" })
-aichatTab:AddTitle("智谱清言 ChatGLM")
-aichat_message = ""
-lastSendTime = 0
-aichatprefix = "<system>当前用户环境参数: 游戏: Roblox"
-    .. "游戏ID："
-    .. game.GameId
-    .. "游戏数据："
-    .. (function()
-        local success, result = pcall(function()
-            return HttpService:JSONEncode(getGameName(game.GameId))
-        end)
-        if success and result then
-            return result
-        else
-            return ""
-        end
-    end)()
-    .. "玩家昵称："
-    .. data["basicdata"]["player"]["displayname"]
-    .. "玩家用户名："
-    .. data["basicdata"]["player"]["name"]
-    .. "玩家ID："
-    .. data["basicdata"]["player"]["userid"]
-    .. "上述信息仅供参考，用户未主动提问相关信息切勿主动提供，且提供信息时皆为属于你已知道的，不要说'根据你提供的内容'之类的话。</system>"
-aichatinput = aichatTab:AddInput({
-    Label = "输入框",
-    Placeholder = "请输入文本...",
-    Default = "",
-    Callback = function(text) aichat_message = text end
-})
-aichatTab:AddButton({
-    Text = "发送",
-    Callback = function()
-        local currentTime = os.time()
-        if currentTime - lastSendTime < 10 then
-            local remainingTime = math.ceil(10 - (currentTime - lastSendTime))
-            ChronixUI:Notify({
-                Title = "提示",
-                Content = "发送过于频繁，请等待 " .. remainingTime .. " 秒后再试。",
-                Type = "warning",
-                Duration = 5
-            })
-            return
-        end
-        if aichat_message == "" then
-            ChronixUI:Notify({ Title = "提示", Content = "无法发送空白内容。", Type = "warning", Duration = 5 })
-            return
-        end
-        aichatinput.Text = ""
-        lastSendTime = currentTime
-        aichatTab:AddParagraph({
-            Title = data["basicdata"]["player"]["displayname"] .. ":",
-            Content = aichat_message
-        })
-        local aithink = aichatTab:AddParagraph({
-            Title = "ChatGLM:",
-            Content = "思考中..."
-        })
-        local fullMessage = aichatprefix .. aichat_message
-        local encodedMessage = HttpService:UrlEncode(fullMessage)
-        local apiUrl = "https://api.52vmy.cn/api/chat/glm?msg=" .. encodedMessage
-        local success, result = pcall(function()
-            local response = AsyncFileFetcher.fetchSingle(apiUrl)
-            return HttpService:JSONDecode(response)
-        end)
-        aithink:Destroy()
-        if not success then
-            aichatTab:AddParagraph({ Title = "ChatGLM:", Content = "请求失败: " .. tostring(result) })
-        elseif type(result) ~= "table" then
-            aichatTab:AddParagraph({ Title = "ChatGLM:", Content = "返回数据格式异常" })
-        elseif result["code"] and result["code"] == 201 then
-            aichatTab:AddParagraph({ Title = "ChatGLM:", Content = result["msg"] or "网络异常，请稍后重试。" })
-        elseif result["data"] and result["data"]["answer"] then
-            aichatTab:AddParagraph({ Title = "ChatGLM:", Content = result["data"]["answer"] })
-        else
-            aichatTab:AddParagraph({ Title = "ChatGLM:", Content = "返回数据格式异常" })
-        end
-        aichat_message = ""
-    end
-})
-aichatTab:AddDivider()
-
 -- ===== IRC Tab =====
 genv = getgenv().ChronixUI
 if not genv then
@@ -2409,7 +2325,6 @@ infoTab:AddButton({ Text = "强制内存垃圾回收", Callback = function()
     ChronixUI:Notify({ Title = "提示", Content = "已进行垃圾回收\n请不要频繁使用，可能会影响性能。", Type = "info", Duration = 5 })
 end })
 infoTab:AddLabel(data["basicdata"]["otherdata"]["yiyan"]["data"]["hitokoto"])
-infoTab:AddTitle(">广告位招租<")
 
 -- ===== 设置内容 =====
 settingsContent = mainWindow.SettingsElements
