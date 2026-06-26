@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 项目讨论
+    url: https://github.com/wjm13206/THub/discussions
+    about: 如果你想讨论功能想法或询问使用方法，请前往 Discussions
+  - name: 项目 README
+    url: https://github.com/wjm13206/THub#readme
+    about: 查看项目文档和免责声明

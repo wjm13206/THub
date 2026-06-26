@@ -1,0 +1,79 @@
+name: Bug 反馈
+description: 报告 THub 中遇到的问题或异常
+title: "[Bug] "
+labels: ["bug"]
+assignees: []
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: 描述问题
+      description: 清晰简洁地描述这个 Bug 是什么。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤
+      description: 如何复现该行为
+      placeholder: |
+        1. 打开 '...'
+        2. 点击 '....'
+        3. 滚动到 '....'
+        4. 看到错误
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+      description: 清晰简洁地描述你期望发生的事情。
+    validations:
+      required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图
+      description: 如果适用，请添加截图以帮助解释问题。
+      render: markdown
+    validations:
+      required: false
+  - type: input
+    id: executor
+    attributes:
+      label: 执行器
+      description: 你使用的执行器是什么？
+      placeholder: 例如: Solara, Xeno, Swift
+    validations:
+      required: true
+  - type: input
+    id: roblox_version
+    attributes:
+      label: Roblox 版本
+      description: 当前 Roblox 客户端版本
+      placeholder: ？
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: 操作系统
+      description: 你的操作系统
+      placeholder: 例如: Windows , macos
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: THub 版本
+      description: 当前使用的 THub 版本
+      placeholder: 例如: 2026.6.26
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: 附加上下文
+      description: 在此添加关于该问题的任何其他上下文。
+    validations:
+      required: false
