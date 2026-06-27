@@ -41,7 +41,7 @@ local LocalPlayer = Players.LocalPlayer
 -- 内部状态
 local isActive = false
 local currentSpinBody = nil
-local currentStabilizer = nil
+local currentHeartbeat = nil
 local currentSpeed = 20
 local currentCharacter = nil
 local characterAddedConn = nil
@@ -67,32 +67,19 @@ local function cleanupSpinBody()
     currentSpinBody = nil
 end
 
--- 清理稳定器
-local function cleanupStabilizer()
-    if currentStabilizer and currentStabilizer.Parent then
-        pcall(function()
-            currentStabilizer:Destroy()
-        end)
+-- 断开心跳连接
+local function disconnectHeartbeat()
+    if currentHeartbeat then
+        currentHeartbeat:Disconnect()
+        currentHeartbeat = nil
     end
-    currentStabilizer = nil
-end
-
--- 创建稳定器（防止高速旋转时穿模掉下去）
-local function createStabilizer(root)
-    cleanupStabilizer()
-    local stab = Instance.new("BodyVelocity")
-    stab.Name = "__SpinStabilizer"
-    stab.Velocity = Vector3.new(0, 0, 0)
-    stab.MaxForce = Vector3.new(0, math.huge, 0)
-    stab.Parent = root
-    currentStabilizer = stab
 end
 
 -- 停止旋转
 local function stopSpin()
     isActive = false
     cleanupSpinBody()
-    cleanupStabilizer()
+    disconnectHeartbeat()
     
     -- 断开角色重生监听
     if characterAddedConn then
@@ -140,8 +127,23 @@ local function startSpin(speed)
     currentSpinBody.MaxTorque = Vector3.new(0, math.huge, 0)  -- 只允许Y轴旋转
     currentSpinBody.AngularVelocity = Vector3.new(0, currentSpeed, 0)  -- Y轴旋转速度
 
-    -- 创建稳定器防止高速旋转时穿模
-    createStabilizer(root)
+    -- 心跳检测：限制极端向下速度防止穿模，但允许正常跳跃和下落
+    disconnectHeartbeat()
+    currentHeartbeat = RunService.Heartbeat:Connect(function()
+        if isActive then
+            local char = currentCharacter or LocalPlayer.Character
+            if char then
+                local r = getRoot(char)
+                if r then
+                    local vel = r.Velocity
+                    if vel.Y < -75 then
+                        r.Velocity = Vector3.new(vel.X, -50, vel.Z)
+                    end
+                end
+            end
+        end
+    end)
+    table.insert(connections, currentHeartbeat)
     
     -- 监听角色重生
     characterAddedConn = LocalPlayer.CharacterAdded:Connect(function(newChar)
@@ -158,9 +160,6 @@ local function startSpin(speed)
             -- 替换旧的
             cleanupSpinBody()
             currentSpinBody = newSpinBody
-            
-            -- 重新创建稳定器
-            createStabilizer(newRoot)
         end
     end)
     
@@ -250,7 +249,7 @@ function SpinModule.unload()
     -- 清空内部状态
     isActive = false
     currentSpinBody = nil
-    currentStabilizer = nil
+    currentHeartbeat = nil
     currentSpeed = 20
     currentCharacter = nil
     characterAddedConn = nil
