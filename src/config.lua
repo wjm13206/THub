@@ -126,7 +126,6 @@ data = {
     },
     scriptlist = {
         { name = "高级聊天系统", link = "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/customChatSystem.lua" },
-        { name = "飞行V4", link = "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/FlyV4.lua" },
         { name = "IY5.5.9(指令挂)(汉化版)", link = "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/IY.lua" },
         { name = "Dex", link = "https://raw.githubusercontent.com/infyiff/backup/main/dex.lua" },
         { name = "DexDark", link = "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/DexDark.lua" },
