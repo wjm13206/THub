@@ -495,21 +495,13 @@ local function playNotificationSound(notifType)
 end
 
 -- 动画辅助函数：滑入/滑出
-local function animateSlide(frame, fromX, toX, easing)
-    local startTime = tick()
-    local duration = 0.5
-    while tick() - startTime < duration do
-        local alpha = (tick() - startTime) / duration
-        local easedAlpha = easing(alpha)
-        local currentX = fromX + (toX - fromX) * easedAlpha
-        if frame and frame.Parent then
-            frame.Position = UDim2.new(currentX, 0, 0, 0)
-        end
-        RunService.Heartbeat:Wait()
-    end
-    if frame and frame.Parent then
-        frame.Position = UDim2.new(toX, 0, 0, 0)
-    end
+local function animateSlide(frame, fromX, toX, direction)
+    if not frame then return end
+    frame.Position = UDim2.new(fromX, 0, 0, 0)
+    local tween = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, direction), {
+        Position = UDim2.new(toX, 0, 0, 0)
+    })
+    tween:Play()
 end
 
 -- 辅助函数：从列表中移除通知
@@ -560,33 +552,27 @@ function ChronixUI:Notify(config)
     -- 等待一帧确保渲染完成
     RunService.Heartbeat:Wait()
     
-    -- 入场动画（easeOutQuad）
-    coroutine.wrap(function()
-        animateSlide(innerFrame, 1, 0, function(a) return 1 - (1 - a) * (1 - a) end)
-    end)()
+    -- 入场动画
+    task.spawn(animateSlide, innerFrame, 1, 0, Enum.EasingDirection.Out)
     
     -- 处理通知生命周期
-    coroutine.wrap(function()
-        -- 等待显示时间
+    task.spawn(function()
         task.wait(duration)
         
-        -- 检查通知是否仍然有效
         if not clipFrame or not clipFrame.Parent then
             removeNotification(notification)
             updateAllPositions()
             return
         end
         
-        -- 出场动画（easeInQuad）
-        animateSlide(innerFrame, 0, 1, function(a) return a * a end)
+        animateSlide(innerFrame, 0, 1, Enum.EasingDirection.In)
         
-        -- 从列表中移除并销毁
         removeNotification(notification)
         if clipFrame and clipFrame.Parent then
             clipFrame:Destroy()
         end
         updateAllPositions()
-    end)()
+    end)
     
     return notification
 end
@@ -1361,12 +1347,17 @@ function ChronixUI:CreateWindow(config)
                 callback()
             end)
 
+            local hoverTween
             btn.MouseEnter:Connect(function()
-                TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Hover}):Play()
+                if hoverTween then hoverTween:Cancel() end
+                hoverTween = TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Hover})
+                hoverTween:Play()
             end)
 
             btn.MouseLeave:Connect(function()
-                TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Card}):Play()
+                if hoverTween then hoverTween:Cancel() end
+                hoverTween = TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Card})
+                hoverTween:Play()
             end)
 
             return wrap(btn)
@@ -1610,14 +1601,19 @@ function ChronixUI:CreateWindow(config)
             handleCorner.Parent = toggleHandle
 
             local toggled = default
+            local toggleBtnTween, toggleHandleTween
             toggleBtn.InputBegan:Connect(function(input)
                 if not isClickInput(input) then return end
                 PlayClickSound()
                 toggled = not toggled
+                if toggleBtnTween then toggleBtnTween:Cancel() end
+                if toggleHandleTween then toggleHandleTween:Cancel() end
                 local targetColor = toggled and ChronixUI.Themes[ChronixUI.CurrentTheme].Accent or Color3.fromRGB(80, 80, 80)
                 local targetPos = toggled and UDim2.new(1, -26*scale, 0.5, -math.floor(11 * scale)) or UDim2.new(0, math.floor(4 * scale), 0.5, -math.floor(11 * scale))
-                TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
-                TweenService:Create(toggleHandle, TweenInfo.new(0.2), {Position = targetPos}):Play()
+                toggleBtnTween = TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = targetColor})
+                toggleBtnTween:Play()
+                toggleHandleTween = TweenService:Create(toggleHandle, TweenInfo.new(0.2), {Position = targetPos})
+                toggleHandleTween:Play()
                 callback(toggled)
             end)
 
