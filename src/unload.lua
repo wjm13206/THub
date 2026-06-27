@@ -73,6 +73,7 @@ unloadTHub = function()
     TCPHighLight.unload()
     SnapTurn.Unload()
     SnapReverse.Unload()
+    ChatSpammer.unload()
 
     if data["basicdata"]["otherdata"]["audioData"]["scanConnection"] then data["basicdata"]["otherdata"]["audioData"]["scanConnection"]:Disconnect() end
     if prc then prc:Disconnect() end

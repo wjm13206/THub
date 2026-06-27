@@ -276,6 +276,15 @@ ToolsTab:AddToggle({
     Callback = function(v) data["basicdata"]["releasetools"]["chatresend"] = v end
 })
 enableToggle(ToolsTab, "聊天偷听", function() ChatSpy.enable() end, function() ChatSpy.disable() end)
+enableToggle(ToolsTab, "自动喊话器", function() ChatSpammer.enable() end, function() ChatSpammer.disable() end)
+ToolsTab:AddInput({
+    Label = "喊话内容（每行一条）",
+    Height = 80,
+    Default = ChatSpammer.getMessagesAsText(),
+    Callback = function(text) ChatSpammer.setMessagesFromText(text) end
+})
+ToolsTab:AddSlider({ Label = "喊话间隔（秒）", Min = 0.5, Max = 60, Default = ChatSpammer.getInterval(), Callback = function(v) ChatSpammer.setInterval(v) end })
+ToolsTab:AddToggle({ Label = "随机模式", Default = ChatSpammer.isRandomMode(), Callback = function(v) ChatSpammer.setRandom(v) end })
 enableToggle(ToolsTab, "坐下", function() LocalPlayer.Character:FindFirstChild("Humanoid").Sit = true end, function() LocalPlayer.Character:FindFirstChild("Humanoid").Sit = false end)
 ToolsTab:AddToggle({
     Label = "防踢出",
