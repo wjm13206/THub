@@ -60,7 +60,6 @@ modulesToFetch = {
     ["InstantInteraction"] = baseUrl .. "/modules/InstantInteraction.lua",
     ["UNCTestModule"] = baseUrl .. "/modules/UNCAndWUNCGet.lua",
     ["ServerFinderModule"] = baseUrl .. "/modules/ServerFinderModule.lua",
-    ["AimBotModule"] = baseUrl .. "/modules/AimBotModule.lua",
     ["DeleteTool"] = baseUrl .. "/modules/DeleteTool.lua",
     ["GuiDeleter"] = baseUrl .. "/modules/GuiDeleter.lua",
     ["AntiKickModule"] = baseUrl .. "/modules/AntiKick.lua",

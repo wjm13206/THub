@@ -95,7 +95,6 @@ enableToggle(ToolsTab, "瞬间回头", function()
     SnapReverse.Enable()
     ChronixUI:Notify({ Title = "提示", Content = "按下" .. SnapReverse.GetKeyBind().Name .. "键来瞬间回头", Type = "info", Duration = 5 })
 end, function() SnapReverse.Disable() end)
-enableToggle(ToolsTab, "自动瞄准", function() AimBotModule.Enable() end, function() AimBotModule.Disable() end)
 enableToggle(ToolsTab, "物品滚轮切换", function()
     ChronixUI:Notify({ Title = "提示", Content = "按住" .. ScrollSwitch:getbind().Name .. "键并滚动鼠标滚轮来切换物品", Type = "info", Duration = 5 })
     ScrollSwitch:enable()
@@ -1855,63 +1854,6 @@ settingsKeybindInput(settingsContent, "飞行 (Ctrl+)", FlyModule.getbindkey().N
 settingsKeybindInput(settingsContent, "帧飞行 (Ctrl+)", CframeFly.getbindkey().Name, function(k) CframeFly.setbindkey(k) end, "帧飞行速度", CframeFly.getspeed(), function(v) CframeFly.setspeed(v) end)
 settingsKeybindInput(settingsContent, "载具飞行 (Ctrl+)", VehicleFly.getbindkey().Name, function(k) VehicleFly.setbindkey(k) end, "载具飞行速度", VehicleFly.getspeed(), function(v) VehicleFly.setspeed(v) end)
 settingsContent:AddDivider()
-settingsContent:AddKeybind({
-    Label = "自动瞄准-绑定按键",
-    Default = AimBotModule.GetKey().Name,
-    Callback = function(key)
-        if key then
-            local newKey = Enum.KeyCode[key]
-            AimBotModule.SetKey(newKey)
-        end
-    end
-})
-settingsContent:AddToggle({
-    Label = "自动瞄准-队伍检查",
-    Default = false,
-    Callback = function(v) AimBotModule.SetTeamCheck(v) end
-})
-settingsContent:AddToggle({
-    Label = "自动瞄准-墙壁检查",
-    Default = false,
-    Callback = function(v) AimBotModule.SetWallCheck(v) end
-})
-settingsContent:AddDropdown({
-    Label = "自动瞄准-命中部位",
-    Options = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
-    Default = AimBotModule.GetHitScan(),
-    Callback = function(selected) AimBotModule.SetHitScan(selected) end
-})
-settingsContent:AddToggle({
-    Label = "自动瞄准-使用鼠标控制",
-    Default = AimBotModule.GetUseMouse(),
-    Callback = function(v) AimBotModule.SetUseMouse(v) end
-})
-settingsContent:AddDropdown({
-    Label = "自动瞄准-鼠标模式",
-    Options = {"MouseButton2", "MouseButton1"},
-    Default = "MouseButton2",
-    Callback = function(selected) AimBotModule.SetMouseBind(selected) end
-})
-settingsContent:AddToggle({
-    Label = "自动瞄准-粘性瞄准",
-    Default = false,
-    Callback = function(v) AimBotModule.SetStickyAim(v) end
-})
-settingsContent:AddSlider({
-    Label = "自动瞄准-平滑度",
-    Min = 3, Max = 50, Default = 30,
-    Callback = function(v) AimBotModule.SetSmoothing(v) end
-})
-settingsContent:AddToggle({
-    Label = "自动瞄准-移动预测",
-    Default = false,
-    Callback = function(v) AimBotModule.SetPrediction(v) end
-})
-settingsContent:AddSlider({
-    Label = "自动瞄准-预测值",
-    Min = 0, Max = 1000, Default = 100,
-    Callback = function(v) AimBotModule.SetPredictionAmount(v) end
-})
 settingsContent:AddDivider()
 
 mainWindow:RefreshContent()

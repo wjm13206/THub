@@ -142,6 +142,8 @@ data = {
         { name = "动画中心", link = "https://raw.githubusercontent.com/GamingScripter/Animation-Hub/main/Animation%20Gui" },
         { name = "阿尔宙斯", link = "https://raw.githubusercontent.com/AZYsGithub/chillz-workshop/main/Arceus%20X%20V3" },
         { name = "VChine V2", link = "https://pastebin.com/raw/SuDKzFKD" },
+        { name = "自瞄", link = "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/Aimbot.lua" },
+        { name = "ESP", link = "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/ESP.lua" },
     },
     Supported_Games = {
         { gameid = 2162087722, name = "兽化项目" },
