@@ -1,3 +1,5 @@
+--!native
+--!optimize 2
 -- Spin 模块
 -- 让角色高速旋转
 -- 
@@ -39,6 +41,7 @@ local LocalPlayer = Players.LocalPlayer
 -- 内部状态
 local isActive = false
 local currentSpinBody = nil
+local currentStabilizer = nil
 local currentSpeed = 20
 local currentCharacter = nil
 local characterAddedConn = nil
@@ -64,10 +67,32 @@ local function cleanupSpinBody()
     currentSpinBody = nil
 end
 
+-- 清理稳定器
+local function cleanupStabilizer()
+    if currentStabilizer and currentStabilizer.Parent then
+        pcall(function()
+            currentStabilizer:Destroy()
+        end)
+    end
+    currentStabilizer = nil
+end
+
+-- 创建稳定器（防止高速旋转时穿模掉下去）
+local function createStabilizer(root)
+    cleanupStabilizer()
+    local stab = Instance.new("BodyVelocity")
+    stab.Name = "__SpinStabilizer"
+    stab.Velocity = Vector3.new(0, 0, 0)
+    stab.MaxForce = Vector3.new(0, math.huge, 0)
+    stab.Parent = root
+    currentStabilizer = stab
+end
+
 -- 停止旋转
 local function stopSpin()
     isActive = false
     cleanupSpinBody()
+    cleanupStabilizer()
     
     -- 断开角色重生监听
     if characterAddedConn then
@@ -114,6 +139,9 @@ local function startSpin(speed)
     currentSpinBody.Parent = root
     currentSpinBody.MaxTorque = Vector3.new(0, math.huge, 0)  -- 只允许Y轴旋转
     currentSpinBody.AngularVelocity = Vector3.new(0, currentSpeed, 0)  -- Y轴旋转速度
+
+    -- 创建稳定器防止高速旋转时穿模
+    createStabilizer(root)
     
     -- 监听角色重生
     characterAddedConn = LocalPlayer.CharacterAdded:Connect(function(newChar)
@@ -130,6 +158,9 @@ local function startSpin(speed)
             -- 替换旧的
             cleanupSpinBody()
             currentSpinBody = newSpinBody
+            
+            -- 重新创建稳定器
+            createStabilizer(newRoot)
         end
     end)
     
@@ -219,6 +250,7 @@ function SpinModule.unload()
     -- 清空内部状态
     isActive = false
     currentSpinBody = nil
+    currentStabilizer = nil
     currentSpeed = 20
     currentCharacter = nil
     characterAddedConn = nil
