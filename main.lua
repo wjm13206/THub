@@ -83,15 +83,27 @@ modulesToFetch = {
     ["SnapTurn"] = baseUrl .. "/modules/SnapTurn.lua",
     ["SnapReverse"] = baseUrl .. "/modules/SnapReverse.lua",
 }
-for moduleName, content in pairs(AsyncFileFetcher.fetchMultiple(modulesToFetch)) do
-    if content and type(content) == "string" and content ~= "" then
-        local success, result = pcall(loadstring, content)
-        if success and result then
-            (_ENV or getfenv())[moduleName] = result()
-        else
-            warn("模块加载失败: " .. moduleName)
+local moduleContents = AsyncFileFetcher.fetchMultiple(modulesToFetch)
+local moduleKeys = {}
+for k in pairs(moduleContents) do
+    table.insert(moduleKeys, k)
+end
+
+local BATCH_SIZE = 5
+for i = 1, #moduleKeys, BATCH_SIZE do
+    for j = i, math.min(i + BATCH_SIZE - 1, #moduleKeys) do
+        local key = moduleKeys[j]
+        local content = moduleContents[key]
+        if content and type(content) == "string" and content ~= "" then
+            local success, result = pcall(loadstring, content)
+            if success and result then
+                (_ENV or getfenv())[key] = result()
+            else
+                warn("模块加载失败: " .. key)
+            end
         end
     end
+    task.wait()
 end
 LogService:Info("[THub] 模块加载完毕，UI正在初始化中...")
 

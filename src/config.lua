@@ -48,10 +48,10 @@ data = {
             lastDeath,
         },
         otherdata = {
-            yiyan = HttpService:JSONDecode(AsyncFileFetcher.fetchSingle("https://api.52vmy.cn/api/wl/yan/yiyan")),
+            yiyan = { data = { target = "加载中..." } },
             executordetecter = {
-                robloxinfo = HttpService:JSONDecode(AsyncFileFetcher.fetchSingle("https://weao.xyz/api/versions/current")),
-                exploits = HttpService:JSONDecode(AsyncFileFetcher.fetchSingle("https://weao.xyz/api/status/exploits")),
+                robloxinfo = {},
+                exploits = {},
             },
             playertitle = {
                 tag = ChatTagModule.new({
@@ -252,3 +252,22 @@ data["basicdata"]["otherdata"]["musicbox"]["Looped"] = false
 data["basicdata"]["otherdata"]["musicbox"]["Parent"] = SoundService
 data["basicdata"]["otherdata"]["testSound"]["Volume"] = 0.5
 data["basicdata"]["otherdata"]["testSound"]["Parent"] = SoundService
+
+-- 异步加载外部API数据，不阻塞启动
+task.spawn(function()
+    local ok1, res1 = pcall(AsyncFileFetcher.fetchSingle, "https://api.52vmy.cn/api/wl/yan/yiyan")
+    if ok1 and res1 then
+        local ok, d = pcall(HttpService.JSONDecode, HttpService, res1)
+        if ok then data.basicdata.otherdata.yiyan = d end
+    end
+    local ok2, res2 = pcall(AsyncFileFetcher.fetchSingle, "https://weao.xyz/api/versions/current")
+    if ok2 and res2 then
+        local ok, info = pcall(HttpService.JSONDecode, HttpService, res2)
+        if ok then data.basicdata.otherdata.executordetecter.robloxinfo = info end
+    end
+    local ok3, res3 = pcall(AsyncFileFetcher.fetchSingle, "https://weao.xyz/api/status/exploits")
+    if ok3 and res3 then
+        local ok, exploits = pcall(HttpService.JSONDecode, HttpService, res3)
+        if ok then data.basicdata.otherdata.executordetecter.exploits = exploits end
+    end
+end)

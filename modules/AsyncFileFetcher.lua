@@ -220,6 +220,7 @@ function AsyncFileFetcher.fetchMultiple(fileTable)
     if totalFiles == 0 then return loadedFiles end
     
     local potassiumEnabled = initPotassium(totalFiles)
+    local completionSignal = Instance.new("BindableEvent")
     
     local startTime = os.clock()
     print("[AsyncFileFetcher] Starting to load " .. totalFiles .. " files...")
@@ -245,21 +246,16 @@ function AsyncFileFetcher.fetchMultiple(fileTable)
             updateLastCompleted(key)
             if loadedCount >= totalFiles then
                 allLoaded = true
+                completionSignal:Fire()
             end
         end)
     end
     
-    local lastProgress = ""
-    while not allLoaded do
-        if os.clock() - startTime > CONFIG.TIMEOUT then
-            print("[AsyncFileFetcher] ⚠ Timeout! Loaded: " .. loadedCount .. "/" .. totalFiles)
-            break
-        end
-        local currentProgress = getProgressBar(loadedCount, totalFiles)
-        if currentProgress ~= lastProgress then
-            lastProgress = currentProgress
-        end
-        task.wait(CONFIG.POLL_INTERVAL)
+    if not allLoaded then
+        completionSignal.Event:Wait(CONFIG.TIMEOUT)
+    end
+    if not allLoaded then
+        print("[AsyncFileFetcher] ⚠ Timeout! Loaded: " .. loadedCount .. "/" .. totalFiles)
     end
     
     local elapsed = string.format("%.2f", os.clock() - startTime)

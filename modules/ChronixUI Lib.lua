@@ -26,7 +26,16 @@ local Lighting = cloneref(game:GetService("Lighting"))
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
-local UIParticleSystem = loadstring(game:HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/UIParticleSystem.lua"))()
+local UIParticleSystem
+task.spawn(function()
+    local ok, result = pcall(game.HttpGet, game, "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/UIParticleSystem.lua")
+    if ok and result then
+        local success, mod = pcall(loadstring, result)
+        if success and mod then
+            UIParticleSystem = mod()
+        end
+    end
+end)
 
 -- ========== 多图标库集成模块 ==========
 local IconModule = {
@@ -163,8 +172,8 @@ function IconModule:WaitForIcon(iconName, iconType, callback)
     end)
 end
 
--- 启动加载所有图标库
-IconModule:LoadAll()
+-- 仅加载默认图标库（lucide），其他按需加载
+IconModule:LoadIconSet(IconModule.DefaultType)
 -- ========== 多图标库集成结束 ==========
 
 -- 辅助：判断是否为点击/触摸输入
