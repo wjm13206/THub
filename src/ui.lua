@@ -1537,34 +1537,67 @@ end
 -- ===== 执行器查询 Tab =====
 weaoapiTab = mainWindow:CreateTab({ Name = "执行器查询", HasIcon = true, IconName = "section" })
 weaoapiTab:AddTitle("Roblox版本")
-local ri = data["basicdata"]["otherdata"]["executordetecter"]["robloxinfo"]
-weaoapiTab:AddLabel("Windows: " .. (ri.Windows or "加载中..."))
-weaoapiTab:AddLabel("Windows更新日期: " .. toChineseDate(ri.WindowsDate, true))
-weaoapiTab:AddLabel("Mac: " .. (ri.Mac or "加载中..."))
-weaoapiTab:AddLabel("Mac更新日期: " .. toChineseDate(ri.MacDate, true))
-weaoapiTab:AddLabel("Android: " .. (ri.Android or "加载中..."))
-weaoapiTab:AddLabel("Android更新日期: " .. toChineseDate(ri.AndroidDate, true))
-weaoapiTab:AddLabel("iOS: " .. (ri.iOS or "加载中..."))
-weaoapiTab:AddLabel("iOS更新日期: " .. toChineseDate(ri.iOSDate, true))
+local robloxLabels = {
+    win = weaoapiTab:AddLabel("Windows: 加载中..."),
+    winDate = weaoapiTab:AddLabel("Windows更新日期: 加载中..."),
+    mac = weaoapiTab:AddLabel("Mac: 加载中..."),
+    macDate = weaoapiTab:AddLabel("Mac更新日期: 加载中..."),
+    android = weaoapiTab:AddLabel("Android: 加载中..."),
+    androidDate = weaoapiTab:AddLabel("Android更新日期: 加载中..."),
+    ios = weaoapiTab:AddLabel("iOS: 加载中..."),
+    iosDate = weaoapiTab:AddLabel("iOS更新日期: 加载中..."),
+}
 weaoapiTab:AddDivider()
 weaoapiTab:AddTitle("执行器状态")
-local executors = parseExecutors(data["basicdata"]["otherdata"]["executordetecter"]["exploits"])
-for _, exec in ipairs(executors) do
-    weaoapiTab:AddTitle(string.format("[%s] %s (%s) | %s", exec.platform, exec.title, exec.version, exec.updateStatus and "已更新(有效)" or "未更新(失效)"))
-    weaoapiTab:AddLabel("类型:" .. exec.extType .. " | " .. (exec.free and "免费" or ("付费(" .. exec.cost:gsub("Lifetime", "永久"):gsub("Weekly", "每周"):gsub("Monthly", "每月"):gsub("Private", "私人") .. ")")) .. " | " .. (exec.detected and "已被检测" or "未被检测"))
-    weaoapiTab:AddLabel((exec.uncStatus and ("UNC: " .. (exec.uncPercent or 0) .. "%") or "") .. ", sUNC: " .. (exec.suncPercent or 0) .. "%")
-    weaoapiTab:AddLabel("更新时间:" .. exec.updatedDate)
-    weaoapiTab:AddLabel("密钥系统: " .. (exec.keysystem and "有" or "无") .. " 测试版:" .. (exec.beta and "是" or "否") .. " 反编译器: " .. (exec.decompiler and "有" or "无") .. " 多开支持: " .. (exec.multiInject and "支持" or "不支持"))
-    weaoapiTab:AddButton({
-        Text = "官网: " .. exec.website,
-        Callback = function() setclipboard(exec.website); ChronixUI:Notify({ Title = "提示", Content = "已复制到剪切板", Type = "info", Duration = 5 }) end
-    })
-    weaoapiTab:AddButton({
-        Text = "Discord: " .. exec.discord,
-        Callback = function() setclipboard(exec.discord); ChronixUI:Notify({ Title = "提示", Content = "已复制到剪切板", Type = "info", Duration = 5 }) end
-    })
-    weaoapiTab:AddDivider()
+local executorsTitle = weaoapiTab:AddTitle("加载中...")
+local function rebuildExploiters()
+    local ok, executors = pcall(parseExecutors, data["basicdata"]["otherdata"]["executordetecter"]["exploits"])
+    if not ok or #executors == 0 then return end
+    executorsTitle:Destroy()
+    for _, exec in ipairs(executors) do
+        weaoapiTab:AddTitle(string.format("[%s] %s (%s) | %s", exec.platform, exec.title, exec.version, exec.updateStatus and "已更新(有效)" or "未更新(失效)"))
+        weaoapiTab:AddLabel("类型:" .. exec.extType .. " | " .. (exec.free and "免费" or ("付费(" .. exec.cost:gsub("Lifetime", "永久"):gsub("Weekly", "每周"):gsub("Monthly", "每月"):gsub("Private", "私人") .. ")")) .. " | " .. (exec.detected and "已被检测" or "未被检测"))
+        weaoapiTab:AddLabel((exec.uncStatus and ("UNC: " .. (exec.uncPercent or 0) .. "%") or "") .. ", sUNC: " .. (exec.suncPercent or 0) .. "%")
+        weaoapiTab:AddLabel("更新时间:" .. exec.updatedDate)
+        weaoapiTab:AddLabel("密钥系统: " .. (exec.keysystem and "有" or "无") .. " 测试版:" .. (exec.beta and "是" or "否") .. " 反编译器: " .. (exec.decompiler and "有" or "无") .. " 多开支持: " .. (exec.multiInject and "支持" or "不支持"))
+        weaoapiTab:AddButton({
+            Text = "官网: " .. exec.website,
+            Callback = function() setclipboard(exec.website); ChronixUI:Notify({ Title = "提示", Content = "已复制到剪切板", Type = "info", Duration = 5 }) end
+        })
+        weaoapiTab:AddButton({
+            Text = "Discord: " .. exec.discord,
+            Callback = function() setclipboard(exec.discord); ChronixUI:Notify({ Title = "提示", Content = "已复制到剪切板", Type = "info", Duration = 5 }) end
+        })
+        weaoapiTab:AddDivider()
+    end
 end
+task.spawn(function()
+    while true do
+        local rd = data["basicdata"]["otherdata"]["executordetecter"]["robloxinfo"]
+        if rd.Windows then
+            robloxLabels.win.Text = "Windows: " .. rd.Windows
+            robloxLabels.winDate.Text = "Windows更新日期: " .. toChineseDate(rd.WindowsDate, true)
+            robloxLabels.mac.Text = "Mac: " .. rd.Mac
+            robloxLabels.macDate.Text = "Mac更新日期: " .. toChineseDate(rd.MacDate, true)
+            robloxLabels.android.Text = "Android: " .. rd.Android
+            robloxLabels.androidDate.Text = "Android更新日期: " .. toChineseDate(rd.AndroidDate, true)
+            robloxLabels.ios.Text = "iOS: " .. rd.iOS
+            robloxLabels.iosDate.Text = "iOS更新日期: " .. toChineseDate(rd.iOSDate, true)
+            break
+        end
+        task.wait(1)
+    end
+end)
+task.spawn(function()
+    while true do
+        local ex = data["basicdata"]["otherdata"]["executordetecter"]["exploits"]
+        if ex and type(ex) == "table" and #ex > 0 then
+            rebuildExploiters()
+            break
+        end
+        task.wait(1)
+    end
+end)
 
 -- ===== 游戏专属标签页 =====
 for _, GetgameInfo in ipairs(data["Supported_Games"]) do
