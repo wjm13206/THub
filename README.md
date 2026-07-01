@@ -4,6 +4,10 @@
 
 ---
 
+> 最近在玩《蔚蓝档案》不怎么玩 Roblox，所以更新会慢一点另外我在测试一个压缩软件，可以把代码压成一个文件，正在开发中...
+
+---
+
 ## 🎮 简介
 
 **THub V3** 是一个为 Roblox 平台设计的现代化多功能工具集，包含完整的 UI 框架（ChronixUI）和丰富的游戏专用功能。fork 自 [ChronixHub V3](https://atomgit.com/Furrycalin/ChronixHub)
