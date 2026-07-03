@@ -1535,33 +1535,56 @@ vpf.Size = UDim2.new(1, 0, 1, 0)
 vpf.Visible = true
 vpf.Name = "esp"
 
+local espParts = {}
+local function clearEspParts()
+	for _, vpPart in pairs(espParts) do
+		vpPart:Destroy()
+	end
+	espParts = {}
+end
 local con = nil
 con = renderstepped:Connect(function()
     if not gui then
+		clearEspParts()
         con:Disconnect()
         return
     end
 	if net then
 		net(9e9)
 	end
-	vpf:ClearAllChildren()
 	if esp then
 	    vpf.CurrentCamera = ws.CurrentCamera
+		local seen = {}
 		for i, plr in pairs(plrs:GetPlayers()) do
 			if ( (not espTeamCheck) or (plr.Team ~= lp.Team) ) and (plr ~= lp) then
 				local c = plr.Character
 				if c and c.Parent then
 					for i, part in pairs(c:GetDescendants()) do
 						if part:IsA("BasePart") then
-							local part1 = Instance.new("Part", vpf)
-							part1.Color = espcolor
-							part1.Size = part.Size
-							part1.CFrame = part.CFrame
+							seen[part] = true
+							local vpPart = espParts[part]
+							if not vpPart then
+								vpPart = Instance.new("Part", vpf)
+								vpPart.Color = espcolor
+								vpPart.Anchored = true
+								vpPart.CanCollide = false
+								espParts[part] = vpPart
+							end
+							vpPart.Size = part.Size
+							vpPart.CFrame = part.CFrame
 						end
 					end
 				end
 			end
 		end
+		for part, vpPart in pairs(espParts) do
+			if not seen[part] then
+				vpPart:Destroy()
+				espParts[part] = nil
+			end
+		end
+	else
+		clearEspParts()
 	end
 	if viewedPlayer then
 	    local c = viewedPlayer.Character
@@ -1741,11 +1764,10 @@ con = stepped:Connect(function()
 	end
 end)
 
-local con0, con1 = nil, nil
+local con0 = nil
 local function antiflingF()
     if not gui then
         con0:Disconnect()
-        con1:Disconnect()
         return
     end
     if antifling then
@@ -1765,8 +1787,7 @@ local function antiflingF()
         end
     end
 end
-con0 = stepped:Connect(antiflingF)
-con1 = heartbeat:Connect(antiflingF)
+con0 = heartbeat:Connect(antiflingF)
 
 gui.Enabled = true
 renderstepped:Wait()

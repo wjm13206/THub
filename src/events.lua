@@ -86,25 +86,18 @@ function setupHumanoidListeners(humanoid)
         end
     end)
     humanoidConnections.forceUpdates = RunService.Heartbeat:Connect(function()
-        if data["basicdata"]["player"]["islockspeed"] then
-            if humanoid.WalkSpeed ~= data["basicdata"]["player"]["speed"] then
-                humanoid.WalkSpeed = data["basicdata"]["player"]["speed"]
-            end
+        local pdata = data["basicdata"]["player"]
+        if pdata.islockspeed and humanoid.WalkSpeed ~= pdata.speed then
+            humanoid.WalkSpeed = pdata.speed
         end
-        if data["basicdata"]["player"]["islockjump"] then
-            if humanoid.JumpPower ~= data["basicdata"]["player"]["jump"] then
-                humanoid.JumpPower = data["basicdata"]["player"]["jump"]
-            end
+        if pdata.islockjump and humanoid.JumpPower ~= pdata.jump then
+            humanoid.JumpPower = pdata.jump
         end
-        if data["basicdata"]["player"]["islockhealth"] then
-            if humanoid.Health ~= data["basicdata"]["player"]["health"] then
-                humanoid.Health = data["basicdata"]["player"]["health"]
-            end
+        if pdata.islockhealth and humanoid.Health ~= pdata.health then
+            humanoid.Health = pdata.health
         end
-        if data["basicdata"]["player"]["islockmaxhealth"] then
-            if humanoid.MaxHealth ~= data["basicdata"]["player"]["maxhealth"] then
-                humanoid.MaxHealth = data["basicdata"]["player"]["maxhealth"]
-            end
+        if pdata.islockmaxhealth and humanoid.MaxHealth ~= pdata.maxhealth then
+            humanoid.MaxHealth = pdata.maxhealth
         end
     end)
     humanoidConnections.hscc = humanoid.StateChanged:Connect(function(oldState, newState)
@@ -215,26 +208,28 @@ RunStepped = RunService.Stepped:Connect(function()
         if isrbxactive and rbxactivelabel then rbxactivelabel.Text = string.format("焦点检测: %s", (isrbxactive() and "True" or "False")) end
     end
     if data["othergamedata"]["grace"]["deleteentity"] then
-        ReplicatedStorage.eyegui:Destroy()
-        ReplicatedStorage.smilegui:Destroy()
-        ReplicatedStorage.SendRush:Destroy()
-        ReplicatedStorage.SendWorm:Destroy()
-        ReplicatedStorage.SendSorrow:Destroy()
-        task.wait(0.1)
-        ReplicatedStorage.Worm:Destroy()
-        ReplicatedStorage.elkman:Destroy()
-        task.wait(0.1)
-        ReplicatedStorage.QuickNotes.Eye:Destroy()
-        ReplicatedStorage.QuickNotes.Rush:Destroy()
-        ReplicatedStorage.QuickNotes.Sorrow:Destroy()
-        ReplicatedStorage.QuickNotes.elkman:Destroy()
-        ReplicatedStorage.QuickNotes.EyePrime:Destroy()
-        ReplicatedStorage.QuickNotes.SlugFish:Destroy()
-        ReplicatedStorage.QuickNotes.FakeDoor:Destroy()
-        ReplicatedStorage.QuickNotes.SleepyHead:Destroy()
-        local SmileGui = PlayerGui:FindFirstChild("smilegui")
-        if SmileGui then
-            SmileGui:Destroy()
-        end
+        task.spawn(function()
+            pcall(function() ReplicatedStorage.eyegui:Destroy() end)
+            pcall(function() ReplicatedStorage.smilegui:Destroy() end)
+            pcall(function() ReplicatedStorage.SendRush:Destroy() end)
+            pcall(function() ReplicatedStorage.SendWorm:Destroy() end)
+            pcall(function() ReplicatedStorage.SendSorrow:Destroy() end)
+            task.wait(0.1)
+            pcall(function() ReplicatedStorage.Worm:Destroy() end)
+            pcall(function() ReplicatedStorage.elkman:Destroy() end)
+            task.wait(0.1)
+            pcall(function() ReplicatedStorage.QuickNotes.Eye:Destroy() end)
+            pcall(function() ReplicatedStorage.QuickNotes.Rush:Destroy() end)
+            pcall(function() ReplicatedStorage.QuickNotes.Sorrow:Destroy() end)
+            pcall(function() ReplicatedStorage.QuickNotes.elkman:Destroy() end)
+            pcall(function() ReplicatedStorage.QuickNotes.EyePrime:Destroy() end)
+            pcall(function() ReplicatedStorage.QuickNotes.SlugFish:Destroy() end)
+            pcall(function() ReplicatedStorage.QuickNotes.FakeDoor:Destroy() end)
+            pcall(function() ReplicatedStorage.QuickNotes.SleepyHead:Destroy() end)
+            local SmileGui = PlayerGui:FindFirstChild("smilegui")
+            if SmileGui then
+                SmileGui:Destroy()
+            end
+        end)
     end
 end)
