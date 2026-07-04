@@ -29,6 +29,7 @@ data = {
             Lantern = PlayerLightModule.new({ Brightness = 3, Range = 20, Color = Color3.fromRGB(255, 165, 0), Shadows = true }),
             SuperLighter = PlayerLightModule.new({ Brightness = 2, Range = 1000 }),
             noclip = false,
+            noclipParts = {},
             infjump = false,
             antifall = false,
             antidead = false,

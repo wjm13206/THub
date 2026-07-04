@@ -175,33 +175,39 @@ end, function() movementModule.Disable() end)
 enableToggle(ToolsTab, "空中移动", function() AirWalk.enable() end, function() AirWalk.disable() end)
 enableToggle(ToolsTab, "无摔落伤害", function() NoFall.enable() end, function() NoFall.disable() end)
 enableToggle(ToolsTab, "瞬间交互", function() InstantInteraction.enable() end, function() InstantInteraction.disable() end)
-noclipConnection = RunService.Stepped:Connect(function()
-    if data["basicdata"]["releasetools"]["noclip"] then
-        local char = Workspace:FindFirstChild(LocalPlayer.Name)
-        if char then
-            for _, v in pairs(char:GetChildren()) do
-                if v:IsA("BasePart") then
-                    v.CanCollide = false
-                end
-            end
-        end
-    end
-end)
 ToolsTab:AddToggle({
     Label = "穿墙",
     Default = false,
     Callback = function(v)
         data["basicdata"]["releasetools"]["noclip"] = v
-        if not v then
-            local char = Workspace:FindFirstChild(LocalPlayer.Name)
-            if char then
-                for _, part in pairs(char:GetChildren()) do
-                    if part:IsA("BasePart") then
+        if noclipConnection then noclipConnection:Disconnect() end
+        noclipConnection = RunService.Stepped:Connect(function()
+            if data["basicdata"]["releasetools"]["noclip"] then
+                if #data["basicdata"]["releasetools"]["noclipParts"] == 0 then
+                    if LocalPlayer.Character then
+                        for _, part in ipairs(LocalPlayer.Character:GetChildren()) do
+                            if part:IsA("BasePart") and part.CanCollide == true then
+                                part.CanCollide = false
+                                table.insert(data["basicdata"]["releasetools"]["noclipParts"], part)
+                            end
+                        end
+                    end
+                end
+                for _, part in ipairs(data["basicdata"]["releasetools"]["noclipParts"]) do
+                    if part and part.Parent then
+                        part.CanCollide = false
+                    end
+                end
+            else
+                for _, part in ipairs(data["basicdata"]["releasetools"]["noclipParts"]) do
+                    if part and part.Parent then
                         part.CanCollide = true
                     end
                 end
+                data["basicdata"]["releasetools"]["noclipParts"] = {}
+                noclipConnection:Disconnect()
             end
-        end
+        end)
     end
 })
 ToolsTab:AddToggle({
