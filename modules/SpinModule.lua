@@ -49,6 +49,55 @@ local characterAddedConn = nil
 -- 存储所有连接，用于unload
 local connections = {}
 
+-- 背起了行囊音乐
+local MUSIC_URL = "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/beiqilexingnang.mp3"
+local spinSongId = nil
+
+local function playMusic()
+    if data["basicdata"]["otherdata"]["musicData"]["isPlay"] then
+        return
+    end
+    local fileName = "beiqilexingnang.mp3"
+    local filePath = "THub/music/cache/" .. fileName
+
+    local function doPlay(assetId)
+        spinSongId = assetId
+        data["basicdata"]["otherdata"]["musicbox"].SoundId = assetId
+        data["basicdata"]["otherdata"]["musicbox"].TimePosition = 0
+        data["basicdata"]["otherdata"]["musicbox"]:Play()
+    end
+
+    if isfile(filePath) then
+        local assetId = getcustomasset(filePath)
+        if assetId and assetId ~= "" then
+            doPlay(assetId)
+            return
+        end
+    end
+
+    task.spawn(function()
+        local success, response = pcall(function() return game:HttpGet(MUSIC_URL) end)
+        if success and response and response ~= "" then
+            pcall(function()
+                local folder = "THub/music/cache"
+                if not isfolder(folder) then makefolder(folder) end
+                writefile(filePath, response)
+                local assetId = getcustomasset(filePath)
+                if assetId and assetId ~= "" then
+                    doPlay(assetId)
+                end
+            end)
+        end
+    end)
+end
+
+local function stopMusic()
+    if spinSongId and data["basicdata"]["otherdata"]["musicbox"].SoundId == spinSongId and data["basicdata"]["otherdata"]["musicData"]["isPlay"] then
+        data["basicdata"]["otherdata"]["musicbox"]:Stop()
+        spinSongId = nil
+    end
+end
+
 -- 获取角色的根部件（HumanoidRootPart）
 local function getRoot(char)
     if char and char:FindFirstChildOfClass("Humanoid") then
@@ -80,6 +129,7 @@ local function stopSpin()
     isActive = false
     cleanupSpinBody()
     disconnectHeartbeat()
+    stopMusic()
     
     -- 断开角色重生监听
     if characterAddedConn then
@@ -118,6 +168,7 @@ local function startSpin(speed)
     
     currentCharacter = char
     isActive = true
+    playMusic()
     
     -- 创建旋转体（BodyAngularVelocity）
     -- BodyAngularVelocity 可以让部件绕指定轴持续旋转
