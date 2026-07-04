@@ -126,5 +126,5 @@ loadstring(game:HttpGet(baseUrl .. "/src/unload.lua"))()
 local loadTime = string.format("%.2f", tick() - startTime)
 ChronixUI:Notify({ Title = "提示", Content = "THub 启动成功。用时: " .. loadTime .. "s\n防挂机已自动开启。", Type = "info", Duration = 10 })
 LogService:Info("[THub] 已成功加载。用时: " .. loadTime .. "s")
-pcall(function() SystemNotification.Rainbow("THub V3 Already Success Loaded!\nWelcome " .. data["basicdata"]["player"]["displayname"]) end)
+pcall(function() SystemNotification.Rainbow("THub V3 已成功加载！\n欢迎 " .. data["basicdata"]["player"]["displayname"]) end)
 _G.THubisLoaded = true; _G.THubLoading = false; loadingTimedOut = true

@@ -158,8 +158,14 @@ function clearAllConnections()
     disconnectHumanoidConnections()
 end
 
-pac = Players.PlayerAdded:Connect(updatePlayerList)
-prc = Players.PlayerRemoving:Connect(updatePlayerList)
+pac = Players.PlayerAdded:Connect(function()
+    updatePlayerList()
+    if updateFlingTeleportPlayerList then updateFlingTeleportPlayerList() end
+end)
+prc = Players.PlayerRemoving:Connect(function()
+    updatePlayerList()
+    if updateFlingTeleportPlayerList then updateFlingTeleportPlayerList() end
+end)
 
 ChatControl:MessageReceiver(function(msgData)
     addChatMessage(msgData.sender, msgData.text)

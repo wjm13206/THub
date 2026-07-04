@@ -1556,6 +1556,102 @@ hankerTab:AddButton({ Text = "开始击杀", Callback = function()
     HandleKillModule.kill(data["basicdata"]["hankermodule"]["hkill"]["killall"] and "All" or data["basicdata"]["hankermodule"]["hkill"]["killname"], data["basicdata"]["hankermodule"]["hkill"]["killany"] and "Infinity" or data["basicdata"]["hankermodule"]["hkill"]["killrange"])
 end })
 hankerTab:AddDivider()
+hankerTab:AddLabel("甩飞传送")
+hankerTab:AddDivider()
+
+local function executeFlingTeleport(player)
+    local myChar = LocalPlayer.Character
+    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then
+        ChronixUI:Notify({ Title = "错误", Content = "无法获取你的角色", Type = "error", Duration = 2 })
+        return
+    end
+    local targetChar = player.Character
+    if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then
+        ChronixUI:Notify({ Title = "错误", Content = "目标玩家角色不存在", Type = "error", Duration = 2 })
+        return
+    end
+    local originalPos = myChar.HumanoidRootPart.CFrame
+    local root = myChar.HumanoidRootPart
+    myChar:SetPrimaryPartCFrame(CFrame.new(targetChar.HumanoidRootPart.Position))
+    local humanoid = myChar:FindFirstChildOfClass("Humanoid")
+    if humanoid then humanoid.PlatformStand = true end
+    for _, child in pairs(myChar:GetDescendants()) do
+        if child:IsA("BasePart") then
+            child.CanCollide = true
+            child.CustomPhysicalProperties = PhysicalProperties.new(0.5, 0.3, 0.5)
+        end
+    end
+    local angVel = Instance.new("BodyAngularVelocity")
+    angVel.Name = "__FlingTeleportVelocity"
+    angVel.Parent = root
+    angVel.AngularVelocity = Vector3.new(99999, 99999, 99999)
+    angVel.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    angVel.P = math.huge
+    local bodyPos = Instance.new("BodyPosition")
+    bodyPos.Name = "__FlingTeleportPos"
+    bodyPos.Parent = root
+    bodyPos.Position = targetChar.HumanoidRootPart.Position
+    bodyPos.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bodyPos.D = 100
+    bodyPos.P = 5000
+    local steppedConn = RunService.Stepped:Connect(function()
+        if not myChar or not myChar.Parent then return end
+        for _, child in pairs(myChar:GetDescendants()) do
+            if child:IsA("BasePart") and child.CanCollide == false then
+                child.CanCollide = true
+            end
+        end
+    end)
+    local upDownConn = RunService.Heartbeat:Connect(function()
+        if not myChar or not myChar.Parent or not root or not root.Parent then return end
+        local osc = math.sin(tick() * 12) * 5
+        root.Velocity = Vector3.new(root.Velocity.X, osc, root.Velocity.Z)
+    end)
+    task.wait(1.5)
+    steppedConn:Disconnect()
+    upDownConn:Disconnect()
+    if angVel and angVel.Parent then angVel:Destroy() end
+    if bodyPos and bodyPos.Parent then bodyPos:Destroy() end
+    if humanoid then humanoid.PlatformStand = false end
+    for _, child in pairs(myChar:GetDescendants()) do
+        if child:IsA("BasePart") then
+            child.CanCollide = true
+            child.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
+        end
+    end
+    if myChar and myChar.Parent and myChar:FindFirstChild("HumanoidRootPart") then
+        myChar:SetPrimaryPartCFrame(originalPos)
+    end
+end
+
+local flingTeleportDropdown = nil
+local flingTeleportPlayerMap = {}
+local function getPlayerOptions()
+    local names = {}
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local label = player.DisplayName .. " (" .. player.Name .. ")"
+            table.insert(names, label)
+            flingTeleportPlayerMap[label] = player
+        end
+    end
+    return names
+end
+flingTeleportDropdown = hankerTab:AddDropdown({
+    Label = "选择要甩飞的玩家",
+    Options = getPlayerOptions(),
+    Default = "",
+    Callback = function(selected)
+        local player = flingTeleportPlayerMap[selected]
+        if player then executeFlingTeleport(player) end
+    end
+})
+function updateFlingTeleportPlayerList()
+    if flingTeleportDropdown then
+        local options = getPlayerOptions()
+        flingTeleportDropdown:UpdateOptions(options)
+    end
+end
 
 -- ===== 支持的游戏 Tab =====
 supportedgamesTab = mainWindow:CreateTab({ Name = "支持的游戏", HasIcon = true, IconName = "swords" })
