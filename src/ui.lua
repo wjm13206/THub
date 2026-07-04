@@ -750,6 +750,7 @@ waypointTab:AddDivider()
 if #waypointsData > 0 then refreshWaypointList() end
 
 -- ===== 音乐播放器 Tab =====
+local musicislink = false
 musicTab = mainWindow:CreateTab({ Name = "音乐播放器", HasIcon = true, IconName = "music" })
 musicTab:AddTitle("音乐播放器")
 musicTab:AddDivider()
@@ -778,6 +779,18 @@ othermusicDropdown = musicTab:AddDropdown({
                 data["basicdata"]["otherdata"]["musicData"]["othermusicname"] = musicname
                 data["basicdata"]["otherdata"]["musicData"]["currentId"] = assid
             end
+        end
+    end
+})
+local linkmusic = musicTab:AddInput({
+    Label = "音乐直链",
+    Default = "",
+    Placeholder = "输入音乐直链",
+    Callback = function(text)
+        if text and text ~= "" then
+            data["basicdata"]["otherdata"]["musicData"]["currentId"] = "link"
+            data["basicdata"]["otherdata"]["musicData"]["currentlink"] = text
+            musicislink = true
         end
     end
 })
@@ -810,10 +823,22 @@ playStopButton = musicTab:AddButton({
             end
             ChronixUI:Notify({ Title = "已停止", Content = "音乐播放已停止", Type = "info", Duration = 2 })
         else
+            if data["basicdata"]["otherdata"]["musicData"]["currentId"] == "link" then
+                ChronixUI:Notify({ Title = "提示", Content = "正在读取链接内容，请稍等...", Type = "info", Duration = 3 })
+                local errorCode, result = ConfigModule.downloadAudio(data["basicdata"]["otherdata"]["musicData"]["currentlink"])
+                if errorCode == 0 then
+                    data["basicdata"]["otherdata"]["musicData"]["currentId"] = tostring(result)
+                elseif errorCode == 1 then
+                    ChronixUI:Notify({ Title = "播放失败", Content = "不是一个有效的直链音频", Type = "error", Duration = 3 })
+                elseif errorCode == 2 then
+                    ChronixUI:Notify({ Title = "播放失败", Content = "缓存文件失败", Type = "error", Duration = 3 })
+                elseif errorCode == 3 then
+                    ChronixUI:Notify({ Title = "播放失败", Content = "获取资产ID失败", Type = "error", Duration = 3 })
+                end
+            end
             data["basicdata"]["otherdata"]["musicbox"]["SoundId"] = (not string.find(data["basicdata"]["otherdata"]["musicData"]["currentId"], "rbxasset://")) and ("rbxassetid://" .. data["basicdata"]["otherdata"]["musicData"]["currentId"]) or data["basicdata"]["otherdata"]["musicData"]["currentId"]
             local success, productInfo = pcall(function()
                 if string.find(data["basicdata"]["otherdata"]["musicData"]["currentId"], "rbxasset://") then
-                    success = true
                     return {}
                 else
                     return MarketplaceService:GetProductInfo(tonumber(data["basicdata"]["otherdata"]["musicData"]["currentId"]))
@@ -823,13 +848,14 @@ playStopButton = musicTab:AddButton({
                 data["basicdata"]["otherdata"]["musicbox"]:Play()
                 data["basicdata"]["otherdata"]["musicData"]["isPlay"] = true
                 data["basicdata"]["otherdata"]["musicData"]["isPause"] = false
+                data["basicdata"]["otherdata"]["musicbox"].TimePosition = 0
                 playStopButton.Text = "⏹️ 停止"
                 if pauseResumeButton then
                     pauseResumeButton.Text = "⏸️ 暂停"
                 end
-                ChronixUI:Notify({ Title = "正在播放", Content = (productInfo.Name and productInfo.Name or data["basicdata"]["otherdata"]["musicData"]["othermusicname"]) .. "\n" .. (productInfo.Description or ""), Type = "info", Duration = 3 })
+                ChronixUI:Notify({ Title = "正在播放", Content = musicislink and data["basicdata"]["otherdata"]["musicData"]["currentlink"] or (productInfo.Name or ""), Type = "info", Duration = 3 })
             else
-                ChronixUI:Notify({ Title = "播放失败", Content = data["basicdata"]["otherdata"]["musicData"]["currentId"] .. "\n不是一个有效的rbxassetid", Type = "error", Duration = 3 })
+                ChronixUI:Notify({ Title = "播放失败", Content = "无效的rbxassetid", Type = "error", Duration = 3 })
                 data["basicdata"]["otherdata"]["musicData"]["isPlay"] = false
             end
         end

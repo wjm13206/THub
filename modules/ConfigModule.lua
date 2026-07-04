@@ -223,4 +223,57 @@ function ConfigModule.createmusicconfig(path)
     return musicTable
 end
 
+-- 下载直链音频到缓存，返回 errorCode, result
+-- 0=成功, 1=非音频直链, 2=下载失败, 3=获取资产ID失败
+function ConfigModule.downloadAudio(url)
+    if not ConfigModule.mainFolderName then error("请先使用 setmain()") end
+    if not url or url == "" then return 2, "URL 不能为空" end
+
+    local audioExtensions = { ".mp3", ".wav", ".ogg", ".flac", ".m4a", ".wma", ".aac" }
+    local function isDirectAudioLink(link)
+        local lower = string.lower(link)
+        for _, ext in ipairs(audioExtensions) do
+            if string.find(lower, ext .. "?") or string.match(lower, ext .. "$") then return true end
+        end
+        return false
+    end
+    if not isDirectAudioLink(url) then return 1, "不是有效的音频直链" end
+
+    local cacheFolder = ConfigModule.mainFolderName .. "/music/cache"
+    if not isfolder(cacheFolder) then
+        local ok = pcall(makefolder, cacheFolder)
+        if not ok then return 2, "创建缓存目录失败" end
+    end
+
+    local function getFileName(link)
+        local name = string.match(link, "/([^/]+)%?.*$") or string.match(link, "/([^/]+)$")
+        return name or "audio_" .. os.time() .. ".mp3"
+    end
+    local fileName = getFileName(url)
+    local filePath = cacheFolder .. "/" .. fileName
+
+    -- 缓存命中
+    if isfile(filePath) then
+        local assetId = getcustomasset(filePath)
+        if assetId and assetId ~= "" then return 0, assetId else pcall(delfile, filePath) end
+    end
+
+    -- 下载
+    local response
+    local downloadSuccess = pcall(function()
+        response = request({ Url = url, Method = "GET" })
+    end)
+    if not downloadSuccess then return 2, "下载失败" end
+    if not response or not response.Success then return 2, "下载失败: HTTP " .. tostring(response and response.StatusCode or "?") end
+    if not response.Body or response.Body == "" then return 2, "下载返回空数据" end
+
+    local saveSuccess = pcall(writefile, filePath, response.Body)
+    if not saveSuccess then return 2, "保存文件失败" end
+
+    local assetId = getcustomasset(filePath)
+    if not assetId or assetId == "" then pcall(delfile, filePath); return 3, "获取资产ID失败" end
+
+    return 0, assetId
+end
+
 return ConfigModule
