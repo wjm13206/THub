@@ -1170,34 +1170,6 @@ chatReceiverTab:AddButton({
 chatReceiverTab:AddDivider()
 chatReceiverTab:AddLabel("💡 提示：点击消息下方的按钮可复制该条消息")
 
--- ===== 执行器 Tab =====
-executerTab = mainWindow:CreateTab({ Name = "执行器", HasIcon = true, IconName = "braces" })
-executerTab:AddTitle("执行器")
-executerTab:AddInput({
-    Label = "请输入代码",
-    Placeholder = "",
-    Height = 200,
-    Callback = function(text)
-        data["basicdata"]["releasetools"]["executecode"] = text
-    end
-})
-executerTab:AddButton({
-    Text = "执行",
-    Callback = function()
-        if data["basicdata"]["releasetools"]["executecode"] and data["basicdata"]["releasetools"]["executecode"] ~= "" then
-            local success, errorMessage = pcall(function()
-                loadstring(data["basicdata"]["releasetools"]["executecode"])()
-            end)
-            if not success then
-                ChronixUI:Notify({ Title = "错误", Content = "脚本执行失败: " .. errorMessage, Type = "error", Duration = 5 })
-            else
-                ChronixUI:Notify({ Title = "提示", Content = "脚本执行成功!", Type = "success", Duration = 5 })
-            end
-        else
-            ChronixUI:Notify({ Title = "错误", Content = "请输入有效的脚本!", Type = "error", Duration = 5 })
-        end
-    end
-})
 
 -- ===== 滤镜控制器 Tab =====
 filterTab = mainWindow:CreateTab({ Name = "滤镜控制器", HasIcon = true, IconName = "sparkles" })

@@ -33,7 +33,6 @@ data = {
             infjump = false,
             antifall = false,
             antidead = false,
-            executecode = "",
             nightvision = false,
             npc = NPCHighLighter.new(),
             chatresend = false,
