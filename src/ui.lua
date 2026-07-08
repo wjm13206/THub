@@ -130,6 +130,7 @@ ToolsTab:AddToggle({
         end
     end
 })
+enableToggle(ToolsTab, "阻挡射线检测", function() AntiLookBlocker.enable() end, function() AntiLookBlocker.disable() end)
 ToolsTab:AddToggle({
     Label = "随身灯笼",
     Default = false,
