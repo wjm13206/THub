@@ -375,20 +375,12 @@ local function initNotificationScreenGui()
     return true
 end
 
--- 根据类型获取颜色（适配 UI 库主题）
+local notifColorMap = {info="Info", success="Success", warning="Warning", error="Error"}
+
 local function getColorByType(notifType)
-    local theme = ChronixUI.Themes[ChronixUI.CurrentTheme]
-    if notifType == "info" then
-        return theme.Info or Color3.fromRGB(30, 144, 255)
-    elseif notifType == "success" then
-        return theme.Success or Color3.fromRGB(46, 213, 115)
-    elseif notifType == "warning" then
-        return theme.Warning or Color3.fromRGB(255, 165, 2)
-    elseif notifType == "error" then
-        return theme.Error or Color3.fromRGB(255, 71, 87)
-    else
-        return theme.Info or Color3.fromRGB(30, 144, 255)
-    end
+    local t = ChronixUI.Themes[ChronixUI.CurrentTheme]
+    local key = notifColorMap[notifType] or "Info"
+    return t[key] or Color3.fromRGB(30, 144, 255)
 end
 
 -- 创建单个通知
@@ -488,19 +480,15 @@ local function updateAllPositions()
     end
 end
 
--- 播放通知音效
+local notifSoundMap = {
+    info = "rbxassetid://129485210015224",
+    success = "rbxassetid://129485210015224",
+    warning = "rbxassetid://124951621656853",
+    error = "rbxassetid://17525305988",
+}
+
 local function playNotificationSound(notifType)
-    local soundsid = "rbxassetid://4590662766"
-    if notifType == "info" then
-        soundsid = "rbxassetid://129485210015224"
-    elseif notifType == "warning" then
-        soundsid = "rbxassetid://124951621656853"
-    elseif notifType == "error" then
-        soundsid = "rbxassetid://17525305988"
-    elseif notifType == "success" then
-        soundsid = "rbxassetid://129485210015224"
-    end
-    PlaySound(soundsid, 0.5)
+    PlaySound(notifSoundMap[notifType] or "rbxassetid://4590662766", 0.5)
 end
 
 -- 动画辅助函数：滑入/滑出
@@ -630,7 +618,7 @@ function ChronixUI:CreateWindow(config)
 
     local defaultWidth = 680
     local defaultHeight = 420
-    local windowSize = config.Size or (isMobile and UDim2.new(0, math.floor(defaultWidth * scale), 0, math.floor(defaultHeight * scale)) or UDim2.new(0, defaultWidth, 0, defaultHeight))
+    local windowSize = config.Size or (isMobile and UDim2.new(0, px(defaultWidth), 0, px(defaultHeight)) or UDim2.new(0, defaultWidth, 0, defaultHeight))
     local windowName = config.Name or "Chronix UI"
 
     local gui = Instance.new("ScreenGui")
@@ -684,12 +672,14 @@ function ChronixUI:CreateWindow(config)
         blurTween:Play()
     end
 
+    local theme = self.Themes[self.CurrentTheme]
+    local px = function(n) return math.floor(n * scale) end
+
     local mainFrame = CreateFrame(gui, windowSize, UDim2.new(0.5, -windowSize.X.Offset/2, 0.5, -windowSize.Y.Offset/2),
-                                   self.Themes[self.CurrentTheme].Background)
-    AddStroke(mainFrame, self.Themes[self.CurrentTheme].Border)
+                                   theme.Background)
+    AddStroke(mainFrame, theme.Border)
 
     local windowVisible = true
-    local minimized = false
     local originalSize = windowSize
     local savedPosition = mainFrame.Position
 
@@ -721,23 +711,23 @@ function ChronixUI:CreateWindow(config)
     end, false, self.Settings.ToggleKey)
 
     -- 标题栏
-    local titleBarHeight = math.floor(45 * scale)
+    local titleBarHeight = px(45)
     local titleBar = CreateFrame(mainFrame, UDim2.new(1, 0, 0, titleBarHeight), UDim2.new(0, 0, 0, 0),
-                                  self.Themes[self.CurrentTheme].Background, 1)
+                                  theme.Background, 1)
     MakeDraggable(mainFrame, titleBar)
 
     -- 监听拖动，保存位置
     local function savePosition()
-        if not minimized then
+        if not windowData or not windowData.Minimized then
             savedPosition = mainFrame.Position
         end
     end
     mainFrame:GetPropertyChangedSignal("Position"):Connect(savePosition)
 
     -- 标题文字
-    local titleFontSize = math.floor(18 * scale)
+    local titleFontSize = px(18)
     local titleLabel = CreateLabel(titleBar, windowName, UDim2.new(1, -140*scale, 1, 0), UDim2.new(0, 20*scale, 0, 0),
-                                    self.Themes[self.CurrentTheme].Accent, titleFontSize, Enum.Font.GothamBold)
+                                    theme.Accent, titleFontSize, Enum.Font.GothamBold)
 
     -- 按钮容器
     local buttonContainer = Instance.new("Frame")
@@ -746,8 +736,8 @@ function ChronixUI:CreateWindow(config)
     buttonContainer.BackgroundTransparency = 1
     buttonContainer.Parent = titleBar
 
-    local btnSize = math.floor(32 * scale)
-    local btnOffset = math.floor(38 * scale)
+    local btnSize = px(32)
+    local btnOffset = px(38)
 
     -- 辅助函数：创建元素右侧图标
     local function createElementIcon(cfg)
@@ -790,41 +780,48 @@ function ChronixUI:CreateWindow(config)
         btn.Size = UDim2.new(0, btnSize, 0, btnSize)
         btn.Position = position
         btn.Text = text
-        btn.TextColor3 = self.Themes[self.CurrentTheme].Text
+        btn.TextColor3 = theme.Text
         btn.TextSize = textSize
-        btn.BackgroundColor3 = self.Themes[self.CurrentTheme].Card
+        btn.BackgroundColor3 = theme.Card
         btn.BorderSizePixel = 0
         btn.Parent = buttonContainer
         local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, math.floor(6 * scale))
+        corner.CornerRadius = UDim.new(0, px(6))
         corner.Parent = btn
-        AddStroke(btn, self.Themes[self.CurrentTheme].Border)
+        AddStroke(btn, theme.Border)
         return btn
     end
 
     -- 设置按钮
-    local settingsBtn = createTitleButton(UDim2.new(0, 0, 0.5, -btnSize/2), "≡", math.floor(20 * scale))
+    local settingsBtn = createTitleButton(UDim2.new(0, 0, 0.5, -btnSize/2), "≡", px(20))
     -- 最小化按钮
-    local minBtn = createTitleButton(UDim2.new(0, btnOffset, 0.5, -btnSize/2), "−", math.floor(24 * scale))
+    local minBtn = createTitleButton(UDim2.new(0, btnOffset, 0.5, -btnSize/2), "−", px(24))
     -- 关闭按钮
-    local closeBtn = createTitleButton(UDim2.new(0, btnOffset*2, 0.5, -btnSize/2), "×", math.floor(20 * scale))
+    local closeBtn = createTitleButton(UDim2.new(0, btnOffset*2, 0.5, -btnSize/2), "×", px(20))
+
+    -- 缓存 UIStroke 引用，供 UpdateTheme 使用
+    local mainStroke = mainFrame:FindFirstChildOfClass("UIStroke")
+    local settingsBtnStroke = settingsBtn:FindFirstChildOfClass("UIStroke")
+    local minBtnStroke = minBtn:FindFirstChildOfClass("UIStroke")
+    local closeBtnStroke = closeBtn:FindFirstChildOfClass("UIStroke")
 
     -- 底部玩家信息栏
-    local playerBarHeight = math.floor(50 * scale)
+    local playerBarHeight = px(50)
     local playerBar = CreateFrame(mainFrame, UDim2.new(1, 0, 0, playerBarHeight), UDim2.new(0, 0, 1, -playerBarHeight),
-                                   self.Themes[self.CurrentTheme].Card)
-    AddStroke(playerBar, self.Themes[self.CurrentTheme].Border)
+                                   theme.Card)
+    AddStroke(playerBar, theme.Border)
+    local playerBarStroke = playerBar:FindFirstChildOfClass("UIStroke")
 
     -- 头像容器
-    local avatarSize = math.floor(36 * scale)
+    local avatarSize = px(36)
     local avatarContainer = Instance.new("Frame")
     avatarContainer.Size = UDim2.new(0, avatarSize, 0, avatarSize)
     avatarContainer.Position = UDim2.new(0, 12*scale, 0.5, -avatarSize/2)
-    avatarContainer.BackgroundColor3 = self.Themes[self.CurrentTheme].Border
+    avatarContainer.BackgroundColor3 = theme.Border
     avatarContainer.BorderSizePixel = 0
     avatarContainer.Parent = playerBar
     local avatarCorner = Instance.new("UICorner")
-    avatarCorner.CornerRadius = UDim.new(0, math.floor(8 * scale))
+    avatarCorner.CornerRadius = UDim.new(0, px(8))
     avatarCorner.Parent = avatarContainer
 
     local avatarImage = Instance.new("ImageLabel")
@@ -834,13 +831,13 @@ function ChronixUI:CreateWindow(config)
     avatarImage.Image = GetPlayerAvatar(LocalPlayer.UserId)
     avatarImage.Parent = avatarContainer
     local imageCorner = Instance.new("UICorner")
-    imageCorner.CornerRadius = UDim.new(0, math.floor(6 * scale))
+    imageCorner.CornerRadius = UDim.new(0, px(6))
     imageCorner.Parent = avatarImage
 
     local premiumBadge = Instance.new("ImageLabel")
     premiumBadge.Name = "PremiumBadge"
-    premiumBadge.Size = UDim2.new(0, math.floor(12 * scale), 0, math.floor(12 * scale))
-    premiumBadge.Position = UDim2.new(1, math.floor(-4 * scale), 1, math.floor(-4 * scale))
+    premiumBadge.Size = UDim2.new(0, px(12), 0, px(12))
+    premiumBadge.Position = UDim2.new(1, px(-4), 1, px(-4))
     premiumBadge.AnchorPoint = Vector2.new(1, 1)      -- 锚点在右下角
     premiumBadge.BackgroundTransparency = 1
     premiumBadge.Image = "rbxassetid://126540142153628"
@@ -850,10 +847,10 @@ function ChronixUI:CreateWindow(config)
     premiumBadge.Parent = avatarContainer
 
     -- 玩家名称和游戏信息（稍后填充）
-    local playerNameLabel = CreateLabel(playerBar, "", UDim2.new(0, 200*scale, 0, math.floor(24 * scale)), UDim2.new(0, 60*scale, 0, 8*scale),
-                                         self.Themes[self.CurrentTheme].Text, math.floor(16 * scale), Enum.Font.GothamBold)
-    local playerInfoLabel = CreateLabel(playerBar, "", UDim2.new(0, 200*scale, 0, math.floor(20 * scale)), UDim2.new(0, 60*scale, 0, 30*scale),
-                                         self.Themes[self.CurrentTheme].TextDark, math.floor(12 * scale), 12)
+    local playerNameLabel = CreateLabel(playerBar, "", UDim2.new(0, 200*scale, 0, px(24)), UDim2.new(0, 60*scale, 0, 8*scale),
+                                         theme.Text, px(16), Enum.Font.GothamBold)
+    local playerInfoLabel = CreateLabel(playerBar, "", UDim2.new(0, 200*scale, 0, px(20)), UDim2.new(0, 60*scale, 0, 30*scale),
+                                         theme.TextDark, px(12), 12)
     playerInfoLabel.Name = "PlayerInfoLabel"
 
     -- 获取游戏名的函数（需在 safePlayerInfo 前定义）
@@ -917,12 +914,12 @@ function ChronixUI:CreateWindow(config)
     updatePlayerInfoDisplay()
 
     -- 侧边栏
-    local sidebarWidth = math.floor(160 * scale)
+    local sidebarWidth = px(160)
     local sidebar = CreateFrame(mainFrame, UDim2.new(0, sidebarWidth, 1, -playerBarHeight - titleBarHeight), UDim2.new(0, 0, 0, titleBarHeight),
-                                 self.Themes[self.CurrentTheme].Sidebar)
+                                 theme.Sidebar)
 
     local sidebarTitle = CreateLabel(sidebar, "功能菜单", UDim2.new(1, 0, 0, 40*scale), UDim2.new(0, 0, 0, 10*scale),
-                                      self.Themes[self.CurrentTheme].Accent, math.floor(16 * scale), Enum.Font.GothamBold)
+                                      theme.Accent, px(16), Enum.Font.GothamBold)
     sidebarTitle.TextXAlignment = Enum.TextXAlignment.Center
 
     local tabContainer = Instance.new("ScrollingFrame")
@@ -931,10 +928,10 @@ function ChronixUI:CreateWindow(config)
     tabContainer.Position = UDim2.new(0, 0, 0, 50*scale)
     tabContainer.BackgroundTransparency = 1
     tabContainer.BorderSizePixel = 0
-    tabContainer.ScrollBarThickness = math.floor(6 * scale)
+    tabContainer.ScrollBarThickness = px(6)
     tabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 
-    local tabList = AddListLayout(tabContainer, math.floor(8 * scale))
+    local tabList = AddListLayout(tabContainer, px(8))
 
     -- 更新侧边栏滚动区域
     local function updateSidebarCanvas()
@@ -944,22 +941,22 @@ function ChronixUI:CreateWindow(config)
 
     -- 内容区域
     local contentArea = CreateFrame(mainFrame, UDim2.new(1, -sidebarWidth, 1, -playerBarHeight - titleBarHeight), UDim2.new(0, sidebarWidth, 0, titleBarHeight),
-                                     self.Themes[self.CurrentTheme].Background, 1)
+                                     theme.Background, 1)
 
     local contentScroll = Instance.new("ScrollingFrame")
     contentScroll.Parent = contentArea
     contentScroll.Size = UDim2.new(1, 0, 1, 0)
     contentScroll.BackgroundTransparency = 1
     contentScroll.BorderSizePixel = 0
-    contentScroll.ScrollBarThickness = math.floor(6 * scale)
+    contentScroll.ScrollBarThickness = px(6)
     contentScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 
-    local contentLayout = AddListLayout(contentScroll, math.floor(16 * scale))
+    local contentLayout = AddListLayout(contentScroll, px(16))
     local contentPadding = Instance.new("UIPadding")
-    contentPadding.PaddingLeft = UDim.new(0, math.floor(20 * scale))
-    contentPadding.PaddingRight = UDim.new(0, math.floor(20 * scale))
-    contentPadding.PaddingTop = UDim.new(0, math.floor(20 * scale))
-    contentPadding.PaddingBottom = UDim.new(0, math.floor(20 * scale))
+    contentPadding.PaddingLeft = UDim.new(0, px(20))
+    contentPadding.PaddingRight = UDim.new(0, px(20))
+    contentPadding.PaddingTop = UDim.new(0, px(20))
+    contentPadding.PaddingBottom = UDim.new(0, px(20))
     contentPadding.Parent = contentScroll
 
     -- 更新内容区域滚动
@@ -1017,10 +1014,7 @@ function ChronixUI:CreateWindow(config)
         
         -- 1. 更新主框架背景和边框描边
         mainFrame.BackgroundColor3 = theme.Background
-        local mainStroke = mainFrame:FindFirstChildOfClass("UIStroke")
-        if mainStroke then
-            mainStroke.Color = theme.Border
-        end
+        if mainStroke then mainStroke.Color = theme.Border end
         
         -- 2. 更新侧边栏
         sidebar.BackgroundColor3 = theme.Sidebar
@@ -1030,24 +1024,19 @@ function ChronixUI:CreateWindow(config)
         titleLabel.TextColor3 = theme.Accent
         
         -- 4. 更新右上角按钮样式
-        local function updateButtonStyle(btn)
-            btn.BackgroundColor3 = theme.Card
-            btn.TextColor3 = theme.Text
-            local btnStroke = btn:FindFirstChildOfClass("UIStroke")
-            if btnStroke then
-                btnStroke.Color = theme.Border
-            end
-        end
-        updateButtonStyle(settingsBtn)
-        updateButtonStyle(minBtn)
-        updateButtonStyle(closeBtn)
+        settingsBtn.BackgroundColor3 = theme.Card
+        settingsBtn.TextColor3 = theme.Text
+        if settingsBtnStroke then settingsBtnStroke.Color = theme.Border end
+        minBtn.BackgroundColor3 = theme.Card
+        minBtn.TextColor3 = theme.Text
+        if minBtnStroke then minBtnStroke.Color = theme.Border end
+        closeBtn.BackgroundColor3 = theme.Card
+        closeBtn.TextColor3 = theme.Text
+        if closeBtnStroke then closeBtnStroke.Color = theme.Border end
         
         -- 5. 更新底部玩家信息栏
         playerBar.BackgroundColor3 = theme.Card
-        local barStroke = playerBar:FindFirstChildOfClass("UIStroke")
-        if barStroke then
-            barStroke.Color = theme.Border
-        end
+        if playerBarStroke then playerBarStroke.Color = theme.Border end
         if avatarContainer then
             avatarContainer.BackgroundColor3 = theme.Border
         end
@@ -1135,21 +1124,22 @@ function ChronixUI:CreateWindow(config)
     
         windowData.ParticleSystem = UIParticleSystem.new(particleBgFrame)
         if windowData.ParticleSystem then
-            windowData.ParticleSystem:setColor(self.Themes[self.CurrentTheme].Accent)
+            windowData.ParticleSystem:setColor(theme.Accent)
         end
     end
     -- ========== 粒子系统添加结束 ==========
 
     -- Tab 切换方法（供局部 SelectTab 和设置按钮共用）
     function windowData:SelectTab(name)
+        local t = ChronixUI.Themes[ChronixUI.CurrentTheme]
         for _, tab in pairs(self.Tabs) do
             if tab.Name == name then
-                tab.Button.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Accent
+                tab.Button.BackgroundColor3 = t.Accent
                 tab.Button.TextColor3 = Color3.fromRGB(0, 0, 0)
                 tab.Content.Visible = true
             else
-                tab.Button.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Background
-                tab.Button.TextColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].TextDark
+                tab.Button.BackgroundColor3 = t.Background
+                tab.Button.TextColor3 = t.TextDark
                 tab.Content.Visible = false
             end
         end
@@ -1170,7 +1160,7 @@ function ChronixUI:CreateWindow(config)
         if windowData.Minimized then
             savedPosition = mainFrame.Position
             TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
-                Size = UDim2.new(0, math.floor(280 * scale), 0, titleBarHeight),
+                Size = UDim2.new(0, px(280), 0, titleBarHeight),
                 Position = savedPosition
             }):Play()
             sidebar.Visible = false
@@ -1200,7 +1190,7 @@ function ChronixUI:CreateWindow(config)
         local hasIcon = tabConfig.HasIcon or false
         local iconName = tabConfig.IconName or ""
         local iconType = tabConfig.IconType or "lucide"  -- lucide, solar, craft, geist, sfsymbols, gravity, other
-        local iconColor = tabConfig.IconColor or ChronixUI.Themes[ChronixUI.CurrentTheme].IconColor
+        local iconColor = tabConfig.IconColor or theme.IconColor
         
         -- 计算文字偏移量
         local textPadding = 8 * scale
@@ -1208,18 +1198,18 @@ function ChronixUI:CreateWindow(config)
 
         local tabBtn = Instance.new("TextButton")
         tabBtn.Parent = tabContainer
-        tabBtn.Size = UDim2.new(1, -12*scale, 0, math.floor(36 * scale))
+        tabBtn.Size = UDim2.new(1, -12*scale, 0, px(36))
         tabBtn.Position = UDim2.new(0, 6*scale, 0, 0)
         tabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 46)
         tabBtn.Text = ""
-        tabBtn.TextColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].TextDark
-        tabBtn.TextSize = math.floor(14 * scale)
+        tabBtn.TextColor3 = theme.TextDark
+        tabBtn.TextSize = px(14)
         tabBtn.TextXAlignment = Enum.TextXAlignment.Left
         tabBtn.Font = Enum.Font.GothamSemibold
         tabBtn.BorderSizePixel = 0
 
         local btnCorner = Instance.new("UICorner")
-        btnCorner.CornerRadius = UDim.new(0, math.floor(4 * scale))
+        btnCorner.CornerRadius = UDim.new(0, px(4))
         btnCorner.Parent = tabBtn
 
         -- 图标 ImageLabel（如果需要）
@@ -1247,8 +1237,8 @@ function ChronixUI:CreateWindow(config)
         tabTextLabel.Position = UDim2.new(0, textPadding + iconOffset, 0, 0)
         tabTextLabel.BackgroundTransparency = 1
         tabTextLabel.Text = tabName
-        tabTextLabel.TextColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].TextDark
-        tabTextLabel.TextSize = math.floor(14 * scale)
+        tabTextLabel.TextColor3 = theme.TextDark
+        tabTextLabel.TextSize = px(14)
         tabTextLabel.TextXAlignment = Enum.TextXAlignment.Left
         tabTextLabel.Font = Enum.Font.GothamSemibold
         tabTextLabel.Parent = tabBtn
@@ -1283,7 +1273,7 @@ function ChronixUI:CreateWindow(config)
         tabContent.Visible = false
         tabContent.AutomaticSize = Enum.AutomaticSize.Y
 
-        local tabLayout = AddListLayout(tabContent, math.floor(12 * scale))
+        local tabLayout = AddListLayout(tabContent, px(12))
 
         local function SelectTab()
             windowData:SelectTab(tabName)
@@ -1325,22 +1315,22 @@ function ChronixUI:CreateWindow(config)
             local hasIcon = btnConfig.HasIcon or true
             local iconName = btnConfig.IconName or "mouse-pointer-click"
             local iconType = btnConfig.IconType or "lucide"
-            local iconColor = btnConfig.IconColor or ChronixUI.Themes[ChronixUI.CurrentTheme].IconColor
+            local iconColor = btnConfig.IconColor or theme.IconColor
             -- =====================
 
             local btn = Instance.new("TextButton")
             btn.Parent = tabContent
-            btn.Size = UDim2.new(1, 0, 0, math.floor(38 * scale))
-            btn.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Card
+            btn.Size = UDim2.new(1, 0, 0, px(38))
+            btn.BackgroundColor3 = theme.Card
             btn.Text = btnText
-            btn.TextColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Text
-            btn.TextSize = math.floor(14 * scale)
+            btn.TextColor3 = theme.Text
+            btn.TextSize = px(14)
             btn.Font = Enum.Font.GothamSemibold
             btn.BorderSizePixel = 0
             local btnCorner = Instance.new("UICorner")
-            btnCorner.CornerRadius = UDim.new(0, math.floor(4 * scale))
+            btnCorner.CornerRadius = UDim.new(0, px(4))
             btnCorner.Parent = btn
-            AddStroke(btn, ChronixUI.Themes[ChronixUI.CurrentTheme].Border)
+            AddStroke(btn, theme.Border)
 
             createElementIcon({
                 HasIcon = hasIcon,
@@ -1359,13 +1349,13 @@ function ChronixUI:CreateWindow(config)
             local hoverTween
             btn.MouseEnter:Connect(function()
                 if hoverTween then hoverTween:Cancel() end
-                hoverTween = TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Hover})
+                hoverTween = TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = theme.Hover})
                 hoverTween:Play()
             end)
 
             btn.MouseLeave:Connect(function()
                 if hoverTween then hoverTween:Cancel() end
-                hoverTween = TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Card})
+                hoverTween = TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = theme.Card})
                 hoverTween:Play()
             end)
 
@@ -1383,33 +1373,33 @@ function ChronixUI:CreateWindow(config)
             local hasIcon = dropdownConfig.HasIcon or true
             local iconName = dropdownConfig.IconName or "chevron-down"
             local iconType = dropdownConfig.IconType or "lucide"
-            local iconColor = dropdownConfig.IconColor or ChronixUI.Themes[ChronixUI.CurrentTheme].IconColor
+            local iconColor = dropdownConfig.IconColor or theme.IconColor
             -- =====================
 
             local container = Instance.new("Frame")
             container.Parent = tabContent
-            container.Size = UDim2.new(1, 0, 0, math.floor(70 * scale))
+            container.Size = UDim2.new(1, 0, 0, px(70))
             container.BackgroundTransparency = 1
             container.AutomaticSize = Enum.AutomaticSize.Y
 
-            local labelText = CreateLabel(container, label, UDim2.new(1, 0, 0, math.floor(20 * scale)), UDim2.new(0, 0, 0, 0),
-                                           ChronixUI.Themes[ChronixUI.CurrentTheme].Text, math.floor(14 * scale), Enum.Font.GothamSemibold)
+            local labelText = CreateLabel(container, label, UDim2.new(1, 0, 0, px(20)), UDim2.new(0, 0, 0, 0),
+                                           theme.Text, px(14), Enum.Font.GothamSemibold)
 
             local dropdownBtn = Instance.new("TextButton")
             dropdownBtn.Parent = container
-            dropdownBtn.Size = UDim2.new(1, 0, 0, math.floor(36 * scale))
-            dropdownBtn.Position = UDim2.new(0, 0, 0, math.floor(28 * scale))
-            dropdownBtn.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Input
+            dropdownBtn.Size = UDim2.new(1, 0, 0, px(36))
+            dropdownBtn.Position = UDim2.new(0, 0, 0, px(28))
+            dropdownBtn.BackgroundColor3 = theme.Input
             dropdownBtn.Text = "  " .. default
-            dropdownBtn.TextColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Text
-            dropdownBtn.TextSize = math.floor(14 * scale)
+            dropdownBtn.TextColor3 = theme.Text
+            dropdownBtn.TextSize = px(14)
             dropdownBtn.TextXAlignment = Enum.TextXAlignment.Left
             dropdownBtn.Font = Enum.Font.Gotham
             dropdownBtn.BorderSizePixel = 0
             local btnCorner = Instance.new("UICorner")
-            btnCorner.CornerRadius = UDim.new(0, math.floor(4 * scale))
+            btnCorner.CornerRadius = UDim.new(0, px(4))
             btnCorner.Parent = dropdownBtn
-            AddStroke(dropdownBtn, ChronixUI.Themes[ChronixUI.CurrentTheme].Border)
+            AddStroke(dropdownBtn, theme.Border)
 
             createElementIcon({
                 HasIcon = hasIcon,
@@ -1423,14 +1413,14 @@ function ChronixUI:CreateWindow(config)
             local dropdownList = Instance.new("Frame")
             dropdownList.Parent = container
             dropdownList.Size = UDim2.new(1, 0, 0, 0)
-            dropdownList.Position = UDim2.new(0, 0, 0, math.floor(64 * scale))
-            dropdownList.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Input
+            dropdownList.Position = UDim2.new(0, 0, 0, px(64))
+            dropdownList.BackgroundColor3 = theme.Input
             dropdownList.ClipsDescendants = true
             dropdownList.Visible = false
             local listCorner = Instance.new("UICorner")
-            listCorner.CornerRadius = UDim.new(0, math.floor(4 * scale))
+            listCorner.CornerRadius = UDim.new(0, px(4))
             listCorner.Parent = dropdownList
-            AddStroke(dropdownList, ChronixUI.Themes[ChronixUI.CurrentTheme].Border)
+            AddStroke(dropdownList, theme.Border)
 
             local listLayout = AddListLayout(dropdownList, 0)
 
@@ -1443,11 +1433,11 @@ function ChronixUI:CreateWindow(config)
             for _, option in ipairs(options) do
                 local optBtn = Instance.new("TextButton")
                 optBtn.Parent = dropdownList
-                optBtn.Size = UDim2.new(1, 0, 0, math.floor(32 * scale))
-                optBtn.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Input
+                optBtn.Size = UDim2.new(1, 0, 0, px(32))
+                optBtn.BackgroundColor3 = theme.Input
                 optBtn.Text = "  " .. option
-                optBtn.TextColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Text
-                optBtn.TextSize = math.floor(14 * scale)
+                optBtn.TextColor3 = theme.Text
+                optBtn.TextSize = px(14)
                 optBtn.TextXAlignment = Enum.TextXAlignment.Left
                 optBtn.Font = Enum.Font.Gotham
                 optBtn.BorderSizePixel = 0
@@ -1466,7 +1456,7 @@ function ChronixUI:CreateWindow(config)
                 expanded = not expanded
                 dropdownList.Visible = true
                 if expanded then
-                    local totalHeight = #options * math.floor(32 * scale)
+                    local totalHeight = #options * px(32)
                     TweenService:Create(dropdownList, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, totalHeight)}):Play()
                 else
                     collapseDropdown()
@@ -1486,43 +1476,43 @@ function ChronixUI:CreateWindow(config)
 
             local container = Instance.new("Frame")
             container.Parent = tabContent
-            container.Size = UDim2.new(1, 0, 0, math.floor(70 * scale))
+            container.Size = UDim2.new(1, 0, 0, px(70))
             container.BackgroundTransparency = 1
 
-            local labelText = CreateLabel(container, label, UDim2.new(1, 0, 0, math.floor(20 * scale)), UDim2.new(0, 0, 0, 0),
-                                           ChronixUI.Themes[ChronixUI.CurrentTheme].Text, math.floor(14 * scale), Enum.Font.GothamSemibold)
+            local labelText = CreateLabel(container, label, UDim2.new(1, 0, 0, px(20)), UDim2.new(0, 0, 0, 0),
+                                           theme.Text, px(14), Enum.Font.GothamSemibold)
 
-            local valueLabel = CreateLabel(container, tostring(default), UDim2.new(0, math.floor(50 * scale), 0, math.floor(20 * scale)), UDim2.new(1, -60*scale, 0, 0),
-                                            ChronixUI.Themes[ChronixUI.CurrentTheme].Accent, math.floor(14 * scale), Enum.Font.GothamBold)
+            local valueLabel = CreateLabel(container, tostring(default), UDim2.new(0, px(50), 0, px(20)), UDim2.new(1, -60*scale, 0, 0),
+                                            theme.Accent, px(14), Enum.Font.GothamBold)
             valueLabel.TextXAlignment = Enum.TextXAlignment.Right
 
             local slider = Instance.new("Frame")
             slider.Parent = container
-            slider.Size = UDim2.new(1, 0, 0, math.floor(4 * scale))
-            slider.Position = UDim2.new(0, 0, 0, math.floor(40 * scale))
-            slider.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Border
+            slider.Size = UDim2.new(1, 0, 0, px(4))
+            slider.Position = UDim2.new(0, 0, 0, px(40))
+            slider.BackgroundColor3 = theme.Border
             slider.BorderSizePixel = 0
             local sliderCorner = Instance.new("UICorner")
-            sliderCorner.CornerRadius = UDim.new(0, math.floor(2 * scale))
+            sliderCorner.CornerRadius = UDim.new(0, px(2))
             sliderCorner.Parent = slider
 
             local fill = Instance.new("Frame")
             fill.Parent = slider
             fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-            fill.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Accent
+            fill.BackgroundColor3 = theme.Accent
             fill.BorderSizePixel = 0
             local fillCorner = Instance.new("UICorner")
-            fillCorner.CornerRadius = UDim.new(0, math.floor(2 * scale))
+            fillCorner.CornerRadius = UDim.new(0, px(2))
             fillCorner.Parent = fill
 
             local handle = Instance.new("Frame")
             handle.Parent = slider
-            handle.Size = UDim2.new(0, math.floor(12 * scale), 0, math.floor(12 * scale))
-            handle.Position = UDim2.new((default - min) / (max - min), -math.floor(6 * scale), 0, -math.floor(4 * scale))
-            handle.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Accent
+            handle.Size = UDim2.new(0, px(12), 0, px(12))
+            handle.Position = UDim2.new((default - min) / (max - min), -px(6), 0, -px(4))
+            handle.BackgroundColor3 = theme.Accent
             handle.BorderSizePixel = 0
             local handleCorner = Instance.new("UICorner")
-            handleCorner.CornerRadius = UDim.new(0, math.floor(6 * scale))
+            handleCorner.CornerRadius = UDim.new(0, px(6))
             handleCorner.Parent = handle
 
             local dragging = false
@@ -1530,15 +1520,15 @@ function ChronixUI:CreateWindow(config)
                 local pos = math.clamp((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
                 local value = math.floor(min + (max - min) * pos)
                 fill.Size = UDim2.new(pos, 0, 1, 0)
-                handle.Position = UDim2.new(pos, -math.floor(6 * scale), 0, -math.floor(4 * scale))
+                handle.Position = UDim2.new(pos, -px(6), 0, -px(4))
                 valueLabel.Text = tostring(value)
                 callback(value)
             end
 
             local sliderHitbox = Instance.new("TextButton")
             sliderHitbox.Parent = container
-            sliderHitbox.Size = UDim2.new(1, 0, 0, math.floor(30 * scale))
-            sliderHitbox.Position = UDim2.new(0, 0, 0, math.floor(35 * scale))
+            sliderHitbox.Size = UDim2.new(1, 0, 0, px(30))
+            sliderHitbox.Position = UDim2.new(0, 0, 0, px(35))
             sliderHitbox.BackgroundTransparency = 1
             sliderHitbox.Text = ""
             sliderHitbox.AutoButtonColor = false
@@ -1583,30 +1573,30 @@ function ChronixUI:CreateWindow(config)
 
             local container = Instance.new("Frame")
             container.Parent = tabContent
-            container.Size = UDim2.new(1, 0, 0, math.floor(50 * scale))
+            container.Size = UDim2.new(1, 0, 0, px(50))
             container.BackgroundTransparency = 1
 
-            local labelText = CreateLabel(container, label, UDim2.new(1, -60*scale, 0, math.floor(30 * scale)), UDim2.new(0, 0, 0, math.floor(10 * scale)),
-                                           ChronixUI.Themes[ChronixUI.CurrentTheme].Text, math.floor(14 * scale), Enum.Font.GothamSemibold)
+            local labelText = CreateLabel(container, label, UDim2.new(1, -60*scale, 0, px(30)), UDim2.new(0, 0, 0, px(10)),
+                                           theme.Text, px(14), Enum.Font.GothamSemibold)
 
             local toggleBtn = Instance.new("Frame")
             toggleBtn.Parent = container
-            toggleBtn.Size = UDim2.new(0, math.floor(50 * scale), 0, math.floor(26 * scale))
-            toggleBtn.Position = UDim2.new(1, -60*scale, 0, math.floor(12 * scale))
-            toggleBtn.BackgroundColor3 = default and ChronixUI.Themes[ChronixUI.CurrentTheme].Accent or Color3.fromRGB(80, 80, 80)
+            toggleBtn.Size = UDim2.new(0, px(50), 0, px(26))
+            toggleBtn.Position = UDim2.new(1, -60*scale, 0, px(12))
+            toggleBtn.BackgroundColor3 = default and theme.Accent or Color3.fromRGB(80, 80, 80)
             toggleBtn.BorderSizePixel = 0
             local toggleCorner = Instance.new("UICorner")
-            toggleCorner.CornerRadius = UDim.new(0, math.floor(13 * scale))
+            toggleCorner.CornerRadius = UDim.new(0, px(13))
             toggleCorner.Parent = toggleBtn
 
             local toggleHandle = Instance.new("Frame")
             toggleHandle.Parent = toggleBtn
-            toggleHandle.Size = UDim2.new(0, math.floor(22 * scale), 0, math.floor(22 * scale))
-            toggleHandle.Position = default and UDim2.new(1, -26*scale, 0.5, -math.floor(11 * scale)) or UDim2.new(0, math.floor(4 * scale), 0.5, -math.floor(11 * scale))
+            toggleHandle.Size = UDim2.new(0, px(22), 0, px(22))
+            toggleHandle.Position = default and UDim2.new(1, -26*scale, 0.5, -px(11)) or UDim2.new(0, px(4), 0.5, -px(11))
             toggleHandle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             toggleHandle.BorderSizePixel = 0
             local handleCorner = Instance.new("UICorner")
-            handleCorner.CornerRadius = UDim.new(0, math.floor(11 * scale))
+            handleCorner.CornerRadius = UDim.new(0, px(11))
             handleCorner.Parent = toggleHandle
 
             local toggled = default
@@ -1617,8 +1607,8 @@ function ChronixUI:CreateWindow(config)
                 toggled = not toggled
                 if toggleBtnTween then toggleBtnTween:Cancel() end
                 if toggleHandleTween then toggleHandleTween:Cancel() end
-                local targetColor = toggled and ChronixUI.Themes[ChronixUI.CurrentTheme].Accent or Color3.fromRGB(80, 80, 80)
-                local targetPos = toggled and UDim2.new(1, -26*scale, 0.5, -math.floor(11 * scale)) or UDim2.new(0, math.floor(4 * scale), 0.5, -math.floor(11 * scale))
+                local targetColor = toggled and theme.Accent or Color3.fromRGB(80, 80, 80)
+                local targetPos = toggled and UDim2.new(1, -26*scale, 0.5, -px(11)) or UDim2.new(0, px(4), 0.5, -px(11))
                 toggleBtnTween = TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = targetColor})
                 toggleBtnTween:Play()
                 toggleHandleTween = TweenService:Create(toggleHandle, TweenInfo.new(0.2), {Position = targetPos})
@@ -1644,29 +1634,29 @@ function ChronixUI:CreateWindow(config)
             local hasIcon = inputConfig.HasIcon or true
             local iconName = inputConfig.IconName or "text-cursor-input"
             local iconType = inputConfig.IconType or "lucide"
-            local iconColor = inputConfig.IconColor or ChronixUI.Themes[ChronixUI.CurrentTheme].IconColor
+            local iconColor = inputConfig.IconColor or theme.IconColor
             -- =====================
 
             local container = Instance.new("Frame")
             container.Parent = tabContent
             local containerHeight = customHeight and (customHeight + 34) or 70
-            container.Size = UDim2.new(1, 0, 0, math.floor(containerHeight * scale))
+            container.Size = UDim2.new(1, 0, 0, px(containerHeight))
             container.BackgroundTransparency = 1
 
-            local labelText = CreateLabel(container, label, UDim2.new(1, 0, 0, math.floor(20 * scale)), UDim2.new(0, 0, 0, 0),
-                                           ChronixUI.Themes[ChronixUI.CurrentTheme].Text, math.floor(14 * scale), Enum.Font.GothamSemibold)
+            local labelText = CreateLabel(container, label, UDim2.new(1, 0, 0, px(20)), UDim2.new(0, 0, 0, 0),
+                                           theme.Text, px(14), Enum.Font.GothamSemibold)
 
             local inputBox = Instance.new("TextBox")
             inputBox.Parent = container
             local inputHeight = customHeight and customHeight or 36
-            inputBox.Size = UDim2.new(1, 0, 0, math.floor(inputHeight * scale))
-            inputBox.Position = UDim2.new(0, 0, 0, math.floor(28 * scale))
-            inputBox.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Input
+            inputBox.Size = UDim2.new(1, 0, 0, px(inputHeight))
+            inputBox.Position = UDim2.new(0, 0, 0, px(28))
+            inputBox.BackgroundColor3 = theme.Input
             inputBox.PlaceholderText = placeholder
-            inputBox.PlaceholderColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].TextDark
+            inputBox.PlaceholderColor3 = theme.TextDark
             inputBox.Text = default or ""
-            inputBox.TextColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Text
-            inputBox.TextSize = math.floor(14 * scale)
+            inputBox.TextColor3 = theme.Text
+            inputBox.TextSize = px(14)
             inputBox.Font = Enum.Font.Gotham
             inputBox.BorderSizePixel = 0
             inputBox.ClearTextOnFocus = clearTextOnFocus
@@ -1679,9 +1669,9 @@ function ChronixUI:CreateWindow(config)
             end
 
             local inputCorner = Instance.new("UICorner")
-            inputCorner.CornerRadius = UDim.new(0, math.floor(4 * scale))
+            inputCorner.CornerRadius = UDim.new(0, px(4))
             inputCorner.Parent = inputBox
-            AddStroke(inputBox, ChronixUI.Themes[ChronixUI.CurrentTheme].Border)
+            AddStroke(inputBox, theme.Border)
 
             local iconPosition = isMultiLine and UDim2.new(1, -28 * scale, 0, 8 * scale) or UDim2.new(1, -28 * scale, 0.5, -10 * scale)
             createElementIcon({
@@ -1744,31 +1734,31 @@ function ChronixUI:CreateWindow(config)
             local hasIcon = keybindConfig.HasIcon or true
             local iconName = keybindConfig.IconName or "mouse-pointer-click"
             local iconType = keybindConfig.IconType or "lucide"
-            local iconColor = keybindConfig.IconColor or ChronixUI.Themes[ChronixUI.CurrentTheme].IconColor
+            local iconColor = keybindConfig.IconColor or theme.IconColor
             -- =====================
 
             local container = Instance.new("Frame")
             container.Parent = tabContent
-            container.Size = UDim2.new(1, 0, 0, math.floor(70 * scale))
+            container.Size = UDim2.new(1, 0, 0, px(70))
             container.BackgroundTransparency = 1
 
-            local labelText = CreateLabel(container, label, UDim2.new(1, 0, 0, math.floor(20 * scale)), UDim2.new(0, 0, 0, 0),
-                                           ChronixUI.Themes[ChronixUI.CurrentTheme].Text, math.floor(14 * scale), Enum.Font.GothamSemibold)
+            local labelText = CreateLabel(container, label, UDim2.new(1, 0, 0, px(20)), UDim2.new(0, 0, 0, 0),
+                                           theme.Text, px(14), Enum.Font.GothamSemibold)
 
             local keyBtn = Instance.new("TextButton")
             keyBtn.Parent = container
-            keyBtn.Size = UDim2.new(1, 0, 0, math.floor(36 * scale))
-            keyBtn.Position = UDim2.new(0, 0, 0, math.floor(28 * scale))
-            keyBtn.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Input
+            keyBtn.Size = UDim2.new(1, 0, 0, px(36))
+            keyBtn.Position = UDim2.new(0, 0, 0, px(28))
+            keyBtn.BackgroundColor3 = theme.Input
             keyBtn.Text = defaultKey
-            keyBtn.TextColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Accent
-            keyBtn.TextSize = math.floor(14 * scale)
+            keyBtn.TextColor3 = theme.Accent
+            keyBtn.TextSize = px(14)
             keyBtn.Font = Enum.Font.GothamBold
             keyBtn.BorderSizePixel = 0
             local btnCorner = Instance.new("UICorner")
-            btnCorner.CornerRadius = UDim.new(0, math.floor(4 * scale))
+            btnCorner.CornerRadius = UDim.new(0, px(4))
             btnCorner.Parent = keyBtn
-            AddStroke(keyBtn, ChronixUI.Themes[ChronixUI.CurrentTheme].Border)
+            AddStroke(keyBtn, theme.Border)
 
             createElementIcon({
                 HasIcon = hasIcon,
@@ -1785,7 +1775,7 @@ function ChronixUI:CreateWindow(config)
                 if listening then return end
                 listening = true
                 keyBtn.Text = "按下按键..."
-                keyBtn.TextColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Text
+                keyBtn.TextColor3 = theme.Text
 
                 local connection
                 connection = UserInputService.InputBegan:Connect(function(input)
@@ -1793,7 +1783,7 @@ function ChronixUI:CreateWindow(config)
                         local key = input.KeyCode.Name
                         if key ~= "Unknown" then
                             keyBtn.Text = key
-                            keyBtn.TextColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Accent
+                            keyBtn.TextColor3 = theme.Accent
                             if callback then
                                 callback(key)
                             end
@@ -1829,7 +1819,7 @@ function ChronixUI:CreateWindow(config)
             header.Parent = container
             
             local labelText = CreateLabel(header, label, UDim2.new(1, -50*scale, 1, 0), UDim2.new(0, 12*scale, 0, 0),
-                ChronixUI.Themes[ChronixUI.CurrentTheme].Text, 14 * scale, Enum.Font.GothamSemibold)
+                theme.Text, 14 * scale, Enum.Font.GothamSemibold)
             
             local colorPreview = Instance.new("Frame")
             colorPreview.Size = UDim2.new(0, 30 * scale, 0, 30 * scale)
@@ -1841,7 +1831,7 @@ function ChronixUI:CreateWindow(config)
             local previewCorner = Instance.new("UICorner")
             previewCorner.CornerRadius = UDim.new(0, 6 * scale)
             previewCorner.Parent = colorPreview
-            AddStroke(colorPreview, ChronixUI.Themes[ChronixUI.CurrentTheme].Border)
+            AddStroke(colorPreview, theme.Border)
             
             local expandBtn = Instance.new("TextButton")
             expandBtn.Size = UDim2.new(1, 0, 1, 0)
@@ -2048,11 +2038,11 @@ function ChronixUI:CreateWindow(config)
             container.BackgroundTransparency = 1
             container.AutomaticSize = Enum.AutomaticSize.Y
 
-            local titleLabel = CreateLabel(container, title, UDim2.new(1, 0, 0, math.floor(24 * scale)), UDim2.new(0, 0, 0, 0),
-                                            ChronixUI.Themes[ChronixUI.CurrentTheme].Text, math.floor(16 * scale), Enum.Font.GothamBold)
+            local titleLabel = CreateLabel(container, title, UDim2.new(1, 0, 0, px(24)), UDim2.new(0, 0, 0, 0),
+                                            theme.Text, px(16), Enum.Font.GothamBold)
 
-            local contentLabel = CreateLabel(container, content, UDim2.new(1, 0, 0, 0), UDim2.new(0, 0, 0, math.floor(28 * scale)),
-                                              ChronixUI.Themes[ChronixUI.CurrentTheme].TextDark, math.floor(13 * scale), Enum.Font.Gotham)
+            local contentLabel = CreateLabel(container, content, UDim2.new(1, 0, 0, 0), UDim2.new(0, 0, 0, px(28)),
+                                              theme.TextDark, px(13), Enum.Font.Gotham)
             contentLabel.TextWrapped = true
             contentLabel.AutomaticSize = Enum.AutomaticSize.Y
 
@@ -2062,23 +2052,23 @@ function ChronixUI:CreateWindow(config)
         function elements:AddDivider()
             local divider = Instance.new("Frame")
             divider.Parent = tabContent
-            divider.Size = UDim2.new(1, 0, 0, math.floor(1 * scale))
-            divider.BackgroundColor3 = ChronixUI.Themes[ChronixUI.CurrentTheme].Border
+            divider.Size = UDim2.new(1, 0, 0, px(1))
+            divider.BackgroundColor3 = theme.Border
             divider.BorderSizePixel = 0
 
             return wrap(divider)
         end
 
         function elements:AddTitle(text)
-            local title = CreateLabel(tabContent, text, UDim2.new(1, 0, 0, math.floor(40 * scale)), UDim2.new(0, 0, 0, 0),
-                                       ChronixUI.Themes[ChronixUI.CurrentTheme].Accent, math.floor(20 * scale), Enum.Font.GothamBold)
+            local title = CreateLabel(tabContent, text, UDim2.new(1, 0, 0, px(40)), UDim2.new(0, 0, 0, 0),
+                                       theme.Accent, px(20), Enum.Font.GothamBold)
 
             return wrap(title)
         end
 
         function elements:AddLabel(text)
-            local label = CreateLabel(tabContent, text, UDim2.new(1, 0, 0, math.floor(30 * scale)), UDim2.new(0, 0, 0, 0),
-                                       ChronixUI.Themes[ChronixUI.CurrentTheme].Text, math.floor(14 * scale), Enum.Font.Gotham)
+            local label = CreateLabel(tabContent, text, UDim2.new(1, 0, 0, px(30)), UDim2.new(0, 0, 0, 0),
+                                       theme.Text, px(14), Enum.Font.Gotham)
 
             return wrap(label)
         end
