@@ -156,6 +156,13 @@ function getjerktool()
 	end
 end
 
+function drophandtool()
+    local currentTool = LocalPlayer.Character:FindFirstChildWhichIsA("Tool")
+    if currentTool then
+        currentTool.Parent = Workspace
+    end
+end
+
 function droptool()
     for i,v in pairs(LocalPlayer.Backpack:GetChildren()) do
 		if v:IsA("Tool") then
