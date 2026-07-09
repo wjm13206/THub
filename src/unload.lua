@@ -77,6 +77,7 @@ unloadTHub = function()
     TCPHighLight.unload()
     SnapTurn.Unload()
     SnapReverse.Unload()
+    AimBotModule.Unload()
     ChatSpammer.unload()
 
     if data["basicdata"]["otherdata"]["audioData"]["scanConnection"] then data["basicdata"]["otherdata"]["audioData"]["scanConnection"]:Disconnect() end
