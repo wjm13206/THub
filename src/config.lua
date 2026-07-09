@@ -31,6 +31,7 @@ data = {
             noclip = false,
             noclipParts = {},
             infjump = false,
+            autojump = false,
             antifall = false,
             antidead = false,
             nightvision = false,

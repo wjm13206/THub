@@ -233,6 +233,36 @@ ToolsTab:AddToggle({
         end)
     end
 })
+local _autoJumpLast = 0
+ToolsTab:AddToggle({
+    Label = "自动跳跃",
+    Default = false,
+    Callback = function(v)
+        data["basicdata"]["releasetools"]["autojump"] = v
+        if v then
+            autoJumpConnection = RunService.Heartbeat:Connect(function()
+                if not data["basicdata"]["releasetools"]["autojump"] then
+                    autoJumpConnection:Disconnect()
+                    return
+                end
+                if tick() - _autoJumpLast < 0.2 then return end
+                _autoJumpLast = tick()
+                local c = LocalPlayer.Character
+                if c and c.Parent then
+                    local hum = c:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        hum:ChangeState("Jumping")
+                    end
+                end
+            end)
+        else
+            if autoJumpConnection then
+                autoJumpConnection:Disconnect()
+                autoJumpConnection = nil
+            end
+        end
+    end
+})
 enableToggle(ToolsTab, "固定到世界", function()
     LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.Anchored = true
 end, function()
