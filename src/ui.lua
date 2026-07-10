@@ -22,9 +22,30 @@ local function enableToggle(tab, label, onFn, offFn)
     tab:AddToggle({ Label = label, Default = false, Callback = function(v) if v then onFn() else offFn() end end })
 end
 
+local function safeGetKeyCode(key)
+    if typeof(key) == "EnumItem" and key.EnumType == Enum.KeyCode then
+        return key
+    end
+    if type(key) ~= "string" or key == "" then
+        return nil
+    end
+    local ok, keyCode = pcall(function()
+        return Enum.KeyCode[key]
+    end)
+    if ok then
+        return keyCode
+    end
+    return nil
+end
+
 local function settingsKeybindInput(tab, bindLabel, defaultKey, setKey, inputLabel, defaultVal, setVal)
     tab:AddKeybind({ Label = bindLabel, Default = defaultKey, Callback = function(key)
-        if key then local nk = Enum.KeyCode[key]; if nk then setKey(nk) end end
+        if key then
+            local nk = safeGetKeyCode(key)
+            if nk then
+                setKey(nk)
+            end
+        end
     end })
     tab:AddInput({ Label = inputLabel, Placeholder = "", Default = defaultVal, Callback = function(text)
         local n = tonumber(text); if n then setVal(n) end
@@ -2025,7 +2046,7 @@ settingsContent:AddKeybind({
     Label = "灵魂出窍",
     Default = FreecamModule.getKeybind().Name,
     Callback = function(key)
-        local newKey = Enum.KeyCode[key]
+        local newKey = safeGetKeyCode(key)
         if newKey then
             FreecamModule.setKeybind(newKey)
         end
@@ -2035,7 +2056,7 @@ settingsContent:AddKeybind({
     Label = "望远镜",
     Default = data["basicdata"]["releasetools"]["zoom"]:GetBindKey().Name,
     Callback = function(key)
-        local newKey = Enum.KeyCode[key]
+        local newKey = safeGetKeyCode(key)
         if newKey then
             data["basicdata"]["releasetools"]["zoom"]:SetBindKey(newKey)
         end
@@ -2055,7 +2076,7 @@ settingsContent:AddKeybind({
     Default = ScrollSwitch:getbind().Name,
     Callback = function(key)
         if key then
-            local newKey = Enum.KeyCode[key]
+            local newKey = safeGetKeyCode(key)
             ScrollSwitch:setbind(newKey)
         end
     end
@@ -2086,7 +2107,7 @@ settingsContent:AddKeybind({
     Label = "GUI删除工具",
     Default = GuiDeleter.getBindKey().Name,
     Callback = function(key)
-        local newKey = Enum.KeyCode[key]
+        local newKey = safeGetKeyCode(key)
         if newKey then
             GuiDeleter.setBindKey(newKey)
         end
@@ -2097,7 +2118,7 @@ settingsContent:AddKeybind({
     Default = SnapReverse.GetKeyBind().Name,
     Callback = function(key)
         if key then
-            local newKey = Enum.KeyCode[key]
+            local newKey = safeGetKeyCode(key)
             if newKey then
                 SnapReverse.SetKeyBind(newKey)
             end
@@ -2114,7 +2135,7 @@ settingsContent:AddKeybind({
     Default = AimBotModule.GetKey().Name,
     Callback = function(key)
         if key then
-            local newKey = Enum.KeyCode[key]
+            local newKey = safeGetKeyCode(key)
             AimBotModule.SetKey(newKey)
         end
     end

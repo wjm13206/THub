@@ -2237,9 +2237,33 @@ local function QKYM_fake_script() -- BUTTONDESIGN.toggleoff/on
 	local open = true
 	
 	local waittchange = true
+
+	local function getToggleKeyCode()
+		local keyName = script.Parent.TextButton.Text
+		if type(keyName) ~= "string" or keyName == "" or keyName == "..." then
+			return nil
+		end
+		local ok, keyCode = pcall(function()
+			return Enum.KeyCode[keyName]
+		end)
+		if ok then
+			return keyCode
+		end
+		local fallbackKeyName = keyName:match("[A-Za-z0-9]+")
+		if fallbackKeyName then
+			ok, keyCode = pcall(function()
+				return Enum.KeyCode[fallbackKeyName]
+			end)
+			if ok then
+				return keyCode
+			end
+		end
+		return nil
+	end
 	
 	UIS.InputBegan:Connect(function(key, gp)
-		if key.KeyCode == Enum.KeyCode[script.Parent.TextButton.Text] and script.Parent:FindFirstChild("Keybind") then
+		local toggleKey = getToggleKeyCode()
+		if toggleKey and key.KeyCode == toggleKey and script.Parent:FindFirstChild("Keybind") then
 			
 			if UIS:GetFocusedTextBox() == nil then
 				if open == false then

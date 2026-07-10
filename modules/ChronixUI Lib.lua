@@ -311,8 +311,16 @@ local function wrapInstance(instance)
     }
     return setmetatable(proxy, {
         __index = function(t, k)
-            if k == "Destroy" then return t.Destroy end
-            local value = instance[k]
+            local ownValue = rawget(t, k)
+            if ownValue ~= nil then
+                return ownValue
+            end
+            local ok, value = pcall(function()
+                return instance[k]
+            end)
+            if not ok then
+                return nil
+            end
             if type(value) == "function" then
                 return function(...)
                     return value(instance, ...)
@@ -321,7 +329,14 @@ local function wrapInstance(instance)
             return value
         end,
         __newindex = function(t, k, v)
-            instance[k] = v
+            local ok = pcall(function()
+                return instance[k]
+            end)
+            if ok then
+                instance[k] = v
+            else
+                rawset(t, k, v)
+            end
         end
     })
 end
