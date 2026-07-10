@@ -2,6 +2,55 @@
 --!optimize 2
 
 --======================================================================================
+-- Spoofing hooks: intercept WalkSpeed/JumpPower reads/writes to hide locked values
+local checkcaller = checkcaller or function() return false end
+local newcclosure = newcclosure or function(f) return f end
+local hookmetamethod = hookmetamethod
+local spoofHooks = {}
+
+if hookmetamethod then
+    spoofHooks.speedIndex = hookmetamethod(game, "__index", newcclosure(function(self, key)
+        if not checkcaller() and typeof(self) == "Instance" and self:IsA("Humanoid") then
+            local char = LocalPlayer.Character
+            if char and self:IsDescendantOf(char) then
+                if key == "WalkSpeed" and data["basicdata"]["player"]["islockspeed"] then
+                    return data["basicdata"]["player"]["speed"]
+                end
+                if key == "JumpPower" and data["basicdata"]["player"]["islockjump"] then
+                    return data["basicdata"]["player"]["jump"]
+                end
+            end
+        end
+        return spoofHooks.speedIndex(self, key)
+    end))
+
+    spoofHooks.speedNewindex = hookmetamethod(game, "__newindex", newcclosure(function(self, key, value)
+        if not checkcaller() and typeof(self) == "Instance" and self:IsA("Humanoid") then
+            local char = LocalPlayer.Character
+            if char and self:IsDescendantOf(char) then
+                if key == "WalkSpeed" and data["basicdata"]["player"]["islockspeed"] then
+                    return
+                end
+                if key == "JumpPower" and data["basicdata"]["player"]["islockjump"] then
+                    return
+                end
+            end
+        end
+        return spoofHooks.speedNewindex(self, key, value)
+    end))
+end
+
+function restoreSpoofHooks()
+    if not hookmetamethod then return end
+    if spoofHooks.speedIndex then
+        pcall(hookmetamethod, game, "__index", spoofHooks.speedIndex)
+        spoofHooks.speedIndex = nil
+    end
+    if spoofHooks.speedNewindex then
+        pcall(hookmetamethod, game, "__newindex", spoofHooks.speedNewindex)
+        spoofHooks.speedNewindex = nil
+    end
+end
 
 staffwatchjoin = nil
 if game.CreatorType == Enum.CreatorType.Group then
@@ -65,16 +114,6 @@ function setupHumanoidListeners(humanoid)
             data["basicdata"]["releasetools"]["lastDeath"] = LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.CFrame
         end
     end)
-    humanoidConnections.walkSpeed = humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-        if data["basicdata"]["player"]["islockspeed"] then
-            humanoid.WalkSpeed = data["basicdata"]["player"]["speed"]
-        end
-    end)
-    humanoidConnections.jumpPower = humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
-        if data["basicdata"]["player"]["islockjump"] then
-            humanoid.JumpPower = data["basicdata"]["player"]["jump"]
-        end
-    end)
     humanoidConnections.health = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
         if data["basicdata"]["player"]["islockhealth"] then
             humanoid.Health = data["basicdata"]["player"]["health"]
@@ -87,12 +126,6 @@ function setupHumanoidListeners(humanoid)
     end)
     humanoidConnections.forceUpdates = RunService.Heartbeat:Connect(function()
         local pdata = data["basicdata"]["player"]
-        if pdata.islockspeed and humanoid.WalkSpeed ~= pdata.speed then
-            humanoid.WalkSpeed = pdata.speed
-        end
-        if pdata.islockjump and humanoid.JumpPower ~= pdata.jump then
-            humanoid.JumpPower = pdata.jump
-        end
         if pdata.islockhealth and humanoid.Health ~= pdata.health then
             humanoid.Health = pdata.health
         end

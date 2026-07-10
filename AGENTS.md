@@ -21,7 +21,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/he
 4. `src/config.lua` — 全局 `data` 表（玩家信息、游戏配置、执行器信息、外部 API 异步加载）
 5. `src/utils.lua` — 工具函数
 6. `src/ui.lua` — ChronixUI 定义（约 2100 行，17+ 标签页）
-7. `src/events.lua` — 事件处理器（防挂机、重生监听、反踢、锁属性等）
+7. `src/events.lua` — 事件处理器（防挂机、重生监听、属性欺骗钩子、反踢等）
 8. `src/unload.lua` — 清理（`unloadTHub()` 逐一卸载所有模块）
 
 ## 目录
@@ -40,6 +40,15 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/he
 - **守卫全局变量**：`_G.THubisLoaded`（已加载）和 `_G.THubLoading`（加载中）；`main.lua:5-6` 做防重复执行检查
 - **配置持久化**：`ConfigModule.createconfig()` / `ConfigModule.setmain()` — 写本地文件
 - **提交信息**：中文 conventional-commit 风格（`feat`、`fix`、`refactor` 等）
+
+## 反检测架构
+
+- **`checkcaller()` 守卫**：`AntiKick.lua` 和 `events.lua` 中的 `__index`/`__namecall`/`__newindex` 钩子均用 `checkcaller()` 区分执行器调用与游戏调用，只拦截游戏侧
+- **`newcclosure` 包装**：所有钩子函数通过 `newcclosure` 包装（有回退），防止被 `isexecutorclosure` / `getupvalues` 识别
+- **属性欺骗钩子**（`events.lua`）：`WalkSpeed`/`JumpPower` 锁定用 `__index` + `__newindex` 全局钩子实现，替代原始的 Heartbeat 强制写入。游戏读到的是欺骗值，执行器读写穿透
+- **反踢 + 反传送**（`modules/AntiKick.lua`）：统一钩住 `game.__index` 和 `game.__namecall`，同时拦截 `Player:Kick` 和 `TeleportService:Teleport`/`TeleportToPlaceInstance`
+- **钩子恢复**：`unload()` 时通过回调 `hookmetamethod(game, "__index", originalHandler)` 将 Roblox 元表恢复原状，不留残钩
+- **`cloneref` 全局模式**：每个文件独立定义 `cloneref = cloneref or clonereference or function(obj) return obj end`，不依赖全局
 
 ## UI 框架
 

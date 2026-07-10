@@ -93,6 +93,7 @@ unloadTHub = function()
     if networkPaused then networkPaused:Disconnect() end
     if staffwatchjoin then staffwatchjoin:Disconnect() end
     clearAllConnections()
+    pcall(restoreSpoofHooks)
 
     pcall(function() SystemNotification.UnloadedGradient("THub V3 Already Unload!") end)
     LogService:Info("[THub] 已成功卸载。")
