@@ -1145,7 +1145,6 @@ local function ZFVIA_fake_script() -- ESPS.t
 				
 				pcall(function()
 					for i,v in pairs(game.Players:GetPlayers()) do
-						if v.Name == "s" then continue end -- game.Players.LocalPlayer.Name then continue end
 						pcall(function()
 							if v.Character:FindFirstChild("11f00h8lsfhh920") then
 								v.Character["11f00h8lsfhh920"].FillColor = v.TeamColor.Color
@@ -1159,7 +1158,6 @@ local function ZFVIA_fake_script() -- ESPS.t
 	
 				pcall(function()
 					for i,v in pairs(game.Players:GetPlayers()) do
-						if v.Name == "s" then continue end -- game.Players.LocalPlayer.Name then continue end
 						pcall(function()
 							if v.Character.Head:FindFirstChild("6ff7ds09n") then
 								v.Character.Head["6ff7ds09n"].Frame.TextLabel.TextColor3 = v.TeamColor.Color
@@ -1172,7 +1170,6 @@ local function ZFVIA_fake_script() -- ESPS.t
 			else
 				pcall(function()
 					for i,v in pairs(game.Players:GetPlayers()) do
-						if v.Name == "s" then continue end -- game.Players.LocalPlayer.Name then continue end
 						pcall(function()
 							if v.Character:FindFirstChild("11f00h8lsfhh920") then
 								v.Character["11f00h8lsfhh920"].FillColor = script.Parent.Parent.SettingFrame.ESPCOLOR.BackgroundColor3
@@ -1184,7 +1181,6 @@ local function ZFVIA_fake_script() -- ESPS.t
 				
 				pcall(function()
 					for i,v in pairs(game.Players:GetPlayers()) do
-						if v.Name == "s" then continue end -- game.Players.LocalPlayer.Name then continue end
 						pcall(function()
 							if v.Character.Head:FindFirstChild("6ff7ds09n") then
 								v.Character.Head["6ff7ds09n"].Frame.TextLabel.TextColor3 = script.Parent.Parent.SettingFrame.ESPCOLOR.BackgroundColor3
@@ -1380,7 +1376,6 @@ local function SFEB_fake_script() -- TextButton.LocalScript
 		else
 			pcall(function()
 			for i,v in pairs(game.Players:GetPlayers()) do
-				if v.Name == "s" then continue end -- game.Players.LocalPlayer.Name then continue end
 				pcall(function()
 						if v.Character.Head:FindFirstChild("6ff7ds09n") then
 							v.Character.Head["6ff7ds09n"]:Destroy()
@@ -1470,7 +1465,6 @@ local function RUHUSM_fake_script() -- TextButton_2.LocalScript
 		else
 			pcall(function()
 			for i,v in pairs(game.Players:GetPlayers()) do
-				if v.Name == "s" then continue end -- game.Players.LocalPlayer.Name then continue end
 				pcall(function()
 						if v.Character.Head:FindFirstChild("6ff7ds09n") then
 							v.Character.Head["6ff7ds09n"]:Destroy()
@@ -1490,38 +1484,37 @@ local function RUHUSM_fake_script() -- TextButton_2.LocalScript
 		if not _G.UESP1_Enabled then break end
 		if script.Parent.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
 			for i,v in pairs(game.Players:GetPlayers()) do
-				if v.Name == game.Players.LocalPlayer.Name then continue end
-				pcall(function()
-					if not v.Character.Head:FindFirstChild("6ff7ds09n") then
+				if v.Name ~= game.Players.LocalPlayer.Name then
+					pcall(function()
+						if not v.Character.Head:FindFirstChild("6ff7ds09n") then
+		
+							local BGui = Instance.new("BillboardGui", v.Character.Head)
+							local Frame = Instance.new("Frame", BGui)
+							local TextLabel = Instance.new("TextLabel", Frame)
+							BGui.Name = "6ff7ds09n"
+							BGui.Adornee = v.Character.Head
+							BGui.StudsOffset = Vector3.new(0, 3, 0)
+							BGui.AlwaysOnTop = true
+							BGui.Size = UDim2.new(4, 0, 0.5, 0)
+							Frame.Size = UDim2.new(1, 0, 1, 0)
+							TextLabel.Size = UDim2.new(1, 0, 1, 0)
+							Frame.BackgroundTransparency = 1
+							TextLabel.BackgroundTransparency = 1
+							TextLabel.Text = ""
+							TextLabel.Font = Enum.Font.Code
+							TextLabel.TextColor3 = script.Parent.Parent.Parent.Parent.SettingFrame.ESPCOLOR.BackgroundColor3
+							TextLabel.TextScaled = false
+							TextLabel.TextSize = 17
+		
+						end
 	
-						local BGui = Instance.new("BillboardGui", v.Character.Head)
-						local Frame = Instance.new("Frame", BGui)
-						local TextLabel = Instance.new("TextLabel", Frame)
-						BGui.Name = "6ff7ds09n"
-						BGui.Adornee = v.Character.Head
-						BGui.StudsOffset = Vector3.new(0, 3, 0)
-						BGui.AlwaysOnTop = true
-						BGui.Size = UDim2.new(4, 0, 0.5, 0)
-						Frame.Size = UDim2.new(1, 0, 1, 0)
-						TextLabel.Size = UDim2.new(1, 0, 1, 0)
-						Frame.BackgroundTransparency = 1
-						TextLabel.BackgroundTransparency = 1
-						TextLabel.Text = ""
-						TextLabel.Font = Enum.Font.Code
-						TextLabel.TextColor3 = script.Parent.Parent.Parent.Parent.SettingFrame.ESPCOLOR.BackgroundColor3
-						TextLabel.TextScaled = false
-						TextLabel.TextSize = 17
-						--TextLabel.TextColor3 = v.TeamColor.Color
-	
-					end
-	
-	
-					if v.Character.Head:FindFirstChild("6ff7ds09n") then
-						pcall(function()
-							v.Character.Head.NametagLS.Frame.TextLabel.TextColor3 = v.TeamColor.Color
-						end)
-					end
-				end)
+						if v.Character.Head:FindFirstChild("6ff7ds09n") then
+							pcall(function()
+								v.Character.Head.NametagLS.Frame.TextLabel.TextColor3 = v.TeamColor.Color
+							end)
+						end
+					end)
+				end
 			end
 		end
 	end
@@ -1539,7 +1532,6 @@ local function RXUPX_fake_script() -- TextButton_3.LocalScript
 		else
 			pcall(function()
 			for i,v in pairs(game.Players:GetPlayers()) do
-				if v.Name == "s" then continue end -- game.Players.LocalPlayer.Name then continue end
 				pcall(function()
 						if v.Character.Head:FindFirstChild("6ff7ds09n") then
 							v.Character.Head["6ff7ds09n"]:Destroy()
@@ -1559,38 +1551,37 @@ local function RXUPX_fake_script() -- TextButton_3.LocalScript
 		if not _G.UESP1_Enabled then break end
 		if script.Parent.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
 			for i,v in pairs(game.Players:GetPlayers()) do
-				if v.Name == game.Players.LocalPlayer.Name then continue end
-				pcall(function()
-					if not v.Character.Head:FindFirstChild("6ff7ds09n") then
+				if v.Name ~= game.Players.LocalPlayer.Name then
+					pcall(function()
+						if not v.Character.Head:FindFirstChild("6ff7ds09n") then
+		
+							local BGui = Instance.new("BillboardGui", v.Character.Head)
+							local Frame = Instance.new("Frame", BGui)
+							local TextLabel = Instance.new("TextLabel", Frame)
+							BGui.Name = "6ff7ds09n"
+							BGui.Adornee = v.Character.Head
+							BGui.StudsOffset = Vector3.new(0, 3, 0)
+							BGui.AlwaysOnTop = true
+							BGui.Size = UDim2.new(4, 0, 0.5, 0)
+							Frame.Size = UDim2.new(1, 0, 1, 0)
+							TextLabel.Size = UDim2.new(1, 0, 1, 0)
+							Frame.BackgroundTransparency = 1
+							TextLabel.BackgroundTransparency = 1
+							TextLabel.Text = ""
+							TextLabel.Font = Enum.Font.Code
+							TextLabel.TextColor3 = script.Parent.Parent.Parent.Parent.SettingFrame.ESPCOLOR.BackgroundColor3
+							TextLabel.TextScaled = false
+							TextLabel.TextSize = 17
+		
+						end
 	
-						local BGui = Instance.new("BillboardGui", v.Character.Head)
-						local Frame = Instance.new("Frame", BGui)
-						local TextLabel = Instance.new("TextLabel", Frame)
-						BGui.Name = "6ff7ds09n"
-						BGui.Adornee = v.Character.Head
-						BGui.StudsOffset = Vector3.new(0, 3, 0)
-						BGui.AlwaysOnTop = true
-						BGui.Size = UDim2.new(4, 0, 0.5, 0)
-						Frame.Size = UDim2.new(1, 0, 1, 0)
-						TextLabel.Size = UDim2.new(1, 0, 1, 0)
-						Frame.BackgroundTransparency = 1
-						TextLabel.BackgroundTransparency = 1
-						TextLabel.Text = ""
-						TextLabel.Font = Enum.Font.Code
-						TextLabel.TextColor3 = script.Parent.Parent.Parent.Parent.SettingFrame.ESPCOLOR.BackgroundColor3
-						TextLabel.TextScaled = false
-						TextLabel.TextSize = 17
-						--TextLabel.TextColor3 = v.TeamColor.Color
-	
-					end
-	
-	
-					if v.Character.Head:FindFirstChild("6ff7ds09n") then
-						pcall(function()
-							v.Character.Head.NametagLS.Frame.TextLabel.TextColor3 = v.TeamColor.Color
-						end)
-					end
-				end)
+						if v.Character.Head:FindFirstChild("6ff7ds09n") then
+							pcall(function()
+								v.Character.Head.NametagLS.Frame.TextLabel.TextColor3 = v.TeamColor.Color
+							end)
+						end
+					end)
+				end
 			end
 		end
 	end
@@ -1757,12 +1748,10 @@ local function HIPDQD_fake_script() -- TextButton_4.main
 	
 	runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
 		for player, drawings in next, espCache do
-			if settings.teamcheck and player.Team == localPlayer.Team then
-				continue;
-			end
-	
-			if drawings and player ~= localPlayer then
-				updateEsp(player, drawings);
+			if not (settings.teamcheck and player.Team == localPlayer.Team) then
+				if drawings and player ~= localPlayer then
+					updateEsp(player, drawings);
+				end
 			end
 		end
 	end)
@@ -1780,12 +1769,13 @@ local function XFMMK_fake_script() -- TextButton_5.LocalScript
 		else
 			pcall(function()
 			for i,v in pairs(game.Players:GetPlayers()) do
-					if v.Name == game.Players.LocalPlayer.Name then continue end
-				pcall(function()
-						if v.Character:FindFirstChild("11f00h8lsfhh920") then
-							v.Character["11f00h8lsfhh920"]:Destroy()
-					    end
-				end)
+					if v.Name ~= game.Players.LocalPlayer.Name then
+						pcall(function()
+							if v.Character:FindFirstChild("11f00h8lsfhh920") then
+								v.Character["11f00h8lsfhh920"]:Destroy()
+							end
+						end)
+					end
 				end
 				end)
 			script.Parent.Parent.BackgroundTransparency = 0
@@ -1800,19 +1790,20 @@ local function XFMMK_fake_script() -- TextButton_5.LocalScript
 		if not _G.UESP1_Enabled then break end
 		if script.Parent.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
 			for i,v in pairs(game.Players:GetPlayers()) do
-				if v.Name == game.Players.LocalPlayer.Name then continue end
-				pcall(function()
-					if not v.Character:FindFirstChild("11f00h8lsfhh920") then
-						local Highlight = Instance.new("Highlight")
-						Highlight.Name = "11f00h8lsfhh920"
-						--Highlight.FillColor = v.TeamColor.Color
-						--Highlight.OutlineColor = v.TeamColor.Color
-						Highlight.FillColor = script.Parent.Parent.Parent.Parent.SettingFrame.ESPCOLOR.BackgroundColor3
-						Highlight.OutlineColor = script.Parent.Parent.Parent.Parent.SettingFrame.ESPCOLOR.BackgroundColor3
-						Highlight.FillTransparency = 0.40
-						Highlight.Parent = v.Character
-					end
-				end)
+				if v.Name ~= game.Players.LocalPlayer.Name then
+					pcall(function()
+						if not v.Character:FindFirstChild("11f00h8lsfhh920") then
+							local Highlight = Instance.new("Highlight")
+							Highlight.Name = "11f00h8lsfhh920"
+							--Highlight.FillColor = v.TeamColor.Color
+							--Highlight.OutlineColor = v.TeamColor.Color
+							Highlight.FillColor = script.Parent.Parent.Parent.Parent.SettingFrame.ESPCOLOR.BackgroundColor3
+							Highlight.OutlineColor = script.Parent.Parent.Parent.Parent.SettingFrame.ESPCOLOR.BackgroundColor3
+							Highlight.FillTransparency = 0.40
+							Highlight.Parent = v.Character
+						end
+					end)
+				end
 			end
 		end
 	end
@@ -1898,50 +1889,48 @@ local function ALKG_fake_script() -- TextButton_6.Tracers
 				end)
 			
 				
-					if s.Name == game.Players.LocalPlayer.Name then continue end
-					
-				for i,v in pairs(s.Character.HumanoidRootPart:GetChildren()) do
-					if v.Name == "AttachTrace" then
+				if s.Name ~= game.Players.LocalPlayer.Name then
+					for i,v in pairs(s.Character.HumanoidRootPart:GetChildren()) do
+						if v.Name == "AttachTrace" then
 							if not v.Parent:FindFirstChild(v.Parent.Parent.Name) then
 								if not game.Players.LocalPlayer.Character.HumanoidRootPart:FindFirstChild(v.Parent.Parent.Name) then
-							local Beam2 = Instance.new("Beam")
-							Beam2.Name = v.Parent.Parent.Name 
+									local Beam2 = Instance.new("Beam")
+									Beam2.Name = v.Parent.Parent.Name 
 									Beam2.Parent = game.Players.LocalPlayer.Character.HumanoidRootPart
 									Beam2.Attachment0 = game.Players.LocalPlayer.Character.HumanoidRootPart.AttachMain
 									Beam2.Attachment1 = v
-								if script.Parent.Parent.Parent.TeamColor.TextButton.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
-									Beam2.Color = ColorSequence.new(s.TeamColor.Color, s.TeamColor.Color)
-								else
+									if script.Parent.Parent.Parent.TeamColor.TextButton.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
+										Beam2.Color = ColorSequence.new(s.TeamColor.Color, s.TeamColor.Color)
+									else
 										Beam2.Color = ColorSequence.new(script.Parent.Parent.Parent.Parent.SettingFrame.ESPCOLOR.BackgroundColor3,script.Parent.Parent.Parent.Parent.SettingFrame.ESPCOLOR.BackgroundColor3)
-								end
-							Beam2.FaceCamera = true
-							Beam2.LightInfluence = 1
-							Beam2.Transparency = NumberSequence.new(0.10000000298023224,0.10000000298023224)
-							Beam2.Width0 = 0.04
+									end
+									Beam2.FaceCamera = true
+									Beam2.LightInfluence = 1
+									Beam2.Transparency = NumberSequence.new(0.10000000298023224,0.10000000298023224)
+									Beam2.Width0 = 0.04
 									Beam2.Width1 = 0.04
-									--Beam2.LightEmission = 1
+								end
 							end
-								end
-								end
+						end
 					end
-				
+				end
 			end
 	
-	
 			for i,v in pairs(game.Players:GetPlayers()) do
-				if v.Name == game.Players.LocalPlayer.Name then continue end
-				pcall(function()
+				if v.Name ~= game.Players.LocalPlayer.Name then
+					pcall(function()
 	
-					if v.Character.HumanoidRootPart:FindFirstChild("AttachTrace") then
-						return
-					else
-						local aaa = Instance.new("Attachment")
-						aaa.Name = "AttachTrace"
-						aaa.Parent = v.Character.HumanoidRootPart
+						if v.Character.HumanoidRootPart:FindFirstChild("AttachTrace") then
+							return
+						else
+							local aaa = Instance.new("Attachment")
+							aaa.Name = "AttachTrace"
+							aaa.Parent = v.Character.HumanoidRootPart
 	
-					end
+						end
 	
-				end)
+					end)
+				end
 			end
 	
 	
@@ -1971,17 +1960,18 @@ local function NCVV_fake_script() -- TextButton_7.LocalScript
 		else
 			pcall(function()
 			for i,v in pairs(game.Players:GetPlayers()) do
-					if v.Name == game.Players.LocalPlayer.Name then continue end
-					pcall(function()
-						if v.Character:FindFirstChild("11f00h8lsfhh920") then
-							v.Character["11f00h8lsfhh920"]:Destroy()
-					    end
-				end)
+					if v.Name ~= game.Players.LocalPlayer.Name then
+						pcall(function()
+							if v.Character:FindFirstChild("11f00h8lsfhh920") then
+								v.Character["11f00h8lsfhh920"]:Destroy()
+							end
+						end)
+					end
 				end
 			end)
 			pcall(function()
 				for i,v in pairs(game.Players:GetPlayers()) do
-					if v.Name == game.Players.LocalPlayer.Name then continue end
+					if v.Name ~= game.Players.LocalPlayer.Name then
 					pcall(function()
 						if v.Character.Head:FindFirstChild("6ff7ds09n") then
 							v.Character.Head["6ff7ds09n"]:Destroy()
@@ -2045,12 +2035,13 @@ local function UVBZHX_fake_script() -- TextButton_8.LocalScript
 			--name
 			pcall(function()
 				for i,v in pairs(game.Players:GetPlayers()) do
-					if v.Name == game.Players.LocalPlayer.Name then continue end
-					pcall(function()
-						if v.Character.Head:FindFirstChild("6ff7ds09n") then
-							v.Character.Head["6ff7ds09n"]:Destroy()
-						end
-					end)
+					if v.Name ~= game.Players.LocalPlayer.Name then
+						pcall(function()
+							if v.Character.Head:FindFirstChild("6ff7ds09n") then
+								v.Character.Head["6ff7ds09n"]:Destroy()
+							end
+						end)
+					end
 				end
 			end)
 			

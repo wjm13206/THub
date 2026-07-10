@@ -103,7 +103,7 @@ unloadTHub = function()
     pcall(function() SystemNotification.UnloadedGradient("THub V3 Already Unload!") end)
     LogService:Info("[THub] 已成功卸载。")
 
-    for moduleName, _ in pairs(modulesToFetch) do (_ENV or getfenv())[moduleName] = nil end; AsyncFileFetcher = nil
+    if modulesToFetch then for moduleName, _ in pairs(modulesToFetch) do (_ENV or getfenv())[moduleName] = nil end end; AsyncFileFetcher = nil
 
     data = nil
 end
