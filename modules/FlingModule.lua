@@ -355,9 +355,10 @@ local function startFlyFling(speed)
         local walkActive = true
         local char = LocalPlayer.Character
         local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+        local flyflingDiedConn = nil
 
         if humanoid then
-            humanoid.Died:Connect(function()
+            flyflingDiedConn = humanoid.Died:Connect(function()
                 if walkActive then
                     stopFlyFling()
                 end
@@ -397,6 +398,7 @@ local function startFlyFling(speed)
             disable = function()
                 walkActive = false
                 if walkLoop then walkLoop:Disconnect() end
+                if flyflingDiedConn then flyflingDiedConn:Disconnect() end
                 -- Restore noclip
                 for _, child in pairs(char:GetDescendants()) do
                     if child:IsA("BasePart") then
@@ -530,8 +532,8 @@ local function stopInvisFling()
         invisflingCleanup.steppedConn:Disconnect()
     end
 
-    if invisflingCleanup.flyConn then
-        invisflingCleanup.flyConn:Disconnect()
+    if invisflingCleanup.flyCleanup then
+        invisflingCleanup.flyCleanup()
     end
 
     if invisflingCleanup.bodyThrust then
@@ -669,7 +671,7 @@ local function startInvisFling()
         end
     end
 
-    invisflingCleanup.flyConn = startFly()
+    invisflingCleanup.flyCleanup = startFly()
 
     -- Body thrust for fling
     Workspace.CurrentCamera.CameraSubject = root

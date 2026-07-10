@@ -198,8 +198,10 @@ local function stopGlobalListeners()
 end
 
 -- 处理鼠标中键点击（标记/取消标记玩家）
+local mouseClickConn = nil
 local function setupMouseClickHandler()
-    UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+    if mouseClickConn then return end
+    mouseClickConn = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
         if gameProcessedEvent then return end  -- 忽略聊天输入等场景
         if not enabled then return end         -- 仅在 ESP 开启时生效
         
@@ -273,6 +275,10 @@ function EspSimple.unload()
     enabled = false
     clearAll()
     stopGlobalListeners()
+    if mouseClickConn then
+        mouseClickConn:Disconnect()
+        mouseClickConn = nil
+    end
     -- 清空标记记录
     markedPlayers = {}
     -- 清空所有表，防止再次调用

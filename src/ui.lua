@@ -143,21 +143,28 @@ ToolsTab:AddToggle({
     Callback = function(v) data["basicdata"]["releasetools"]["SuperLighter"]["enable"] = v end
 })
 local xrayLastUpdate = 0
-xrayLoop = RunService.Heartbeat:Connect(function()
-    if data["basicdata"]["releasetools"]["xray"] then
-        local now = tick()
-        if now - xrayLastUpdate >= 1 then
-            xrayLastUpdate = now
-            xray(true)
-        end
+local xrayLoop = nil
+local function toggleXrayLoop(enable)
+    if enable then
+        if xrayLoop then return end
+        xrayLoop = RunService.Heartbeat:Connect(function()
+            local now = tick()
+            if now - xrayLastUpdate >= 1 then
+                xrayLastUpdate = now
+                xray(true)
+            end
+        end)
+    else
+        if xrayLoop then xrayLoop:Disconnect(); xrayLoop = nil end
     end
-end)
+end
 ToolsTab:AddToggle({
     Label = "X光",
     Default = false,
     Callback = function(v)
         data["basicdata"]["releasetools"]["xray"] = v
-        if not v then xray(false) end
+        toggleXrayLoop(v)
+        if v then xray(true) else xray(false) end
     end
 })
 ToolsTab:AddToggle({
@@ -217,11 +224,11 @@ ToolsTab:AddToggle({
     Default = false,
     Callback = function(v)
         data["basicdata"]["releasetools"]["infjump"] = v
+        if JR then JR:Disconnect(); JR = nil end
         JR = UserInputService.JumpRequest:Connect(function()
             if not data["basicdata"]["releasetools"]["infjump"] then
-                JR:Disconnect()
-            end
-            if data["basicdata"]["releasetools"]["infjump"] then
+                JR:Disconnect(); JR = nil
+            else
                 local c = LocalPlayer.Character
                 if c and c.Parent then
                     local hum = c:FindFirstChildOfClass("Humanoid")
@@ -430,7 +437,22 @@ ToolsTab:AddButton({ Text = "获取游戏内全部工具", Callback = function()
 ToolsTab:AddButton({ Text = "移除全部工具", Callback = function() removetools() end })
 ToolsTab:AddButton({ Text = "丢弃手中工具", Callback = function() drophandtool(); ChronixUI:Notify({ Title = "掉落工具", Content = "已丢弃手中工具", Type = "success", Duration = 3 }) end })
 ToolsTab:AddButton({ Text = "丢弃全部工具", Callback = function() droptool(); ChronixUI:Notify({ Title = "掉落工具", Content = "已丢弃全部工具", Type = "success", Duration = 3 }) end })
-ToolsTab:AddButton({ Text = "获得点击传送工具", Callback = function() mouse = LocalPlayer:GetMouse() tool = Instance.new("Tool") tool.RequiresHandle = false tool.Name = "手持点击传送" tool.Activated:connect(function() local pos = mouse.Hit+Vector3.new(0,2.5,0) pos = CFrame.new(pos.X,pos.Y,pos.Z) LocalPlayer.Character.HumanoidRootPart.CFrame = pos end) tool.Parent = LocalPlayer.Backpack end })
+ToolsTab:AddButton({ Text = "获得点击传送工具", Callback = function()
+    local backpack = LocalPlayer:FindFirstChildWhichIsA("Backpack")
+    if backpack and backpack:FindFirstChild("手持点击传送") then
+        ChronixUI:Notify({ Title = "提示", Content = "点击传送工具已存在", Type = "info", Duration = 2 })
+        return
+    end
+    local mouse = LocalPlayer:GetMouse()
+    local newTool = Instance.new("Tool")
+    newTool.RequiresHandle = false
+    newTool.Name = "手持点击传送"
+    newTool.Parent = backpack
+    newTool.Activated:Connect(function()
+        local pos = mouse.Hit + Vector3.new(0, 2.5, 0)
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos.X, pos.Y, pos.Z)
+    end)
+end })
 ToolsTab:AddButton({ Text = "重新加入当前房间(服务器)", Callback = function() rejoinCurrentGame() end })
 ToolsTab:AddButton({ Text = "切换角色为R6", Callback = function() promptNewRig("R6") end })
 ToolsTab:AddButton({ Text = "切换角色为R15", Callback = function() promptNewRig("R15") end })
@@ -445,11 +467,21 @@ end })
 ToolsTab:AddButton({ Text = "开启控制台界面", Callback = function() StarterGui:SetCore("DevConsoleVisible", true) end })
 ToolsTab:AddButton({ Text = "启用所有ROBLOXUI", Callback = function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true) end })
 ToolsTab:AddButton({ Text = "获取建筑工具", Callback = function()
+    local backpack = LocalPlayer:FindFirstChildWhichIsA("Backpack")
+    if not backpack then return end
+    local existing = 0
+    for _, v in pairs(backpack:GetChildren()) do
+        if v:IsA("HopperBin") then existing += 1 end
+    end
+    if existing >= 4 then
+        ChronixUI:Notify({ Title = "提示", Content = "背包中已有建筑工具", Type = "info", Duration = 2 })
+        return
+    end
     for i = 1, 4 do
 		local Tool = Instance.new("HopperBin")
 		Tool.BinType = i
 		Tool.Name = randomString()
-		Tool.Parent = LocalPlayer:FindFirstChildWhichIsA("Backpack")
+		Tool.Parent = backpack
 	end
 end })
 ToolsTab:AddButton({ Text = "测试执行器UNC与WUNC", Callback = function()
@@ -530,6 +562,8 @@ function updatePlayerList()
     end
 end
 updatePlayerList()
+playerListAddedConn = Players.PlayerAdded:Connect(updatePlayerList)
+playerListRemovingConn = Players.PlayerRemoving:Connect(updatePlayerList)
 
 -- ===== 路径点传送 Tab =====
 waypointTab = mainWindow:CreateTab({ Name = "路径点传送", HasIcon = true, IconName = "map-pinned" })
@@ -1088,6 +1122,14 @@ thresholdInput = audioCheckerTab:AddInput({
         end
     end
 })
+local function clearAudioListUI()
+    for _, item in ipairs(data["basicdata"]["otherdata"]["audioData"]["audioListItems"]) do
+        if item and item.Destroy then
+            pcall(function() item:Destroy() end)
+        end
+    end
+    data["basicdata"]["otherdata"]["audioData"]["audioListItems"] = {}
+end
 audioCheckerTab:AddToggle({
     Label = "开始检测音频",
     Default = false,
@@ -1102,6 +1144,7 @@ audioCheckerTab:AddToggle({
                 data["basicdata"]["otherdata"]["audioData"]["scanConnection"]:Disconnect()
                 data["basicdata"]["otherdata"]["audioData"]["scanConnection"] = nil
             end
+            clearAudioListUI()
             ChronixUI:Notify({ Title = "已关闭", Content = "音频检测已停止", Type = "info", Duration = 2 })
         end
     end
@@ -1120,6 +1163,7 @@ audioCheckerTab:AddButton({
         end
     end
 })
+testSoundEndedConn = nil
 testPlayButton = audioCheckerTab:AddButton({
     Text = "🎵 尝试播放",
     Callback = function()
@@ -1131,6 +1175,7 @@ testPlayButton = audioCheckerTab:AddButton({
             data["basicdata"]["otherdata"]["testSound"]:Stop()
             data["basicdata"]["otherdata"]["audioData"]["isTesting"] = false
             testPlayButton.Text = "🎵 尝试播放"
+            if testSoundEndedConn then testSoundEndedConn:Disconnect(); testSoundEndedConn = nil end
             ChronixUI:Notify({ Title = "已停止", Content = "测试播放已停止", Type = "info", Duration = 1 })
         else
             local soundId = "rbxassetid://" .. data["basicdata"]["otherdata"]["audioData"]["currentSelectedId"]
@@ -1144,10 +1189,12 @@ testPlayButton = audioCheckerTab:AddButton({
                 testPlayButton.Text = "⏹️ 结束播放"
                 testIdLabel.Text = "测试ID: " .. data["basicdata"]["otherdata"]["audioData"]["currentSelectedId"]
                 ChronixUI:Notify({ Title = "正在播放", Content = productInfo.Name, Type = "info", Duration = 2 })
-                data["basicdata"]["otherdata"]["testSound"]["Ended"]:Connect(function()
+                if testSoundEndedConn then testSoundEndedConn:Disconnect() end
+                testSoundEndedConn = data["basicdata"]["otherdata"]["testSound"]["Ended"]:Connect(function()
                     if data["basicdata"]["otherdata"]["audioData"]["isTesting"] then
                         data["basicdata"]["otherdata"]["audioData"]["isTesting"] = false
                         testPlayButton.Text = "🎵 尝试播放"
+                        testSoundEndedConn = nil
                     end
                 end)
             else
@@ -1163,6 +1210,7 @@ audioCheckerTab:AddDivider()
 
 -- ===== 聊天接收器 Tab =====
 chatReceiverTab = mainWindow:CreateTab({ Name = "聊天接收器", HasIcon = true, IconName = "messages-square" })
+local CHAT_MAX = 100
 chatMessages = {}
 function clearChatMessages()
     for _, element in ipairs(chatMessages) do
@@ -1171,6 +1219,14 @@ function clearChatMessages()
         end
     end
     chatMessages = {}
+end
+local function trimChatMessages()
+    while #chatMessages > CHAT_MAX * 3 do
+        local element = table.remove(chatMessages, 1)
+        if element and element.Destroy then
+            pcall(function() element:Destroy() end)
+        end
+    end
 end
 function addChatMessage(sender, text)
     local messageText = sender .. ": " .. text
@@ -1187,6 +1243,7 @@ function addChatMessage(sender, text)
     table.insert(chatMessages, copyButton)
     local divider = chatReceiverTab:AddDivider()
     table.insert(chatMessages, divider)
+    trimChatMessages()
 end
 chatReceiverTab:AddTitle("📨 聊天接收器")
 chatReceiverTab:AddDivider()
@@ -1612,20 +1669,22 @@ local function executeFlingTeleport(player)
         local osc = math.sin(tick() * 12) * 5
         root.Velocity = Vector3.new(root.Velocity.X, osc, root.Velocity.Z)
     end)
-    task.wait(1.5)
+    local ok = pcall(task.wait, 1.5)
     steppedConn:Disconnect()
     upDownConn:Disconnect()
     if angVel and angVel.Parent then angVel:Destroy() end
     if bodyPos and bodyPos.Parent then bodyPos:Destroy() end
     if humanoid then humanoid.PlatformStand = false end
-    for _, child in pairs(myChar:GetDescendants()) do
-        if child:IsA("BasePart") then
-            child.CanCollide = true
-            child.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
+    if myChar and myChar.Parent then
+        for _, child in pairs(myChar:GetDescendants()) do
+            if child:IsA("BasePart") then
+                child.CanCollide = true
+                child.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
+            end
         end
-    end
-    if myChar and myChar.Parent and myChar:FindFirstChild("HumanoidRootPart") then
-        myChar:SetPrimaryPartCFrame(originalPos)
+        if myChar:FindFirstChild("HumanoidRootPart") then
+            myChar:SetPrimaryPartCFrame(originalPos)
+        end
     end
 end
 

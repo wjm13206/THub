@@ -233,42 +233,42 @@ WorkspaceDescendantAdded = Workspace.DescendantAdded:Connect(function(descendant
 end)
 
 lastTime = 0
+local lastEntityDeleteTime = 0
+local memFormat = "客户端脚本占用内存: %.2f MB"
+local pingFormat = "网络延迟: %s"
+local rbxactiveFormat = "焦点检测: %s"
 RunStepped = RunService.Stepped:Connect(function()
-    if data["basicdata"]["releasetools"]["nightvision"] then game.Lighting.Ambient = Color3.new(1, 1, 1) end
-    if data["basicdata"]["releasetools"]["supernightvision"] then Lighting.Brightness = 2; Lighting.ExposureCompensation = 2.5 end
+    local toolsData = data["basicdata"]["releasetools"]
+    if toolsData["nightvision"] then Lighting.Ambient = Color3.new(1, 1, 1) end
+    if toolsData["supernightvision"] then Lighting.Brightness = 2; Lighting.ExposureCompensation = 2.5 end
     if data["basicdata"]["player"]["islockgravity"] then Workspace.Gravity = data["basicdata"]["player"]["gravity"] end
-    if data["basicdata"]["releasetools"]["antidead"] then LocalPlayer.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false) end
+    if toolsData["antidead"] then LocalPlayer.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false) end
     local now = tick()
     if now - lastTime >= 1 then
         lastTime = now
-        if memLabel then memLabel.Text = string.format("客户端脚本占用内存: %.2f MB", getMemoryUsage("MB")) end
+        if memLabel then memLabel.Text = string.format(memFormat, getMemoryUsage("MB")) end
         local ping = LocalPlayer:GetNetworkPing()
-        if pingLabel then pingLabel.Text = string.format("网络延迟: %s", math.floor(ping * 1000 + 0.5) .. "ms") end
-        if isrbxactive and rbxactivelabel then rbxactivelabel.Text = string.format("焦点检测: %s", (isrbxactive() and "True" or "False")) end
+        if pingLabel then pingLabel.Text = string.format(pingFormat, math.floor(ping * 1000 + 0.5) .. "ms") end
+        if isrbxactive and rbxactivelabel then rbxactivelabel.Text = string.format(rbxactiveFormat, isrbxactive() and "True" or "False") end
     end
-    if data["othergamedata"]["grace"]["deleteentity"] then
-        task.spawn(function()
-            pcall(function() ReplicatedStorage.eyegui:Destroy() end)
-            pcall(function() ReplicatedStorage.smilegui:Destroy() end)
-            pcall(function() ReplicatedStorage.SendRush:Destroy() end)
-            pcall(function() ReplicatedStorage.SendWorm:Destroy() end)
-            pcall(function() ReplicatedStorage.SendSorrow:Destroy() end)
-            task.wait(0.1)
-            pcall(function() ReplicatedStorage.Worm:Destroy() end)
-            pcall(function() ReplicatedStorage.elkman:Destroy() end)
-            task.wait(0.1)
-            pcall(function() ReplicatedStorage.QuickNotes.Eye:Destroy() end)
-            pcall(function() ReplicatedStorage.QuickNotes.Rush:Destroy() end)
-            pcall(function() ReplicatedStorage.QuickNotes.Sorrow:Destroy() end)
-            pcall(function() ReplicatedStorage.QuickNotes.elkman:Destroy() end)
-            pcall(function() ReplicatedStorage.QuickNotes.EyePrime:Destroy() end)
-            pcall(function() ReplicatedStorage.QuickNotes.SlugFish:Destroy() end)
-            pcall(function() ReplicatedStorage.QuickNotes.FakeDoor:Destroy() end)
-            pcall(function() ReplicatedStorage.QuickNotes.SleepyHead:Destroy() end)
-            local SmileGui = PlayerGui:FindFirstChild("smilegui")
-            if SmileGui then
-                SmileGui:Destroy()
-            end
-        end)
+    if data["othergamedata"]["grace"]["deleteentity"] and now - lastEntityDeleteTime >= 1 then
+        lastEntityDeleteTime = now
+        pcall(function() ReplicatedStorage.eyegui:Destroy() end)
+        pcall(function() ReplicatedStorage.smilegui:Destroy() end)
+        pcall(function() ReplicatedStorage.SendRush:Destroy() end)
+        pcall(function() ReplicatedStorage.SendWorm:Destroy() end)
+        pcall(function() ReplicatedStorage.SendSorrow:Destroy() end)
+        pcall(function() ReplicatedStorage.Worm:Destroy() end)
+        pcall(function() ReplicatedStorage.elkman:Destroy() end)
+        pcall(function() ReplicatedStorage.QuickNotes.Eye:Destroy() end)
+        pcall(function() ReplicatedStorage.QuickNotes.Rush:Destroy() end)
+        pcall(function() ReplicatedStorage.QuickNotes.Sorrow:Destroy() end)
+        pcall(function() ReplicatedStorage.QuickNotes.elkman:Destroy() end)
+        pcall(function() ReplicatedStorage.QuickNotes.EyePrime:Destroy() end)
+        pcall(function() ReplicatedStorage.QuickNotes.SlugFish:Destroy() end)
+        pcall(function() ReplicatedStorage.QuickNotes.FakeDoor:Destroy() end)
+        pcall(function() ReplicatedStorage.QuickNotes.SleepyHead:Destroy() end)
+        local SmileGui = PlayerGui:FindFirstChild("smilegui")
+        if SmileGui then SmileGui:Destroy() end
     end
 end)

@@ -28,7 +28,8 @@ unloadTHub = function()
     data["basicdata"]["otherdata"]["testSound"]:Stop()
     local colorCorrection = Lighting:FindFirstChild("THub_ColorCorrection")
     if colorCorrection then colorCorrection:Destroy() end
-    pcall(function() if data["basicdata"]["releasetools"]["xray"] then xrayLoop:Disconnect(); xray(false) end end)
+    if data["basicdata"]["releasetools"]["xray"] then xray(false) end
+    if #shownParts > 0 then showpartsfunction(false) end
 
     tpWalk:unload()
     StandRecovery:unload()
@@ -86,12 +87,15 @@ unloadTHub = function()
     if WorkspaceDescendantAdded then WorkspaceDescendantAdded:Disconnect() end
     if noclipConnection then noclipConnection:Disconnect() end
     if autoJumpConnection then autoJumpConnection:Disconnect() end
-    if JR then JR:Disconnect() end
+    if JR then JR:Disconnect(); JR = nil end
     if AntiAFK then AntiAFK:Disconnect() end
     if RunStepped then RunStepped:Disconnect() end
     if keepthubconnect then keepthubconnect:Disconnect() end
     if networkPaused then networkPaused:Disconnect() end
     if staffwatchjoin then staffwatchjoin:Disconnect() end
+    if playerListAddedConn then playerListAddedConn:Disconnect() end
+    if playerListRemovingConn then playerListRemovingConn:Disconnect() end
+    if testSoundEndedConn then testSoundEndedConn:Disconnect(); testSoundEndedConn = nil end
     clearAllConnections()
     pcall(restoreSpoofHooks)
 
