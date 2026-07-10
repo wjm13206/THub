@@ -333,10 +333,14 @@ local function wrapInstance(instance)
                 return instance[k]
             end)
             if ok then
-                instance[k] = v
-            else
-                rawset(t, k, v)
+                local writeOk = pcall(function()
+                    instance[k] = v
+                end)
+                if writeOk then
+                    return
+                end
             end
+            rawset(t, k, v)
         end
     })
 end
