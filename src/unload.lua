@@ -86,6 +86,7 @@ unloadTHub = function()
     if pac then pac:Disconnect() end
     if WorkspaceDescendantAdded then WorkspaceDescendantAdded:Disconnect() end
     if noclipConnection then noclipConnection:Disconnect() end
+    if noclipRespawn then noclipRespawn:Disconnect() end
     if autoJumpConnection then autoJumpConnection:Disconnect() end
     if JR then JR:Disconnect(); JR = nil end
     if AntiAFK then AntiAFK:Disconnect() end

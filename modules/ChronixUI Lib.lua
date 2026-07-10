@@ -1463,7 +1463,37 @@ function ChronixUI:CreateWindow(config)
                 end
             end)
 
-            return wrap(container)
+            local dropdownElements = wrap(container)
+            dropdownElements.UpdateOptions = function(newOptions)
+                options = newOptions
+                for _, child in ipairs(dropdownList:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        child:Destroy()
+                    end
+                end
+                for _, option in ipairs(newOptions) do
+                    local optBtn = Instance.new("TextButton")
+                    optBtn.Parent = dropdownList
+                    optBtn.Size = UDim2.new(1, 0, 0, px(32))
+                    optBtn.BackgroundColor3 = theme.Input
+                    optBtn.Text = "  " .. option
+                    optBtn.TextColor3 = theme.Text
+                    optBtn.TextSize = px(14)
+                    optBtn.TextXAlignment = Enum.TextXAlignment.Left
+                    optBtn.Font = Enum.Font.Gotham
+                    optBtn.BorderSizePixel = 0
+
+                    optBtn.MouseButton1Click:Connect(function()
+                        PlayClickSound()
+                        dropdownBtn.Text = "  " .. option
+                        callback(option)
+                        expanded = false
+                        collapseDropdown()
+                    end)
+                end
+                dropdownBtn.Text = "  " .. (newOptions[1] or "")
+            end
+            return dropdownElements
         end
 
         function elements:AddSlider(config)

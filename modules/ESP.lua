@@ -851,7 +851,7 @@ TextButton_9.BorderColor3 = Color3.fromRGB(0, 0, 0)
 TextButton_9.BorderSizePixel = 0
 TextButton_9.Position = UDim2.new(0.851000011, 0, 0.193602592, 0)
 TextButton_9.Size = UDim2.new(0, 20, 0, 20)
-TextButton_9.Text = "点击L（电脑）"
+TextButton_9.Text = "L"
 TextButton_9.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextButton_9.TextWrapped = true
 

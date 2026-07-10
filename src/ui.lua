@@ -189,34 +189,28 @@ ToolsTab:AddToggle({
     Default = false,
     Callback = function(v)
         data["basicdata"]["releasetools"]["noclip"] = v
-        if noclipConnection then noclipConnection:Disconnect() end
-        noclipConnection = RunService.Stepped:Connect(function()
-            if data["basicdata"]["releasetools"]["noclip"] then
-                if #data["basicdata"]["releasetools"]["noclipParts"] == 0 then
-                    if LocalPlayer.Character then
-                        for _, part in ipairs(LocalPlayer.Character:GetChildren()) do
-                            if part:IsA("BasePart") and part.CanCollide == true then
-                                part.CanCollide = false
-                                table.insert(data["basicdata"]["releasetools"]["noclipParts"], part)
-                            end
-                        end
-                    end
-                end
-                for _, part in ipairs(data["basicdata"]["releasetools"]["noclipParts"]) do
-                    if part and part.Parent then
-                        part.CanCollide = false
-                    end
-                end
-            else
-                for _, part in ipairs(data["basicdata"]["releasetools"]["noclipParts"]) do
-                    if part and part.Parent then
-                        part.CanCollide = true
-                    end
-                end
-                data["basicdata"]["releasetools"]["noclipParts"] = {}
-                noclipConnection:Disconnect()
+        if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
+        if noclipRespawn then noclipRespawn:Disconnect(); noclipRespawn = nil end
+        if not v then
+            for _, part in ipairs(data["basicdata"]["releasetools"]["noclipParts"]) do
+                if part and part.Parent then part.CanCollide = true end
             end
-        end)
+            data["basicdata"]["releasetools"]["noclipParts"] = {}
+            return
+        end
+        local function scanAndDisable()
+            local char = LocalPlayer.Character
+            if not char then return end
+            data["basicdata"]["releasetools"]["noclipParts"] = {}
+            for _, part in ipairs(char:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                    table.insert(data["basicdata"]["releasetools"]["noclipParts"], part)
+                end
+            end
+        end
+        scanAndDisable()
+        noclipRespawn = LocalPlayer.CharacterAdded:Connect(scanAndDisable)
     end
 })
 ToolsTab:AddToggle({
