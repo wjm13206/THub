@@ -68,6 +68,16 @@ function enableDeathAnnounce()
     end)
     table.insert(connections, playerAddedConn)
 
+    local playerRemovingConn = Players.PlayerRemoving:Connect(function(player)
+        local diedKey = "deathAnnounceDied_" .. player.UserId
+        local charKey = "deathAnnounceCharAdded_" .. player.UserId
+        local diedConn = data["basicdata"]["releasetools"][diedKey]
+        if diedConn then pcall(function() diedConn:Disconnect() end); data["basicdata"]["releasetools"][diedKey] = nil end
+        local charConn = data["basicdata"]["releasetools"][charKey]
+        if charConn then pcall(function() charConn:Disconnect() end); data["basicdata"]["releasetools"][charKey] = nil end
+    end)
+    table.insert(connections, playerRemovingConn)
+
     data["basicdata"]["releasetools"]["deathAnnounceConnections"] = connections
 end
 

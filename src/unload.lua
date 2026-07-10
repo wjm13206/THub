@@ -96,6 +96,7 @@ unloadTHub = function()
     if playerListAddedConn then playerListAddedConn:Disconnect() end
     if playerListRemovingConn then playerListRemovingConn:Disconnect() end
     if testSoundEndedConn then testSoundEndedConn:Disconnect(); testSoundEndedConn = nil end
+    if _G.UESP1_Cleanup then _G.UESP1_Cleanup() end
     clearAllConnections()
     pcall(restoreSpoofHooks)
 

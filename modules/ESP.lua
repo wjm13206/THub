@@ -1,6 +1,17 @@
 -- Gui to Lua
 -- Version: 3.2
 
+_G.UESP1_Enabled = true
+
+-- Cleanup function to stop all coroutines and destroy GUI
+_G.UESP1_Cleanup = function()
+	_G.UESP1_Enabled = false
+	pcall(function()
+		UESP1:Destroy()
+	end)
+	_G.UESP1_Cleanup = nil
+end
+
 -- Instances:
 
 local UESP1 = Instance.new("ScreenGui")
@@ -301,7 +312,7 @@ Description.BorderSizePixel = 0
 Description.Position = UDim2.new(0.0441990159, 0, 0.449419945, 0)
 Description.Size = UDim2.new(0, 165, 0, 25)
 Description.Font = Enum.Font.SourceSans
-Description.Text = "在头顶显示玩家名字"
+Description.Text = "在头顶显示玩家名�?
 Description.TextColor3 = Color3.fromRGB(255, 255, 255)
 Description.TextSize = 12.000
 Description.TextWrapped = true
@@ -339,7 +350,7 @@ Title_2.BorderSizePixel = 0
 Title_2.Position = UDim2.new(0.0441988967, 0, 0.130989924, 0)
 Title_2.Size = UDim2.new(0, 146, 0, 12)
 Title_2.Font = Enum.Font.SourceSansBold
-Title_2.Text = "血条绘制"
+Title_2.Text = "血条绘�?
 Title_2.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title_2.TextSize = 14.000
 Title_2.TextXAlignment = Enum.TextXAlignment.Left
@@ -353,7 +364,7 @@ Description_2.BorderSizePixel = 0
 Description_2.Position = UDim2.new(0.0441990159, 0, 0.449419945, 0)
 Description_2.Size = UDim2.new(0, 165, 0, 25)
 Description_2.Font = Enum.Font.SourceSans
-Description_2.Text = "绘制血条"
+Description_2.Text = "绘制血�?
 Description_2.TextColor3 = Color3.fromRGB(255, 255, 255)
 Description_2.TextSize = 12.000
 Description_2.TextWrapped = true
@@ -405,7 +416,7 @@ Description_3.BorderSizePixel = 0
 Description_3.Position = UDim2.new(0.0441990159, 0, 0.449419945, 0)
 Description_3.Size = UDim2.new(0, 165, 0, 25)
 Description_3.Font = Enum.Font.SourceSans
-Description_3.Text = "绘制距离（在他们憨憨的脑袋上）"
+Description_3.Text = "绘制距离（在他们憨憨的脑袋上�?
 Description_3.TextColor3 = Color3.fromRGB(255, 255, 255)
 Description_3.TextSize = 12.000
 Description_3.TextWrapped = true
@@ -509,7 +520,7 @@ Description_5.BorderSizePixel = 0
 Description_5.Position = UDim2.new(0.0441990159, 0, 0.449419945, 0)
 Description_5.Size = UDim2.new(0, 165, 0, 25)
 Description_5.Font = Enum.Font.SourceSans
-Description_5.Text = "勾勒出他们的形状（会发光的，超酷QAQ）"
+Description_5.Text = "勾勒出他们的形状（会发光的，超酷QAQ�?
 Description_5.TextColor3 = Color3.fromRGB(255, 255, 255)
 Description_5.TextSize = 12.000
 Description_5.TextWrapped = true
@@ -561,7 +572,7 @@ Description_6.BorderSizePixel = 0
 Description_6.Position = UDim2.new(0.0441990159, 0, 0.449419945, 0)
 Description_6.Size = UDim2.new(0, 165, 0, 25)
 Description_6.Font = Enum.Font.SourceSans
-Description_6.Text = "角色在哪你的线就在哪！（绘制线条（其实是遛狗啦bushi）"
+Description_6.Text = "角色在哪你的线就在哪！（绘制线条（其实是遛狗啦bushi�?
 Description_6.TextColor3 = Color3.fromRGB(255, 255, 255)
 Description_6.TextSize = 12.000
 Description_6.TextWrapped = true
@@ -613,7 +624,7 @@ Description_7.BorderSizePixel = 0
 Description_7.Position = UDim2.new(0.0441990159, 0, 0.449419945, 0)
 Description_7.Size = UDim2.new(0, 165, 0, 25)
 Description_7.Font = Enum.Font.SourceSans
-Description_7.Text = "给每个团队绘制上不同的颜色（是这样…对吧？）"
+Description_7.Text = "给每个团队绘制上不同的颜色（是这样…对吧？�?
 Description_7.TextColor3 = Color3.fromRGB(255, 255, 255)
 Description_7.TextSize = 12.000
 Description_7.TextWrapped = true
@@ -1002,6 +1013,7 @@ local function YYUWJ_fake_script() -- ESPS.n
 	
 	local ex = "s"
 	while wait() do
+		if not _G.UESP1_Enabled then break end
 		pcall(function()
 			asjdai()
 			textstrokegarbage()
@@ -1126,6 +1138,7 @@ local function ZFVIA_fake_script() -- ESPS.t
 	wait()
 	
 	while wait() do
+		if not _G.UESP1_Enabled then break end
 		pcall(function()
 			if script.Parent.TeamColor.TextButton.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
 				--outline
@@ -1192,6 +1205,7 @@ local function TCIQ_fake_script() -- ESPS.g
 	wait()
 	
 	while wait() do
+		if not _G.UESP1_Enabled then break end
 		pcall(function()
 			if script.Parent.TeamColor.TextButton.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) and script.Parent["Outline / glow"].TextButton.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
 				script.Parent.Parent.ESPSTUFF["EXAMPLE/GLOW"].ImageColor3 = Color3.fromRGB(255, 255, 255)
@@ -1231,6 +1245,7 @@ local function ZQFZPVK_fake_script() -- ESPS.b
 	
 	
 	while wait() do
+		if not _G.UESP1_Enabled then break end
 		pcall(function()
 			if script.Parent.BOXESP.TextButton.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) and script.Parent.TeamColor.TextButton.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
 				setbox(Color3.fromRGB(255, 255, 255))
@@ -1258,6 +1273,7 @@ local function OQEQ_fake_script() -- ESPS.tr
 	
 	
 	while wait() do
+		if not _G.UESP1_Enabled then break end
 		pcall(function()
 			if script.Parent.TracerESP.TextButton.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) and script.Parent.TeamColor.TextButton.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
 				
@@ -1312,6 +1328,7 @@ local function HIFXYZJ_fake_script() -- ESPS.HIDEESP
 	
 	
 	while wait() do
+		if not _G.UESP1_Enabled then break end
 		pcall(function()
 			textstrokegarbages1()
 			--if script.Parent.AllyESP.TextButton.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
@@ -1397,6 +1414,7 @@ local function SFEB_fake_script() -- TextButton.LocalScript
 	
 	
 	while wait(0.1) do
+		if not _G.UESP1_Enabled then break end
 		pcall(function()
 		if script.Parent.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
 			for i,v in pairs(game.Players:GetPlayers()) do
@@ -1469,6 +1487,7 @@ local function RUHUSM_fake_script() -- TextButton_2.LocalScript
 	
 	wait()
 	while wait(0.1) do
+		if not _G.UESP1_Enabled then break end
 		if script.Parent.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
 			for i,v in pairs(game.Players:GetPlayers()) do
 				if v.Name == game.Players.LocalPlayer.Name then continue end
@@ -1537,6 +1556,7 @@ local function RXUPX_fake_script() -- TextButton_3.LocalScript
 	
 	wait()
 	while wait(0.1) do
+		if not _G.UESP1_Enabled then break end
 		if script.Parent.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
 			for i,v in pairs(game.Players:GetPlayers()) do
 				if v.Name == game.Players.LocalPlayer.Name then continue end
@@ -1777,6 +1797,7 @@ local function XFMMK_fake_script() -- TextButton_5.LocalScript
 	
 	wait()
 	while wait() do
+		if not _G.UESP1_Enabled then break end
 		if script.Parent.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
 			for i,v in pairs(game.Players:GetPlayers()) do
 				if v.Name == game.Players.LocalPlayer.Name then continue end
@@ -1847,6 +1868,7 @@ local function ALKG_fake_script() -- TextButton_6.Tracers
 	
 	
 	while true do
+		if not _G.UESP1_Enabled then break end
 		if script.Parent.BackgroundColor3 ~= Color3.fromRGB(47, 47, 47) then
 		pcall(function()
 				
@@ -2407,7 +2429,7 @@ local function BFPWBAT_fake_script() -- UESP1.Notification
 	TextLabel.Position = UDim2.new(0.151950717, 0, 0.0394736826, 0)
 	TextLabel.Size = UDim2.new(0, 316, 0, 30)
 	TextLabel.Font = Enum.Font.SourceSansSemibold
-	TextLabel.Text = "谢谢你使用通用ESP（LIGHTYX）!"
+	TextLabel.Text = "谢谢你使用通用ESP（LIGHTYX�?"
 	TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	TextLabel.TextSize = 20.000
 	TextLabel.TextXAlignment = Enum.TextXAlignment.Left

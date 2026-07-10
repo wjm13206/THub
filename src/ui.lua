@@ -669,106 +669,132 @@ function clearWaypointList()
             end
         end
     end
-    waypointUIElements = {}
+waypointUIElements = {}
+waypointTitleMap = {}
+    waypointTitleMap = {}
+end
+local function updateWaypointTitle(id)
+    local entry = waypointTitleMap[id]
+    if not entry then return end
+    local wp = waypointsData[id]
+    if not wp then return end
+    local noteStr = type(wp.note) == "string" and wp.note ~= "" and (" - " .. wp.note) or ""
+    if type(entry.title.setText) == "function" then
+        entry.title:setText(string.format("📍 路径点 #%d%s", id, noteStr))
+    end
+end
+local function buildWaypointElements(waypoint)
+    local elements = {}
+    if waypoint.id > 1 then
+        local divider = waypointTab:AddDivider()
+        table.insert(elements, divider)
+    end
+    local idNum = tonumber(waypoint.id) or 0
+    local noteStr = type(waypoint.note) == "string" and waypoint.note or tostring(waypoint.note)
+    local titleText = string.format("📍 路径点 #%d", idNum)
+    if noteStr ~= "" then
+        titleText = titleText .. " - " .. noteStr
+    end
+    local title = waypointTab:AddTitle(titleText)
+    table.insert(elements, title)
+    waypointTitleMap[waypoint.id] = { title = title }
+    local pos = waypoint.position
+    local x = pos and pos.X or 0
+    local y = pos and pos.Y or 0
+    local z = pos and pos.Z or 0
+    local coordText = string.format("坐标: X: %.1f, Y: %.1f, Z: %.1f", x, y, z)
+    local coordLabel = waypointTab:AddLabel(coordText)
+    table.insert(elements, coordLabel)
+    local noteInput = waypointTab:AddInput({
+        Label = "备注",
+        Placeholder = "输入备注信息...",
+        Default = noteStr,
+        Callback = function(text)
+            waypoint.note = text or ""
+            waypointConfig.waypointsData = waypointsData
+            updateWaypointTitle(waypoint.id)
+        end
+    })
+    table.insert(elements, noteInput)
+    local teleportBtn = waypointTab:AddButton({
+        Text = "🚀 传送到此路径点",
+        Callback = function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local targetPos = Vector3.new(pos.X, pos.Y, pos.Z)
+                char:SetPrimaryPartCFrame(CFrame.new(targetPos))
+                ChronixUI:Notify({ Title = "传送成功", Content = string.format("已传送到 %s", noteStr ~= "" and noteStr or "路径点"), Type = "success", Duration = 2 })
+            else
+                ChronixUI:Notify({ Title = "传送失败", Content = "无法获取你的角色", Type = "error", Duration = 2 })
+            end
+        end
+    })
+    table.insert(elements, teleportBtn)
+    local tweenBtn = waypointTab:AddButton({
+        Text = "🎯 缓动到此路径点",
+        Callback = function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
+                local targetPos = Vector3.new(pos.X, pos.Y, pos.Z)
+                local root = char.HumanoidRootPart
+                TweenService:Create(root, TweenInfo.new(1.5, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)}):Play()
+                ChronixUI:Notify({ Title = "缓动中", Content = string.format("正在缓动到 %s", noteStr ~= "" and noteStr or "路径点"), Type = "info", Duration = 2 })
+            else
+                ChronixUI:Notify({ Title = "缓动失败", Content = "无法获取你的角色", Type = "error", Duration = 2 })
+            end
+        end
+    })
+    table.insert(elements, tweenBtn)
+    local walkBtn = waypointTab:AddButton({
+        Text = "🚶 步行到此路径点",
+        Callback = function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChildOfClass("Humanoid") then
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                local targetPos = Vector3.new(pos.X, pos.Y, pos.Z)
+                if humanoid.SeatPart then
+                    humanoid.Sit = false
+                    task.wait(0.1)
+                end
+                humanoid.WalkToPoint = targetPos
+                ChronixUI:Notify({ Title = "步行中", Content = string.format("正在走向 %s", noteStr ~= "" and noteStr or "路径点"), Type = "info", Duration = 2 })
+            else
+                ChronixUI:Notify({ Title = "步行失败", Content = "无法获取你的角色", Type = "error", Duration = 2 })
+            end
+        end
+    })
+    table.insert(elements, walkBtn)
+    local deleteBtn = waypointTab:AddButton({
+        Text = "🗑️ 删除此路径点",
+        Callback = function()
+            local removed = table.remove(waypointsData, waypoint.id)
+            if removed then
+                local entry = waypointTitleMap[waypoint.id]
+                if entry then waypointTitleMap[waypoint.id] = nil end
+                local elements = waypointUIElements[waypoint.id]
+                if elements then
+                    for _, element in ipairs(elements) do
+                        if element and element.Destroy then element:Destroy() end
+                    end
+                    table.remove(waypointUIElements, waypoint.id)
+                end
+                for i, data in ipairs(waypointsData) do
+                    data["id"] = i
+                    updateWaypointTitle(i)
+                end
+            end
+            waypointConfig.waypointsData = waypointsData
+            updateWaypointDisplay()
+            ChronixUI:Notify({ Title = "已删除", Content = "路径点已移除", Type = "info", Duration = 1 })
+        end
+    })
+    table.insert(elements, deleteBtn)
+    return elements
 end
 function refreshWaypointList()
     clearWaypointList()
     for _, waypoint in ipairs(waypointsData) do
-        local elements = {}
-        if waypoint.id > 1 then
-            local divider = waypointTab:AddDivider()
-            table.insert(elements, divider)
-        end
-        local idNum = tonumber(waypoint.id) or 0
-        local noteStr = type(waypoint.note) == "string" and waypoint.note or tostring(waypoint.note)
-        local titleText = string.format("📍 路径点 #%d", idNum)
-        if noteStr ~= "" then
-            titleText = titleText .. " - " .. noteStr
-        end
-        local title = waypointTab:AddTitle(titleText)
-        table.insert(elements, title)
-        local pos = waypoint.position
-        local x = pos and pos.X or 0
-        local y = pos and pos.Y or 0
-        local z = pos and pos.Z or 0
-        local coordText = string.format("坐标: X: %.1f, Y: %.1f, Z: %.1f", x, y, z)
-        local coordLabel = waypointTab:AddLabel(coordText)
-        table.insert(elements, coordLabel)
-        local noteInput = waypointTab:AddInput({
-            Label = "备注",
-            Placeholder = "输入备注信息...",
-            Default = noteStr,
-            Callback = function(text)
-                waypoint.note = text or ""
-                refreshWaypointList()
-            end
-        })
-        table.insert(elements, noteInput)
-        local teleportBtn = waypointTab:AddButton({
-            Text = "🚀 传送到此路径点",
-            Callback = function()
-                local char = LocalPlayer.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    local targetPos = Vector3.new(pos.X, pos.Y, pos.Z)
-                    char:SetPrimaryPartCFrame(CFrame.new(targetPos))
-                    ChronixUI:Notify({ Title = "传送成功", Content = string.format("已传送到 %s", noteStr ~= "" and noteStr or "路径点"), Type = "success", Duration = 2 })
-                else
-                    ChronixUI:Notify({ Title = "传送失败", Content = "无法获取你的角色", Type = "error", Duration = 2 })
-                end
-            end
-        })
-        table.insert(elements, teleportBtn)
-        local tweenBtn = waypointTab:AddButton({
-            Text = "🎯 缓动到此路径点",
-            Callback = function()
-                local char = LocalPlayer.Character
-                if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
-                    local targetPos = Vector3.new(pos.X, pos.Y, pos.Z)
-                    local root = char.HumanoidRootPart
-                    TweenService:Create(root, TweenInfo.new(1.5, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)}):Play()
-                    ChronixUI:Notify({ Title = "缓动中", Content = string.format("正在缓动到 %s", noteStr ~= "" and noteStr or "路径点"), Type = "info", Duration = 2 })
-                else
-                    ChronixUI:Notify({ Title = "缓动失败", Content = "无法获取你的角色", Type = "error", Duration = 2 })
-                end
-            end
-        })
-        table.insert(elements, tweenBtn)
-        local walkBtn = waypointTab:AddButton({
-            Text = "🚶 步行到此路径点",
-            Callback = function()
-                local char = LocalPlayer.Character
-                if char and char:FindFirstChildOfClass("Humanoid") then
-                    local humanoid = char:FindFirstChildOfClass("Humanoid")
-                    local targetPos = Vector3.new(pos.X, pos.Y, pos.Z)
-                    if humanoid.SeatPart then
-                        humanoid.Sit = false
-                        task.wait(0.1)
-                    end
-                    humanoid.WalkToPoint = targetPos
-                    ChronixUI:Notify({ Title = "步行中", Content = string.format("正在走向 %s", noteStr ~= "" and noteStr or "路径点"), Type = "info", Duration = 2 })
-                else
-                    ChronixUI:Notify({ Title = "步行失败", Content = "无法获取你的角色", Type = "error", Duration = 2 })
-                end
-            end
-        })
-        table.insert(elements, walkBtn)
-        local deleteBtn = waypointTab:AddButton({
-            Text = "🗑️ 删除此路径点",
-            Callback = function()
-                for i, data in ipairs(waypointsData) do
-                    if data["id"] == waypoint.id then
-                        table.remove(waypointsData, i)
-                        break
-                    end
-                end
-                for i, data in ipairs(waypointsData) do
-                    data["id"] = i
-                end
-                refreshWaypointList()
-                ChronixUI:Notify({ Title = "已删除", Content = "路径点已移除", Type = "info", Duration = 1 })
-            end
-        })
-        table.insert(elements, deleteBtn)
+        local elements = buildWaypointElements(waypoint)
         table.insert(waypointUIElements, elements)
     end
     waypointConfig.waypointsData = waypointsData
@@ -786,7 +812,10 @@ function addWaypoint(pos, note)
         note = note or ""
     }
     table.insert(waypointsData, waypoint)
-    refreshWaypointList()
+    local elements = buildWaypointElements(waypoint)
+    table.insert(waypointUIElements, elements)
+    waypointConfig.waypointsData = waypointsData
+    updateWaypointDisplay()
 end
 waypointTab:AddTitle("路径点管理")
 waypointTab:AddDivider()

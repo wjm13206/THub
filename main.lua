@@ -107,6 +107,7 @@ for i = 1, #moduleKeys, BATCH_SIZE do
     end
     task.wait()
 end
+modulesToFetch = nil
 LogService:Info("[THub] 模块加载完毕，UI正在初始化中...")
 
 -- 3. Config
