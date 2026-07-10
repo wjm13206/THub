@@ -2003,22 +2003,24 @@ if getfpscap and setfpscap then
         end
     })
 end
-local mouseLockController = LocalPlayer.PlayerScripts:WaitForChild("PlayerModule"):WaitForChild("CameraModule"):WaitForChild("MouseLockController")
-local boundKeys = mouseLockController:FindFirstChild("BoundKeys")
-settingsContent:AddKeybind({
-    Label = "Roblox - 鼠标锁定键",
-    Default = boundKeys and boundKeys.Value,
-    Callback = function(key)
-        if boundKeys then
-            boundKeys.Value = key
-        else
-            boundKeys = Instance.new("StringValue")
-            boundKeys.Name = "BoundKeys"
-            boundKeys.Value = key
-            boundKeys.Parent = mouseLockController
+local mouseLockController = LocalPlayer:FindFirstChild("PlayerScripts") and LocalPlayer.PlayerScripts:FindFirstChild("PlayerModule") and LocalPlayer.PlayerScripts.PlayerModule:FindFirstChild("CameraModule") and LocalPlayer.PlayerScripts.PlayerModule.CameraModule:FindFirstChild("MouseLockController")
+local boundKeys = mouseLockController and mouseLockController:FindFirstChild("BoundKeys")
+if mouseLockController then
+    settingsContent:AddKeybind({
+        Label = "Roblox - 鼠标锁定键",
+        Default = boundKeys and boundKeys.Value,
+        Callback = function(key)
+            if boundKeys then
+                boundKeys.Value = key
+            else
+                boundKeys = Instance.new("StringValue")
+                boundKeys.Name = "BoundKeys"
+                boundKeys.Value = key
+                boundKeys.Parent = mouseLockController
+            end
         end
-    end
-})
+    })
+end
 settingsContent:AddDivider()
 settingsContent:AddToggle({
     Label = "自动连接IRC",
