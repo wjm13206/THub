@@ -58,7 +58,6 @@ modulesToFetch = {
     ["ScrollSwitch"] = baseUrl .. "/modules/ScrollSwitch.lua",
     ["Regretevator_AutoIceCream"] = baseUrl .. "/modules/Regretevator_AutoIceCream.lua",
     ["InstantInteraction"] = baseUrl .. "/modules/InstantInteraction.lua",
-    ["UNCTestModule"] = baseUrl .. "/modules/UNCAndWUNCGet.lua",
     ["ServerFinderModule"] = baseUrl .. "/modules/ServerFinderModule.lua",
     ["DeleteTool"] = baseUrl .. "/modules/DeleteTool.lua",
     ["GuiDeleter"] = baseUrl .. "/modules/GuiDeleter.lua",

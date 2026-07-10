@@ -484,12 +484,7 @@ ToolsTab:AddButton({ Text = "获取建筑工具", Callback = function()
 		Tool.Parent = backpack
 	end
 end })
-ToolsTab:AddButton({ Text = "测试执行器UNC与WUNC", Callback = function()
-    ChronixUI:Notify({ Title = "提示", Content = "正在测试中，请耐心等待。", Type = "info", Duration = 5 })
-    local unc = UNCTestModule.getunc()
-    local wunc = UNCTestModule.getwunc()
-    ChronixUI:Notify({ Title = "执行器 - " .. (identifyexecutor and identifyexecutor() or "UnKnown"), Content = string.format("UNC: %d%%, WUNC: %d%%", unc, wunc), Type = "info", Duration = 5 })
-end })
+
 ToolsTab:AddButton({ Text = "终止当前游戏进程", Callback = function()
     if messagebox then
         local result = messagebox("Do you want to end the current game?\n\nIt may be used in situations where exit is not possible.", "Roblox", 4 + 32)
