@@ -222,6 +222,7 @@ ToolsTab:AddToggle({
         local function scanAndDisable()
             local char = LocalPlayer.Character
             if not char then return end
+            pcall(function() char:WaitForChild("HumanoidRootPart") end)
             data["basicdata"]["releasetools"]["noclipParts"] = {}
             for _, part in ipairs(char:GetChildren()) do
                 if part:IsA("BasePart") then
