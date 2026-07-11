@@ -36,11 +36,24 @@ local function checkSupport()
 end
 
 local function installHooks()
-    if hookOrig.namecall then return true end
+    if hookOrig.index then return true end
 
     local Players = cloneref(game:GetService("Players"))
     LocalPlayerRef = Players.LocalPlayer
     TeleportServiceRef = cloneref(game:GetService("TeleportService"))
+
+    hookOrig.index = hookmetamethod(game, "__index", newcclosure(function(self, method)
+        if not checkcaller() and type(method) == "string" then
+            local ml = method:lower()
+            if self == LocalPlayerRef and ml == "kick" then
+                return error("Expected ':' not '.' calling member function Kick", 2)
+            end
+            if self == TeleportServiceRef and (ml == "teleport" or ml == "teleporttoplaceinstance") then
+                return error("Expected ':' not '.' calling member function " .. method, 2)
+            end
+        end
+        return hookOrig.index(self, method)
+    end))
 
     hookOrig.namecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
         if not checkcaller() then
@@ -96,6 +109,10 @@ function AntiKickModule.unload()
     AntiKickModule.Enabled = false
     AntiKickModule.Loaded = false
 
+    if hookOrig.index then
+        pcall(hookmetamethod, game, "__index", hookOrig.index)
+        hookOrig.index = nil
+    end
     if hookOrig.namecall then
         pcall(hookmetamethod, game, "__namecall", hookOrig.namecall)
         hookOrig.namecall = nil
