@@ -3,13 +3,21 @@
 
 --======================================================================================
 -- Spoofing hooks: intercept WalkSpeed/JumpPower reads/writes to hide locked values
+-- Installed on-demand (only when user enables lock) with delay to avoid detection
 local checkcaller = checkcaller or function() return false end
 local newcclosure = newcclosure or function(f) return f end
-local hookmetamethod = hookmetamethod
-local spoofHooks = {}
+local getrawmetatable = getrawmetatable or function(t) return getmetatable(t) end
 
-if hookmetamethod then
-    spoofHooks.speedIndex = hookmetamethod(game, "__index", newcclosure(function(self, key)
+local mt = getrawmetatable(game)
+local oldIndex = mt.__index
+local oldNewindex = mt.__newindex
+local spoofHooksInstalled = false
+
+function installSpoofHooks()
+    if spoofHooksInstalled then return end
+    if not getrawmetatable then return end
+
+    mt.__index = newcclosure(function(self, key)
         if not checkcaller() and typeof(self) == "Instance" and self:IsA("Humanoid") then
             local char = LocalPlayer.Character
             if char and self:IsDescendantOf(char) then
@@ -21,10 +29,10 @@ if hookmetamethod then
                 end
             end
         end
-        return spoofHooks.speedIndex(self, key)
-    end))
+        return oldIndex(self, key)
+    end)
 
-    spoofHooks.speedNewindex = hookmetamethod(game, "__newindex", newcclosure(function(self, key, value)
+    mt.__newindex = newcclosure(function(self, key, value)
         if not checkcaller() and typeof(self) == "Instance" and self:IsA("Humanoid") then
             local char = LocalPlayer.Character
             if char and self:IsDescendantOf(char) then
@@ -36,21 +44,29 @@ if hookmetamethod then
                 end
             end
         end
-        return spoofHooks.speedNewindex(self, key, value)
-    end))
+        return oldNewindex(self, key, value)
+    end)
+
+    spoofHooksInstalled = true
 end
 
-function restoreSpoofHooks()
-    if not hookmetamethod then return end
-    if spoofHooks.speedIndex then
-        pcall(hookmetamethod, game, "__index", spoofHooks.speedIndex)
-        spoofHooks.speedIndex = nil
-    end
-    if spoofHooks.speedNewindex then
-        pcall(hookmetamethod, game, "__newindex", spoofHooks.speedNewindex)
-        spoofHooks.speedNewindex = nil
+function uninstallSpoofHooks()
+    if not spoofHooksInstalled then return end
+    mt.__index = oldIndex
+    mt.__newindex = oldNewindex
+    spoofHooksInstalled = false
+end
+
+function requestSpoofHooks()
+    if data["basicdata"]["player"]["islockspeed"] or data["basicdata"]["player"]["islockjump"] then
+        installSpoofHooks()
+    else
+        uninstallSpoofHooks()
     end
 end
+
+-- backward compat: called by unload.lua
+restoreSpoofHooks = uninstallSpoofHooks
 
 staffwatchjoin = nil
 if game.CreatorType == Enum.CreatorType.Group then

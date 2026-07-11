@@ -57,10 +57,10 @@ local basicTab = mainWindow:CreateTab({ Name = "基础设置", HasIcon = true, I
 basicTab:AddTitle("基础数据修改")
 sliderLock(basicTab, "玩家移速", 0, 1000, data["basicdata"]["player"]["speed"],
     function(v) LocalPlayer.Character.Humanoid.WalkSpeed = v; data["basicdata"]["player"]["speed"] = v end,
-    "锁定玩家移速", function(v) data["basicdata"]["player"]["islockspeed"] = v end)
+    "锁定玩家移速", function(v) data["basicdata"]["player"]["islockspeed"] = v; requestSpoofHooks() end)
 sliderLock(basicTab, "跳跃力量", 0, 1000, data["basicdata"]["player"]["jump"],
     function(v) LocalPlayer.Character.Humanoid.JumpPower = v; data["basicdata"]["player"]["jump"] = v end,
-    "锁定跳跃力量", function(v) data["basicdata"]["player"]["islockjump"] = v end)
+    "锁定跳跃力量", function(v) data["basicdata"]["player"]["islockjump"] = v; requestSpoofHooks() end)
 sliderLock(basicTab, "最大血量", 0, 1000, data["basicdata"]["player"]["maxhealth"],
     function(v) LocalPlayer.Character.Humanoid.MaxHealth = v; data["basicdata"]["player"]["maxhealth"] = v end,
     "锁定最大血量", function(v) data["basicdata"]["player"]["islockmaxhealth"] = v end)
