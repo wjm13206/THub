@@ -133,7 +133,7 @@ ToolsTab:AddToggle({
     Default = false,
     Callback = function(v)
         data["basicdata"]["releasetools"]["nightvision"] = v
-        game.Lighting.Ambient = v and Color3.new(1, 1, 1) or Color3.new(0, 0, 0)
+        Lighting.Ambient = v and Color3.new(1, 1, 1) or Color3.new(0, 0, 0)
     end
 })
 ToolsTab:AddToggle({
@@ -479,7 +479,7 @@ ToolsTab:AddToggle({
     Default = false,
     Callback = function(v) RemoveFog(v) end
 })
-ToolsTab:AddButton({ Text = "优化世界光效", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/WorldShader.lua"))() end })
+ToolsTab:AddButton({ Text = "优化世界光效", Callback = function() loadstring(cloneref(game):HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/WorldShader.lua"))() end })
 ToolsTab:AddButton({ Text = "打印当前坐标", Callback = function()
     local position1 = LocalPlayer.Character.HumanoidRootPart.Position
     print(string.format("[THub] 玩家坐标: (%.2f, %.2f, %.2f)", position1.X, position1.Y, position1.Z))
@@ -1071,7 +1071,7 @@ function extractSoundIdNumber(soundId)
 end
 function getLoudSounds(threshold)
     local loudSounds = {}
-    local allSounds = getAllSounds(game)
+    local allSounds = getAllSounds(cloneref(game))
     for _, sound in ipairs(allSounds) do
         if sound.IsPlaying and sound.PlaybackLoudness > threshold then
             local cleanSoundId = extractSoundIdNumber(sound.SoundId)

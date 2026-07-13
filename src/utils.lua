@@ -1,5 +1,6 @@
 --!native
 --!optimize 2
+local cloneref = cloneref or clonereference or function(obj) return obj end
 
 --=============================================================================================
 
@@ -218,7 +219,7 @@ function getGameName(universeId)
     if gameInfoCache then return gameInfoCache end
     local url = "https://games.roblox.com/v1/games?universeIds=" .. universeId
     local success, response = pcall(function()
-        return game:HttpGet(url)
+        return cloneref(game):HttpGet(url)
     end)
     if success then
         local dataResp = HttpService:JSONDecode(response)
@@ -590,6 +591,14 @@ function TeleportToPresent(presentNumber)
 	return true
 end
 
+local function pressKey(letter)
+    if not keytap then return end
+    local keyChar = string.sub(letter, 1, 1)
+    local keyCode = string.byte(string.upper(keyChar))
+    if keyCode then keytap(keyCode)
+    else warn("[ChronixHub] 无效的按键字符: " .. letter) end
+end
+
 function detectEntity(instance)
     if instance:IsA("BasePart") then
         for entityName, entityInfo in pairs(data["othergamedata"]["delesions_office"]["entitys"]) do
@@ -605,7 +614,7 @@ function detectEntity(instance)
                         local str = "staycalmstayfocused"
                         for i = 1, #str do
                             local char = string.sub(str, i, i)
-                            VirtualInputManager:SendKeyEvent(true, char, false, game)
+                            pressKey(char)
                             task.wait(0.2)
                         end
                     end

@@ -94,7 +94,7 @@ keepthubconnect = LocalPlayer.OnTeleport:Connect(function(State)
             if not game:IsLoaded() then game.Loaded:Wait() end
             local cloneref = cloneref or clonereference or function(obj) return obj end
             cloneref(game:GetService("StarterGui")):SetCore("SendNotification", {Title = "THub", Text = "检测到游戏被跳转\n正在重新载入中...", Duration = 10})
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/main.lua"))()
+            loadstring(cloneref(game):HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/main.lua"))()
         ]]
         if queueteleport then
             queueteleport(teleportCode)
@@ -108,8 +108,8 @@ end)
 
 AntiAFK = LocalPlayer.Idled:connect(function()
     if data["basicdata"]["releasetools"]["antiafk"] then
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
+        Services.VirtualUser:CaptureController()
+        Services.VirtualUser:ClickButton2(Vector2.new())
     end
 end)
 

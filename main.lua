@@ -25,7 +25,7 @@ local baseUrl = "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main
 loadstring(game:HttpGet(baseUrl .. "/src/services.lua"))()
 
 -- 2. Load functional modules
-AsyncFileFetcher = loadstring(game:HttpGet(baseUrl .. "/modules/AsyncFileFetcher.lua"))()
+AsyncFileFetcher = loadstring(cloneref(game):HttpGet(baseUrl .. "/modules/AsyncFileFetcher.lua"))()
 modulesToFetch = {
     ["ChronixUI"] = baseUrl .. "/modules/ChronixUI%20Lib.lua",
     ["tpWalk"] = baseUrl .. "/modules/SafeTPWalk.lua",

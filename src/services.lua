@@ -2,22 +2,26 @@
 --!optimize 2
 local cloneref = cloneref or clonereference or function(obj) return obj end
 
-UserInputService = cloneref(game:GetService("UserInputService"))
-TweenService = cloneref(game:GetService("TweenService"))
-Players = cloneref(game:GetService("Players"))
-RunService = cloneref(game:GetService("RunService"))
-SoundService = cloneref(game:GetService("SoundService"))
-Lighting = cloneref(game:GetService("Lighting"))
-MarketplaceService = cloneref(game:GetService("MarketplaceService"))
-Workspace = cloneref(game:GetService("Workspace"))
-VirtualInputManager = cloneref(game:GetService("VirtualInputManager"))
-StarterGui = cloneref(game:GetService("StarterGui"))
-ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
-TeleportService = cloneref(game:GetService("TeleportService"))
-VirtualUser = cloneref(game:GetService('VirtualUser'))
-AvatarEditorService = cloneref(game:GetService("AvatarEditorService"))
-LogService = cloneref(game:GetService("LogService"))
-HttpService = cloneref(game:GetService("HttpService"))
+Services = setmetatable({}, { __index = function(self, name)
+    local success, cache = pcall(function() return cloneref(game:GetService(name)) end)
+    if success then rawset(self, name, cache); return cache
+    else error("无效服务: "..tostring(name)) end
+end})
+
+UserInputService = Services.UserInputService
+TweenService = Services.TweenService
+Players = Services.Players
+RunService = Services.RunService
+SoundService = Services.SoundService
+Lighting = Services.Lighting
+MarketplaceService = Services.MarketplaceService
+Workspace = Services.Workspace
+StarterGui = Services.StarterGui
+ReplicatedStorage = Services.ReplicatedStorage
+TeleportService = Services.TeleportService
+AvatarEditorService = Services.AvatarEditorService
+LogService = Services.LogService
+HttpService = Services.HttpService
 LocalPlayer = Players.LocalPlayer
 PlayerGui = LocalPlayer.PlayerGui or LocalPlayer:FindFirstChild("PlayerGui")
-CoreGui = cloneref(game:GetService('CoreGui')) or PlayerGui
+CoreGui = Services.CoreGui
