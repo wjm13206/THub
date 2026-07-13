@@ -4,6 +4,7 @@
 --======================================================================================
 
 unloadTHub = function()
+    RemoveFog(false)
     disableDeathAnnounce()
     if LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.Anchored then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.Anchored = false end
     stopWaypointHeartbeat()

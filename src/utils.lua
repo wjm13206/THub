@@ -447,13 +447,43 @@ function promptNewRig(rig)
 	end
 end
 
-function RemoveFog()
-    Lighting.FogEnd = 100000
-	for i,v in pairs(Lighting:GetDescendants()) do
-		if v:IsA("Atmosphere") then
-			v:Destroy()
-		end
-	end
+local fogBackup = {
+    FogEnd = nil,
+    AtmosphereData = {}
+}
+local isFogRemoved = false
+
+local function RemoveFog(remove)
+    if remove then
+        if not isFogRemoved then
+            fogBackup.FogEnd = Lighting.FogEnd or 100000
+            fogBackup.AtmosphereData = {}
+            for _, atm in ipairs(Lighting:GetDescendants()) do
+                if atm:IsA("Atmosphere") then
+                    table.insert(fogBackup.AtmosphereData, {
+                        instance = atm,
+                        parent = atm.Parent
+                    })
+                    atm.Parent = nil
+                end
+            end
+            Lighting.FogEnd = 100000
+            isFogRemoved = true
+        end
+    else
+        if isFogRemoved then
+            Lighting.FogEnd = fogBackup.FogEnd
+            for _, data in ipairs(fogBackup.AtmosphereData) do
+                local atm = data.instance
+                local parent = data.parent
+                if atm and atm:IsA("Atmosphere") and parent and parent:IsA("Instance") then
+                    atm.Parent = parent
+                end
+            end
+            fogBackup.AtmosphereData = {}
+            isFogRemoved = false
+        end
+    end
 end
 
 function convertToSmallCaps(text)

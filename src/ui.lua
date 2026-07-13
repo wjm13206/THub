@@ -474,7 +474,11 @@ ToolsTab:AddButton({ Text = "切换角色为R6", Callback = function() promptNew
 ToolsTab:AddButton({ Text = "切换角色为R15", Callback = function() promptNewRig("R15") end })
 ToolsTab:AddButton({ Text = "切换时间为白天", Callback = function() setDay() end })
 ToolsTab:AddButton({ Text = "切换时间为黑夜", Callback = function() setNight() end })
-ToolsTab:AddButton({ Text = "去除雾气", Callback = function() RemoveFog() end })
+ToolsTab:AddToggle({
+    Label = "禁用雾效",
+    Default = false,
+    Callback = function(v) RemoveFog(v) end
+})
 ToolsTab:AddButton({ Text = "优化世界光效", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/WorldShader.lua"))() end })
 ToolsTab:AddButton({ Text = "打印当前坐标", Callback = function()
     local position1 = LocalPlayer.Character.HumanoidRootPart.Position
