@@ -99,6 +99,7 @@ function disableDeathAnnounce()
 end
 
 disabledTypes = {}
+local disabledTouchInfo = {}
 function applySetting(obj, componentType, disable)
     if componentType == "ClickDetector" then
         if disable then
@@ -111,7 +112,17 @@ function applySetting(obj, componentType, disable)
     elseif componentType == "TouchTransmitter" then
         local parent = obj.Parent
         if parent and parent:IsA("BasePart") then
-            parent.CanTouch = not disable
+            if disable then
+                if disabledTouchInfo[parent] == nil then
+                    disabledTouchInfo[parent] = parent.CanTouch
+                    parent.CanTouch = false
+                end
+            else
+                if disabledTouchInfo[parent] ~= nil then
+                    parent.CanTouch = disabledTouchInfo[parent]
+                    disabledTouchInfo[parent] = nil
+                end
+            end
         end
     else
         obj.Enabled = not disable
