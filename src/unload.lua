@@ -6,7 +6,13 @@
 unloadTHub = function()
     RemoveFog(false)
     disableDeathAnnounce()
-    if LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.Anchored then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.Anchored = false end
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum and hum.RootPart and hum.RootPart.Anchored then
+            hum.RootPart.Anchored = false
+        end
+    end
     stopWaypointHeartbeat()
     if waypointBeams then
         for _, beamData in pairs(waypointBeams) do

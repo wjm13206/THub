@@ -46,7 +46,7 @@ local function installHooks()
     
     -- Hook __index
     oldhmmi = hookmetamethod(game, "__index", function(self, method)
-        if AntiKickModule.Enabled and self == LocalPlayer and method:lower() == "kick" then
+        if AntiKickModule.Enabled and self == LocalPlayer and type(method) == "string" and method:lower() == "kick" then
             return error("Expected ':' not '.' calling member function Kick", 2)
         end
         return oldhmmi(self, method)
