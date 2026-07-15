@@ -89,21 +89,13 @@ unloadTHub = function()
     ChatSpammer.unload()
 
     if data["basicdata"]["otherdata"]["audioData"]["scanConnection"] then data["basicdata"]["otherdata"]["audioData"]["scanConnection"]:Disconnect() end
-    if prc then prc:Disconnect() end
-    if pac then pac:Disconnect() end
-    if WorkspaceDescendantAdded then WorkspaceDescendantAdded:Disconnect() end
     if noclipConnection then noclipConnection:Disconnect() end
     if noclipRespawn then noclipRespawn:Disconnect() end
     if autoJumpConnection then autoJumpConnection:Disconnect() end
     if JR then JR:Disconnect(); JR = nil end
-    if AntiAFK then AntiAFK:Disconnect() end
-    if RunStepped then RunStepped:Disconnect() end
-    if keepthubconnect then keepthubconnect:Disconnect() end
-    if networkPaused then networkPaused:Disconnect() end
-    if staffwatchjoin then staffwatchjoin:Disconnect() end
+    if testSoundEndedConn then testSoundEndedConn:Disconnect(); testSoundEndedConn = nil end
     if playerListAddedConn then playerListAddedConn:Disconnect() end
     if playerListRemovingConn then playerListRemovingConn:Disconnect() end
-    if testSoundEndedConn then testSoundEndedConn:Disconnect(); testSoundEndedConn = nil end
     if _G.UESP1_Cleanup then _G.UESP1_Cleanup() end
     clearAllConnections()
     pcall(restoreSpoofHooks)

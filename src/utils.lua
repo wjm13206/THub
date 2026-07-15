@@ -135,6 +135,7 @@ function toggleInteraction(componentType, disable)
         end
     end
     disabledTypes[componentType] = disable
+    if onDisabledTypeChanged then onDisabledTypeChanged() end
 end
 
 function getjerktool()

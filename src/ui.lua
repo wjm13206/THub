@@ -63,13 +63,13 @@ sliderLock(basicTab, "跳跃力量", 0, 1000, data["basicdata"]["player"]["jump"
     "锁定跳跃力量", function(v) data["basicdata"]["player"]["islockjump"] = v; requestSpoofHooks() end)
 sliderLock(basicTab, "最大血量", 0, 1000, data["basicdata"]["player"]["maxhealth"],
     function(v) LocalPlayer.Character.Humanoid.MaxHealth = v; data["basicdata"]["player"]["maxhealth"] = v end,
-    "锁定最大血量", function(v) data["basicdata"]["player"]["islockmaxhealth"] = v end)
+    "锁定最大血量", function(v) if v then enableLockMaxHealth() else disableLockMaxHealth() end end)
 sliderLock(basicTab, "当前血量", 0, 1000, data["basicdata"]["player"]["health"],
     function(v) LocalPlayer.Character.Humanoid.Health = v; data["basicdata"]["player"]["health"] = v end,
-    "锁定当前血量", function(v) data["basicdata"]["player"]["islockhealth"] = v end)
+    "锁定当前血量", function(v) if v then enableLockHealth() else disableLockHealth() end end)
 sliderLock(basicTab, "世界重力", 0, 1000, data["basicdata"]["player"]["gravity"],
     function(v) Workspace.Gravity = v; data["basicdata"]["player"]["gravity"] = v end,
-    "锁定世界重力", function(v) data["basicdata"]["player"]["islockgravity"] = v end)
+    "锁定世界重力", function(v) if v then enableLockGravity() else disableLockGravity() end end)
 
 -- ===== 工具 Tab =====
 local ToolsTab = mainWindow:CreateTab({ Name = "工具", HasIcon = true, IconName = "wrench" })
@@ -77,12 +77,12 @@ ToolsTab:AddTitle("各种实用工具")
 ToolsTab:AddToggle({
     Label = "防挂机",
     Default = true,
-    Callback = function(v) data["basicdata"]["releasetools"]["antiafk"] = v end
+    Callback = function(v) if v then enableAntiAFK() else disableAntiAFK() end end
 })
 ToolsTab:AddToggle({
     Label = "保留THub - 传送后自动执行",
     Default = false,
-    Callback = function(v) data["basicdata"]["releasetools"]["keepthub"] = v end
+    Callback = function(v) if v then enableKeepTHub() else disableKeepTHub() end end
 })
 enableToggle(ToolsTab, "飞行", function()
     FlyModule.enable()
@@ -131,26 +131,12 @@ enableToggle(ToolsTab, "落地特效", function() LandingEffect.enable() end, fu
 ToolsTab:AddToggle({
     Label = "夜视",
     Default = false,
-    Callback = function(v)
-        data["basicdata"]["releasetools"]["nightvision"] = v
-        Lighting.Ambient = v and Color3.new(1, 1, 1) or Color3.new(0, 0, 0)
-    end
+    Callback = function(v) if v then enableNightVision() else disableNightVision() end end
 })
 ToolsTab:AddToggle({
     Label = "超级夜视",
     Default = false,
-    Callback = function(v)
-        data["basicdata"]["releasetools"]["supernightvision"] = v
-        if v then
-            data["basicdata"]["releasetools"]["originalBrightness"] = Lighting.Brightness
-            data["basicdata"]["releasetools"]["originalExposureCompensation"] = Lighting.ExposureCompensation
-            Lighting.Brightness = 2
-            Lighting.ExposureCompensation = 2.5
-        else
-            Lighting.Brightness = data["basicdata"]["releasetools"]["originalBrightness"]
-            Lighting.ExposureCompensation = data["basicdata"]["releasetools"]["originalExposureCompensation"]
-        end
-    end
+    Callback = function(v) if v then enableSuperNightVision() else disableSuperNightVision() end end
 })
 enableToggle(ToolsTab, "阻挡射线检测", function() AntiLookBlocker.enable() end, function() AntiLookBlocker.disable() end)
 ToolsTab:AddToggle({
@@ -293,7 +279,7 @@ end, function()
 end)
 enableToggle(ToolsTab, "旁观模式", function() SpectatorModule.start() end, function() SpectatorModule.close() end)
 enableToggle(ToolsTab, "摄像头穿墙", function() NoclipCam.enable(LocalPlayer) end, function() NoclipCam.disable() end)
-ToolsTab:AddToggle({ Label = "防击倒", Default = false, Callback = function(v) data["basicdata"]["releasetools"]["antifall"] = v end })
+ToolsTab:AddToggle({ Label = "防击倒", Default = false, Callback = function(v) if v then enableAntiFall() else disableAntiFall() end end })
 enableToggle(ToolsTab, "晕厥康复", function() StandRecovery:enableDetection() end, function() StandRecovery:disableDetection() end)
 enableToggle(ToolsTab, "防甩飞", function() FlingDetector.enable(LocalPlayer) end, function() FlingDetector.disable() end)
 enableToggle(ToolsTab, "反物理劫持", function() AntiVoidModule.enable() end, function() AntiVoidModule.disable() end)
@@ -302,39 +288,18 @@ enableToggle(ToolsTab, "防御立场", function() DefenseField.Enable() end, fun
 ToolsTab:AddToggle({
     Label = "管理员检测",
     Default = false,
-    Callback = function(v)
-        data["basicdata"]["releasetools"]["staffcheck"] = v
-        if v and game.CreatorType == Enum.CreatorType.Group then
-            local found = {}
-            for _, player in pairs(Players:GetPlayers()) do
-                local result = getStaffRole(player)
-                if result.Staff then
-                    table.insert(found, formatUsername(player) .. " 是 " .. result.Role)
-                end
-            end
-            if #found > 0 then
-                for index, value in ipairs(found) do
-                    ChronixUI:Notify({ Title = "警告", Content = value, Duration = 10 })
-                end
-            end
-        else
-            data["basicdata"]["releasetools"]["staffcheck"] = false
-        end
-    end
+    Callback = function(v) if v then enableStaffCheck() else disableStaffCheck() end end
 })
 enableToggle(ToolsTab, "死亡播报", function() enableDeathAnnounce() end, function() disableDeathAnnounce() end)
 ToolsTab:AddToggle({
     Label = "防死亡",
     Default = false,
-    Callback = function(v)
-        data["basicdata"]["releasetools"]["antidead"] = v
-        if not v then LocalPlayer.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true) end
-    end
+    Callback = function(v) if v then enableAntiDead() else disableAntiDead() end end
 })
 ToolsTab:AddToggle({
     Label = "聊天重发",
     Default = false,
-    Callback = function(v) data["basicdata"]["releasetools"]["chatresend"] = v end
+    Callback = function(v) if v then enableChatResend() else disableChatResend() end end
 })
 enableToggle(ToolsTab, "聊天偷听", function() ChatSpy.enable() end, function() ChatSpy.disable() end)
 enableToggle(ToolsTab, "自动喊话器", function() ChatSpammer.enable() end, function() ChatSpammer.disable() end)
@@ -387,7 +352,7 @@ ToolsTab:AddToggle({
 ToolsTab:AddToggle({
     Label = "禁用游戏暂停",
     Default = false,
-    Callback = function(v) data["basicdata"]["releasetools"]["networkpausedisable"] = v; pcall(function() CoreGui.RobloxGui["CoreScripts/NetworkPause"]:Destroy() end) end
+    Callback = function(v) if v then enableNetworkPauseDisable() else disableNetworkPauseDisable() end end
 })
 enableToggle(ToolsTab, "游戏翻译", function()
     TranslationModule.enable()
@@ -1917,7 +1882,7 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
             OtherGameTab:AddToggle({
                 Label = "实体警告",
                 Default = false,
-                Callback = function(v) data["othergamedata"]["delesions_office"]["entitywarning"] = v end
+                Callback = function(v) if v then enableEntityWarning() else disableEntityWarning() end end
             })
             OtherGameTab:AddToggle({
                 Label = "提醒他人",
@@ -1927,15 +1892,15 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
             OtherGameTab:AddToggle({
                 Label = "自动EN-013",
                 Default = false,
-                Callback = function(v) data["othergamedata"]["delesions_office"]["auto013"] = v end
+                Callback = function(v) if v then enableAuto013() else disableAuto013() end end
             })
         elseif GetgameInfo.name == "格蕾丝" then
             OtherGameTab:AddToggle({
                 Label = "自动拉杆",
                 Default = false,
-                Callback = function(v) data["othergamedata"]["grace"]["autolever"] = v end
+                Callback = function(v) if v then enableAutoLever() else disableAutoLever() end end
             })
-            OtherGameTab:AddButton({ Text = "删除全部实体(无法关闭)", Callback = function() data["othergamedata"]["grace"]["deleteentity"] = true end })
+            OtherGameTab:AddButton({ Text = "删除全部实体(无法关闭)", Callback = function() enableDeleteEntity() end })
         elseif GetgameInfo.name == "深渊" then
             OtherGameTab:AddButton({ Text = "一键获取全地图深渊能量和回音", Callback = function()
                 OBOTeleportModule.TeleportToParts({"AbyssalEnergy", "BigAbyssalEnergy", "Echo"}, 0.01)
