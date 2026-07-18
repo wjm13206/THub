@@ -11,6 +11,7 @@ local cloneref = cloneref or clonereference or function(obj) return obj end
 local oldhmmi = nil
 local oldhmmnc = nil
 local oldKickFunction = nil
+local hookedLocalPlayer = nil
 local hooksInstalled = false
 
 -- 检查支持性（仅检查一次）
@@ -62,6 +63,7 @@ local function installHooks()
     
     -- Hook Kick function
     if hookfunction then
+        hookedLocalPlayer = LocalPlayer
         oldKickFunction = hookfunction(LocalPlayer.Kick, function(...)
             if AntiKickModule.Enabled then return end
             return oldKickFunction(...)
@@ -128,20 +130,30 @@ end
 
 -- 卸载模块
 function AntiKickModule.unload()
-    -- 不管之前什么状态，都安全处理
     local wasEnabled = AntiKickModule.Enabled
     
     -- 禁用功能
     AntiKickModule.Enabled = false
     
-    -- 清理引用（即使 hooksInstalled 为 false 也安全）
+    -- 恢复元方法钩子
+    if oldhmmi then
+        hookmetamethod(game, "__index", oldhmmi)
+    end
+    if oldhmmnc then
+        hookmetamethod(game, "__namecall", oldhmmnc)
+    end
+    if oldKickFunction and hookfunction and hookedLocalPlayer then
+        hookfunction(hookedLocalPlayer.Kick, oldKickFunction)
+    end
+    
+    -- 清理引用
     oldhmmi = nil
     oldhmmnc = nil
     oldKickFunction = nil
+    hookedLocalPlayer = nil
     hooksInstalled = false
     
     AntiKickModule.Loaded = false
-    -- 注意：不重置 Supported，保留检测结果
     
     if wasEnabled then
         return true, "Anti-Kick unloaded and disabled"
