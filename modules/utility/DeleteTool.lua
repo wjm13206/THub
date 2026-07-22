@@ -46,7 +46,7 @@ end
 -- ========== 公开方法 ==========
 
 -- 开启功能
-function ClickDeleteModule.Enable()
+function ClickDeleteModule.enable()
 	if isUnloaded then
 		return
 	end
@@ -67,7 +67,7 @@ function ClickDeleteModule.Enable()
 end
 
 -- 关闭功能（可重新开启）
-function ClickDeleteModule.Disable()
+function ClickDeleteModule.disable()
 	if not isEnabled then
 		return
 	end
@@ -82,10 +82,10 @@ function ClickDeleteModule.Disable()
 end
 
 -- 彻底卸载（无法再使用）
-function ClickDeleteModule.Unload()
+function ClickDeleteModule.unload()
 	-- 先关闭功能
 	if isEnabled then
-		ClickDeleteModule.Disable()
+		ClickDeleteModule.disable()
 	end
 	
 	-- 清空所有连接

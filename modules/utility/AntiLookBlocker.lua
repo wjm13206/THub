@@ -77,7 +77,7 @@ end
 
 -- 彻底卸载模块（不可再次使用）
 function Module.unload()
-	Module.Disable()
+	Module.disable()
 	loaded = false
 	player = nil
 	camera = nil

@@ -235,7 +235,7 @@ function DefenseField.GetConfig()
 end
 
 -- 开启防御力场
-function DefenseField.Enable()
+function DefenseField.enable()
 	if isEnabled then return end
 
 	isEnabled = true
@@ -250,7 +250,7 @@ function DefenseField.Enable()
 end
 
 -- 关闭防御力场
-function DefenseField.Disable()
+function DefenseField.disable()
 	if not isEnabled then return end
 
 	isEnabled = false
@@ -269,8 +269,8 @@ function DefenseField.Disable()
 end
 
 -- 卸载模块
-function DefenseField.Unload()
-	DefenseField.Disable()
+function DefenseField.unload()
+	DefenseField.disable()
 
 	for k, _ in pairs(DefenseField) do
 		DefenseField[k] = nil

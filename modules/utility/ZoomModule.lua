@@ -156,7 +156,7 @@ function ZoomModule:IsMatchingInput(input)
 end
 
 -- 启用模块
-function ZoomModule:Enable()
+function ZoomModule:enable()
     if self.isEnabled then return end
     
     -- 获取当前玩家的正常视野
@@ -200,7 +200,7 @@ function ZoomModule:Enable()
 end
 
 -- 禁用模块
-function ZoomModule:Disable()
+function ZoomModule:disable()
     if not self.isEnabled then return end
     
     if self.isZooming then
@@ -223,8 +223,8 @@ function ZoomModule:Disable()
 end
 
 -- 卸载模块
-function ZoomModule:Unload()
-    self:Disable()
+function ZoomModule:unload()
+    self:disable()
     self.camera = nil
     self.config = nil
     self.connections = nil

@@ -281,6 +281,15 @@ function StandRecovery:batchRestore()
     return successCount > 0
 end
 
+-- 标准接口包装
+function StandRecovery:enable()
+    self:enableDetection()
+end
+
+function StandRecovery:disable()
+    self:disableDetection()
+end
+
 -- 7. 公有方法：开启检测（保持不变）
 function StandRecovery:enableDetection()
     -- 卸载后禁止执行

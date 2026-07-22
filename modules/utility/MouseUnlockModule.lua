@@ -58,7 +58,7 @@ end
 
 local beganConn, endedConn
 
-function module.Enable()
+function module.enable()
 	if isEnabled then return end
 	isEnabled = true
 	keyStates.K = false
@@ -71,7 +71,7 @@ function module.Enable()
 	table.insert(connections, endedConn)
 end
 
-function module.Disable()
+function module.disable()
 	if not isEnabled then return end
 	isEnabled = false
 	if beganConn then beganConn:Disconnect() beganConn = nil end

@@ -287,11 +287,11 @@ end
 
 -- ==================== 公开API ====================
 
-function AimBotModule.Enable()
+function AimBotModule.enable()
 	_enabled = true
 end
 
-function AimBotModule.Disable()
+function AimBotModule.disable()
 	_enabled = false
 	_isAimKeyDown = false
 	_target = nil
@@ -377,7 +377,7 @@ function AimBotModule.GetPredictionAmount()
 	return _predictionAmount
 end
 
-function AimBotModule.Unload()
+function AimBotModule.unload()
 	_enabled = false
 	_isAimKeyDown = false
 	_target = nil

@@ -103,7 +103,7 @@ end
 -- ========== 公开方法 ==========
 
 -- 开启功能
-function ClickInspectModule.Enable()
+function ClickInspectModule.enable()
 	if isUnloaded then
 		return
 	end
@@ -124,7 +124,7 @@ function ClickInspectModule.Enable()
 end
 
 -- 关闭功能（可重新开启）
-function ClickInspectModule.Disable()
+function ClickInspectModule.disable()
 	if not isEnabled then
 		return
 	end
@@ -139,10 +139,10 @@ function ClickInspectModule.Disable()
 end
 
 -- 彻底卸载（无法再使用）
-function ClickInspectModule.Unload()
+function ClickInspectModule.unload()
 	-- 先关闭功能
 	if isEnabled then
-		ClickInspectModule.Disable()
+		ClickInspectModule.disable()
 	end
 	
 	-- 清空所有连接

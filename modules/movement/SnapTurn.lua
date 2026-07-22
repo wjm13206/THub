@@ -53,7 +53,7 @@ end
 --==========================================
 
 -- 开启 SnapTurn
-function SnapTurn.Enable(plr)
+function SnapTurn.enable(plr)
 	player = plr or Players.LocalPlayer
 
 	if enabled then return end
@@ -73,7 +73,7 @@ function SnapTurn.Enable(plr)
 end
 
 -- 关闭 SnapTurn（恢复默认转向，保留监听）
-function SnapTurn.Disable()
+function SnapTurn.disable()
 	if not enabled then return end
 	enabled = false
 
@@ -90,8 +90,8 @@ function SnapTurn.Disable()
 end
 
 -- 彻底卸载（清理所有连接，无法再次使用，需要重新 require）
-function SnapTurn.Unload()
-	SnapTurn.Disable()
+function SnapTurn.unload()
+	SnapTurn.disable()
 
 	-- 断开角色添加监听
 	if charAddedConn then

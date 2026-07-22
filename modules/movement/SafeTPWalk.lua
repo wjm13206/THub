@@ -43,6 +43,14 @@ local function stop()
 end
 
 -- 公开方法
+function TPWalk:enable()
+    self:Enabled(true)
+end
+
+function TPWalk:disable()
+    self:Enabled(false)
+end
+
 function TPWalk:Enabled(state)
     if state == nil then
         return _enabled

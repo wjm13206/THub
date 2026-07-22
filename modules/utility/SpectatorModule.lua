@@ -167,6 +167,14 @@ local function switchToPlayer(index)
 end
 
 -- 公开方法：开启旁观
+function SpectatorModule.enable()
+    SpectatorModule.start()
+end
+
+function SpectatorModule.disable()
+    SpectatorModule.close()
+end
+
 function SpectatorModule.start()
     if isSpectating then return end
     isSpectating = true

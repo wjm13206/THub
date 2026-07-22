@@ -156,7 +156,7 @@ end
 -- ==================== 公开方法 ====================
 
 -- 开启检测
-function MovingPartCleaner.Enable()
+function MovingPartCleaner.enable()
 	if isEnabled then return end
 
 	isEnabled = true
@@ -166,7 +166,7 @@ function MovingPartCleaner.Enable()
 end
 
 -- 关闭检测
-function MovingPartCleaner.Disable()
+function MovingPartCleaner.disable()
 	if not isEnabled then return end
 
 	isEnabled = false
@@ -178,8 +178,8 @@ function MovingPartCleaner.Disable()
 end
 
 -- 卸载模块
-function MovingPartCleaner.Unload()
-	MovingPartCleaner.Disable()
+function MovingPartCleaner.unload()
+	MovingPartCleaner.disable()
 
 	for k, _ in pairs(MovingPartCleaner) do
 		MovingPartCleaner[k] = nil

@@ -183,7 +183,7 @@ local function updateUI()
 end
 
 -- 启用模块
-function DeathBallScript:Enable()
+function DeathBallScript:enable()
     if isEnabled then
         return
     end
@@ -237,7 +237,7 @@ function DeathBallScript:Enable()
 end
 
 -- 禁用模块
-function DeathBallScript:Disable()
+function DeathBallScript:disable()
     if not isEnabled then
         return
     end
@@ -264,8 +264,8 @@ function DeathBallScript:Disable()
 end
 
 -- 卸载模块
-function DeathBallScript:Unload()
-    self:Disable()
+function DeathBallScript:unload()
+    self:disable()
     destroyUI()
     
     -- 清理ContextActionService绑定（以防万一）

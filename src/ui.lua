@@ -104,27 +104,27 @@ enableToggle(ToolsTab, "玩家透视", function() PlayerESP.enable() end, functi
 enableToggle(ToolsTab, "NPC透视", function() data["basicdata"]["releasetools"]["npc"]:enable() end, function() data["basicdata"]["releasetools"]["npc"]:disable() end)
 enableToggle(ToolsTab, "TPWalk", function() tpWalk:Enabled(true) end, function() tpWalk:Enabled(false) end)
 enableToggle(ToolsTab, "鼠标解锁", function()
-    MouseUnlockModule.Enable()
+    MouseUnlockModule.enable()
     ChronixUI:Notify({ Title = "提示", Content = "按下K+L组合键开关解锁鼠标", Type = "info", Duration = 5 })
-end, function() MouseUnlockModule.Disable() end)
+end, function() MouseUnlockModule.disable() end)
 enableToggle(ToolsTab, "锁定视角", function()
     LockCameraModule.enable()
     ChronixUI:Notify({ Title = "提示", Content = "按住" .. LockCameraModule.getBindKey().Name .. "键来锁定视角", Type = "info", Duration = 5 })
 end, function() LockCameraModule.disable() end)
-enableToggle(ToolsTab, "瞬间转向", function() SnapTurn.Enable() end, function() SnapTurn.Disable() end)
+enableToggle(ToolsTab, "瞬间转向", function() SnapTurn.enable() end, function() SnapTurn.disable() end)
 enableToggle(ToolsTab, "瞬间回头", function()
-    SnapReverse.Enable()
+    SnapReverse.enable()
     ChronixUI:Notify({ Title = "提示", Content = "按下" .. SnapReverse.GetKeyBind().Name .. "键来瞬间回头", Type = "info", Duration = 5 })
-end, function() SnapReverse.Disable() end)
-enableToggle(ToolsTab, "自动瞄准", function() AimBotModule.Enable() end, function() AimBotModule.Disable() end)
+end, function() SnapReverse.disable() end)
+enableToggle(ToolsTab, "自动瞄准", function() AimBotModule.enable() end, function() AimBotModule.disable() end)
 enableToggle(ToolsTab, "物品滚轮切换", function()
     ChronixUI:Notify({ Title = "提示", Content = "按住" .. ScrollSwitch:getbind().Name .. "键并滚动鼠标滚轮来切换物品", Type = "info", Duration = 5 })
     ScrollSwitch:enable()
 end, function() ScrollSwitch:disable() end)
 enableToggle(ToolsTab, "望远镜", function()
-    data["basicdata"]["releasetools"]["zoom"]:Enable()
+    data["basicdata"]["releasetools"]["zoom"]:enable()
     ChronixUI:Notify({ Title = "提示", Content = "按住" .. tostring(data["basicdata"]["releasetools"]["zoom"]:GetBindKey()):gsub("^Enum%.%w+%.", "") .. "键放大", Type = "info", Duration = 5 })
-end, function() data["basicdata"]["releasetools"]["zoom"]:Disable() end)
+end, function() data["basicdata"]["releasetools"]["zoom"]:disable() end)
 enableToggle(ToolsTab, "隐身", function() PlayerVisibleModule.enable() end, function() PlayerVisibleModule.disable() end)
 enableToggle(ToolsTab, "查看落脚点", function() FootstepHighlighter.enable() end, function() FootstepHighlighter.disable() end)
 enableToggle(ToolsTab, "落地特效", function() LandingEffect.enable() end, function() LandingEffect.disable() end)
@@ -185,9 +185,9 @@ ToolsTab:AddToggle({
     Callback = function(v) FreecamModule.freecamenable = v end
 })
 enableToggle(ToolsTab, "平移", function()
-    movementModule.Enable()
+    movementModule.enable()
     ChronixUI:Notify({ Title = "提示", Content = "按下↑↓←→键进行平移", Type = "info", Duration = 5 })
-end, function() movementModule.Disable() end)
+end, function() movementModule.disable() end)
 enableToggle(ToolsTab, "空中移动", function() AirWalk.enable() end, function() AirWalk.disable() end)
 enableToggle(ToolsTab, "无摔落伤害", function() NoFall.enable() end, function() NoFall.disable() end)
 enableToggle(ToolsTab, "瞬间交互", function() InstantInteraction.enable() end, function() InstantInteraction.disable() end)
@@ -283,8 +283,8 @@ ToolsTab:AddToggle({ Label = "防击倒", Default = false, Callback = function(v
 enableToggle(ToolsTab, "晕厥康复", function() StandRecovery:enableDetection() end, function() StandRecovery:disableDetection() end)
 enableToggle(ToolsTab, "防甩飞", function() FlingDetector.enable(LocalPlayer) end, function() FlingDetector.disable() end)
 enableToggle(ToolsTab, "反物理劫持", function() AntiVoidModule.enable() end, function() AntiVoidModule.disable() end)
-enableToggle(ToolsTab, "移除移动部件", function() MovingPartCleaner.Enable() end, function() MovingPartCleaner.Disable() end)
-enableToggle(ToolsTab, "防御立场", function() DefenseField.Enable() end, function() DefenseField.Disable() end)
+enableToggle(ToolsTab, "移除移动部件", function() MovingPartCleaner.enable() end, function() MovingPartCleaner.disable() end)
+enableToggle(ToolsTab, "防御立场", function() DefenseField.enable() end, function() DefenseField.disable() end)
 ToolsTab:AddToggle({
     Label = "管理员检测",
     Default = false,
@@ -327,17 +327,17 @@ ToolsTab:AddToggle({
     end
 })
 enableToggle(ToolsTab, "模型删除工具", function()
-    DeleteTool.Enable()
+    DeleteTool.enable()
     ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl键点击来删除指向的模型", Type = "info", Duration = 5 })
-end, function() DeleteTool.Disable() end)
+end, function() DeleteTool.disable() end)
 enableToggle(ToolsTab, "GUI删除工具", function()
     GuiDeleter.enable()
     ChronixUI:Notify({ Title = "提示", Content = "按下" .. GuiDeleter.getBindKey().Name .. "键来删除鼠标指向的UI", Type = "info", Duration = 5 })
 end, function() GuiDeleter.disable() end)
 enableToggle(ToolsTab, "模型信息查询工具", function()
-    ClickInspectModule.Enable()
+    ClickInspectModule.enable()
     ChronixUI:Notify({ Title = "提示", Content = "按下Ctrl键点击来查看模型信息", Type = "info", Duration = 5 })
-end, function() ClickInspectModule.Disable() end)
+end, function() ClickInspectModule.disable() end)
 ToolsTab:AddToggle({
     Label = "禁用购买提示框",
     Default = false,
@@ -1809,7 +1809,7 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
             OtherGameTab:AddToggle({
                 Label = "主功能和界面",
                 Default = false,
-                Callback = function(v) if v then _G.DeathBallScript:Enable() else _G.DeathBallScript:Disable() end end
+                Callback = function(v) if v then _G.DeathBallScript:enable() else _G.DeathBallScript:disable() end end
             })
         elseif GetgameInfo.name == "小屋角色扮演" then
             OtherGameTab:AddButton({ Text = "变正常", Callback = function() ChatControl:chat("/re") end })

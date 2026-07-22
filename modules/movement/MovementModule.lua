@@ -57,7 +57,7 @@ local function onAction(actionName, inputState, input)
 end
 
 -- 启用平移功能（绑定方向键，高优先级覆盖默认行为）
-function module.Enable()
+function module.enable()
     if enabled then return end
     enabled = true
 
@@ -94,7 +94,7 @@ function module.Enable()
 end
 
 -- 禁用平移功能（解绑所有方向键动作）
-function module.Disable()
+function module.disable()
     if not enabled then return end
     enabled = false
 
@@ -105,19 +105,19 @@ function module.Disable()
 end
 
 -- 完全卸载模块（清理所有资源并重置状态）
-function module.Unload()
+function module.unload()
     -- 先禁用功能
-    module.Disable()
+    module.disable()
     
     -- 重置所有内部状态到初始值
     moveDistance = 10
     
     -- 清空模块函数（可选，防止后续调用）
-    module.Enable = nil
-    module.Disable = nil
+    module.enable = nil
+    module.disable = nil
     module.SetDistance = nil
     module.GetDistance = nil
-    module.Unload = nil
+    module.unload = nil
     
     -- 注意：不将 module 本身设为 nil，因为外部可能持有引用
     -- 但清空了所有方法后，模块实际上已无法使用

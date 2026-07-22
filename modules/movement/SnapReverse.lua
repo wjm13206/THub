@@ -49,7 +49,7 @@ end
 --==========================================
 -- 开启
 --==========================================
-function SnapReverse.Enable(plr)
+function SnapReverse.enable(plr)
 	if not loaded then
 		return
 	end
@@ -64,7 +64,7 @@ end
 --==========================================
 -- 关闭
 --==========================================
-function SnapReverse.Disable()
+function SnapReverse.disable()
 	if not enabled then return end
 	enabled = false
 
@@ -77,10 +77,10 @@ end
 --==========================================
 -- 彻底卸载
 --==========================================
-function SnapReverse.Unload()
+function SnapReverse.unload()
 	if not loaded then return end
 
-	SnapReverse.Disable()
+	SnapReverse.disable()
 
 	player = nil
 	camera = nil
