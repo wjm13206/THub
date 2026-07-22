@@ -28,7 +28,7 @@ local Mouse = LocalPlayer:GetMouse()
 
 local UIParticleSystem
 task.spawn(function()
-    local ok, result = pcall(game.HttpGet, game, "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/UIParticleSystem.lua")
+    local ok, result = pcall(game.HttpGet, game, "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/ui/UIParticleSystem.lua")
     if ok and result then
         local success, mod = pcall(loadstring, result)
         if success and mod then

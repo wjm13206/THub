@@ -444,7 +444,7 @@ ToolsTab:AddToggle({
     Default = false,
     Callback = function(v) RemoveFog(v) end
 })
-ToolsTab:AddButton({ Text = "优化世界光效", Callback = function() loadstring(cloneref(game):HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/WorldShader.lua"))() end })
+ToolsTab:AddButton({ Text = "优化世界光效", Callback = function() loadstring(cloneref(game):HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/visual/WorldShader.lua"))() end })
 ToolsTab:AddButton({ Text = "打印当前坐标", Callback = function()
     local position1 = LocalPlayer.Character.HumanoidRootPart.Position
     print(string.format("[THub] 玩家坐标: (%.2f, %.2f, %.2f)", position1.X, position1.Y, position1.Z))
@@ -1826,7 +1826,7 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
             OtherGameTab:AddButton({ Text = "传送到 营地4", Callback = function() TeleportTo(8992, 596, 102) end })
             OtherGameTab:AddButton({ Text = "传送到 营地5", Callback = function() TeleportTo(10990, 550, 104) end })
             OtherGameTab:AddLabel("圣诞活动")
-            OtherGameTab:AddButton({ Text = "获取所有礼物", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/SouthExpedition_Christmas_getallgifts.lua"))() end })
+            OtherGameTab:AddButton({ Text = "获取所有礼物", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/games/SouthExpedition_Christmas_getallgifts.lua"))() end })
             OtherGameTab:AddInput({
                 Label = "礼物号",
                 Placeholder = "",

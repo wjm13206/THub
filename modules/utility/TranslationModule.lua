@@ -4,7 +4,7 @@ local HttpService = cloneref(game:GetService("HttpService"))
 local RunService = cloneref(game:GetService("RunService"))
 
 -- 加载异步请求模块
-local AsyncFileFetcher = _G.AsyncFileFetcher or loadstring(game:HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/AsyncFileFetcher.lua"))()
+local AsyncFileFetcher = _G.AsyncFileFetcher or loadstring(game:HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/core/AsyncFileFetcher.lua"))()
 
 local TranslationModule = {}
 
