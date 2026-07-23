@@ -1,3 +1,7 @@
+-- https://github.com/EdgeIY/infiniteyield/commits/master/source
+-- Update Last Commits on Jul 22, 2026 - Fix unfling - rockythef0x authored yesterday - [537da54]790c7756ae61bc67fb901a7572fb8e23d
+-- I18N by Chronix
+
 if IY_LOADED and not _G.IY_DEBUG then
 	-- error("Infinite Yield is already running!", 0)
 	return
@@ -142,11 +146,12 @@ if makefolder and isfolder and writefile and isfile then
 				writefile(path, game:HttpGet((path:gsub("infiniteyield/", assets))))
 			end
 		end
+		-- honestly just blame your phone if the assets appear in your gallery
 		if IsOnMobile then writefile("infiniteyield/assets/.nomedia", "") end
 	end)
 end
 
-currentVersion = "6.4.1"
+currentVersion = "6.4.2"
 
 ScaledHolder = Instance.new("Frame")
 Scale = Instance.new("UIScale")
@@ -292,7 +297,7 @@ function randomString()
 end
 
 PARENT = nil
-MAX_DISPLAY_ORDER = 2147483647
+MAX_DISPLAY_ORDER = 1.7976931348623157e308
 if get_hidden_gui or gethui then
     local hiddenUI = get_hidden_gui or gethui
     local Main = Instance.new("ScreenGui")
@@ -4453,15 +4458,15 @@ end
 
 CMDs = {}
 CMDs[#CMDs + 1] = {NAME = 'discord / support / help', DESC = '加入无限收益 Discord 服务器的邀请链接。'}
-CMDs[#CMDs + 1] = {NAME = 'guiscale [数字]', DESC = '更改 GUI 的大小。[数字] 接受小数和整数。最小为 0.4，最大为 2'}
-CMDs[#CMDs + 1] = {NAME = 'console', DESC = '加载 Roblox 控制台'}
-CMDs[#CMDs + 1] = {NAME = 'oldconsole', DESC = '加载旧版 Roblox 控制台'}
-CMDs[#CMDs + 1] = {NAME = 'explorer / dex', DESC = '打开 Moon 的 DEX 浏览器'}
-CMDs[#CMDs + 1] = {NAME = 'olddex / odex', DESC = '打开 Moon 的旧版 DEX 浏览器'}
-CMDs[#CMDs + 1] = {NAME = 'remotespy / rspy', DESC = '打开 Simple Spy V3'}
+CMDs[#CMDs + 1] = {NAME = 'guiscale [数字]', DESC = '更改 GUI 的大小。[数字]可接受小数和整数。最小值为0.4，最大值为2'}
+CMDs[#CMDs + 1] = {NAME = 'console', DESC = '打开 Roblox 控制台'}
+CMDs[#CMDs + 1] = {NAME = 'oldconsole', DESC = '加载旧版主题的 Roblox 控制台'}
+CMDs[#CMDs + 1] = {NAME = 'explorer / dex', DESC = '打开 Chillz 的 Dex++ 浏览器'}
+CMDs[#CMDs + 1] = {NAME = 'moondex / mdex', DESC = '打开 Moon 的 Dex 浏览器'}
+CMDs[#CMDs + 1] = {NAME = 'remotespy / rspy', DESC = '打开 Cobalt 以拦截进出网络流量'}
+CMDs[#CMDs + 1] = {NAME = 'simplespy / sspy', DESC = '打开 Simple Spy V3 以拦截从客户端到服务器的远程呼叫'}
 CMDs[#CMDs + 1] = {NAME = 'audiologger / alogger', DESC = '打开 Edge 的音频记录器'}
 CMDs[#CMDs + 1] = {NAME = 'serverinfo / info', DESC = '提供有关服务器的信息'}
-CMDs[#CMDs + 1] = {NAME = 'serverscan', DESC = '扫描字符串中的服务器引用并重建它们'}
 CMDs[#CMDs + 1] = {NAME = 'jobid', DESC = '将游戏的 JobId 复制到剪贴板'}
 CMDs[#CMDs + 1] = {NAME = 'notifyjobid', DESC = '通知你游戏的 JobId'}
 CMDs[#CMDs + 1] = {NAME = 'rejoin / rj', DESC = '让你重新加入游戏'}
@@ -4744,6 +4749,8 @@ CMDs[#CMDs + 1] = {NAME = 'loopoof', DESC = '循环所有人的角色声音（�
 CMDs[#CMDs + 1] = {NAME = 'unloopoof', DESC = '停止 oof 混乱'}
 CMDs[#CMDs + 1] = {NAME = 'muteboombox [玩家]', DESC = '静音某人的音箱'}
 CMDs[#CMDs + 1] = {NAME = 'unmuteboombox [玩家]', DESC = '取消静音某人的音箱'}
+CMDs[#CMDs + 1] = {NAME = 'hitboxes', DESC = '显示所有碰撞箱'}
+CMDs[#CMDs + 1] = {NAME = 'unhitboxes', DESC = '停止显示所有碰撞箱'}
 CMDs[#CMDs + 1] = {NAME = 'hitbox [玩家] [大小] [透明度]', DESC = '扩展玩家的 HumanoidRootPart 的碰撞箱（默认为 1）'}
 CMDs[#CMDs + 1] = {NAME = 'headsize [玩家] [大小]', DESC = '扩展玩家的 Head 的大小（默认为 1）'}
 CMDs[#CMDs + 1] = {NAME = '', DESC = ''}
@@ -6901,10 +6908,6 @@ addcmd('serverinfo',{'info','sinfo'},function(args, speaker)
 	end)
 end)
 
-addcmd("serverscan", {}, function(args, speaker)
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/refs/heads/main/serverscanner.lua"))()
-end)
-
 addcmd("jobid", {}, function(args, speaker)
 	toClipboard("roblox://placeId=" .. PlaceId .. "&gameInstanceId=" .. JobId)
 end)
@@ -6962,39 +6965,43 @@ addcmd("exit", {}, function(args, speaker)
 	game:Shutdown()
 end)
 
+local NoclipParts = {}
 local Noclipping = nil
-addcmd('noclip',{},function(args, speaker)
-	Clip = false
-	wait(0.1)
-	local function NoclipLoop()
-		if Clip == false and speaker.Character ~= nil then
-			for _, child in pairs(speaker.Character:GetDescendants()) do
-				if child:IsA("BasePart") and child.CanCollide == true and child.Name ~= floatName then
-					child.CanCollide = false
-				end
-			end
-		end
-	end
-	Noclipping = RunService.Stepped:Connect(NoclipLoop)
-	if args[1] and args[1] == 'nonotify' then return end
-	notify('穿墙','穿墙已启用')
+addcmd("noclip", {}, function(args, speaker)
+    pcall(function() Noclipping:Disconnect() end)
+    Clip = false
+    task.wait(0.1)
+    NoclipParts = {}
+    Noclipping = RunService.Stepped:Connect(function()
+        if Clip == false and speaker.Character ~= nil then
+            for _, child in pairs(speaker.Character:GetDescendants()) do
+                if child:IsA("BasePart") and child.CanCollide == true and child.Name ~= floatName then
+                    child.CanCollide = false
+                    NoclipParts[child] = true
+                end
+            end
+        end
+    end)
+    if args[1] and args[1] == "nonotify" then return end
+    notify('穿墙','穿墙已启用')
 end)
 
-addcmd('clip',{'unnoclip'},function(args, speaker)
-	if Noclipping then
-		Noclipping:Disconnect()
-	end
-	Clip = true
-	if args[1] and args[1] == 'nonotify' then return end
-	notify('穿墙','穿墙已禁用')
+addcmd("unnoclip", {"clip"}, function(args, speaker)
+    pcall(function() Noclipping:Disconnect() end)
+    Clip = true
+    task.wait(0.1)
+    for child, _ in pairs(NoclipParts) do
+        if typeof(child) == "Instance" and child:IsA("BasePart") and child.Parent then
+            child.CanCollide = true
+        end
+    end
+    NoclipParts = {}
+    if args[1] and args[1] == "nonotify" then return end
+    notify('穿墙','穿墙已禁用')
 end)
 
-addcmd('togglenoclip',{},function(args, speaker)
-	if Clip then
-		execCmd('noclip')
-	else
-		execCmd('clip')
-	end
+addcmd("togglenoclip", {}, function(args, speaker)
+    execCmd(Clip and "noclip" or "unnoclip")
 end)
 
 FLYING = false
@@ -9250,26 +9257,28 @@ end)
 
 addcmd("orbit", {}, function(args, speaker)
 	execCmd("unorbit nonotify")
+
 	local target = Players:FindFirstChild(getPlayer(args[1], speaker)[1])
 	local root = getRoot(speaker.Character)
 	local humanoid = speaker.Character:FindFirstChildWhichIsA("Humanoid")
+
 	if target and target.Character and getRoot(target.Character) and root and humanoid then
 		local rotation = 0
 		local speed = tonumber(args[2]) or 0.2
 		local distance = tonumber(args[3]) or 6
-		orbit1 = RunService.Heartbeat:Connect(function()
-			pcall(function()
-				rotation = rotation + speed
-				root.CFrame = CFrame.new(getRoot(target.Character).Position) * CFrame.Angles(0, math.rad(rotation), 0) * CFrame.new(distance, 0, 0)
-			end)
+		orbit1 = RunService.Stepped:Connect(function()
+			breakVelocity()
+			rotation = rotation + speed
+
+			local targetRoot = getRoot(target.Character).Position
+			local orbitPosition = (CFrame.new(targetRoot) * CFrame.Angles(0, math.rad(rotation), 0) * CFrame.new(distance, 0, 0)).Position
+			root.CFrame = CFrame.lookAt(orbitPosition, Vector3.new(targetRoot.X, orbitPosition.Y, targetRoot.Z))
 		end)
-		orbit2 = RunService.RenderStepped:Connect(function()
-			pcall(function()
-				root.CFrame = CFrame.new(root.Position, getRoot(target.Character).Position)
-			end)
+		orbit2 = humanoid.Died:Connect(function() execCmd("unorbit") end)
+		orbit3 = humanoid.Seated:Connect(function(value)
+			if value then execCmd("unorbit") end
 		end)
-		orbit3 = humanoid.Died:Connect(function() execCmd("unorbit") end)
-		orbit4 = humanoid.Seated:Connect(function(value) if value then execCmd("unorbit") end end)
+		
 		notify("轨道", "已开始围绕 " .. formatUsername(target) .. " 旋转")
 	end
 end)
@@ -9278,7 +9287,6 @@ addcmd("unorbit", {}, function(args, speaker)
 	if orbit1 then orbit1:Disconnect() end
 	if orbit2 then orbit2:Disconnect() end
 	if orbit3 then orbit3:Disconnect() end
-	if orbit4 then orbit4:Disconnect() end
 	if args[1] ~= "nonotify" then notify("轨道", "已停止围绕玩家旋转") end
 end)
 
@@ -10429,90 +10437,25 @@ end)
 
 addcmd("explorer", {"dex"}, function(args, speaker)
 	notify("加载中", "请稍等片刻")
+    loadstring(game:HttpGet("https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua"))()
+end)
+
+addcmd("moondex", {"mdex"}, function(args, speaker)
+    notify("加载中",'请稍等片刻')
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
 end)
 
-addcmd('olddex', {'odex'}, function(args, speaker)
-	notify('加载旧版浏览器', '请稍等片刻')
-
-	local getobjects = function(a)
-		local Objects = {}
-		if a then
-			local b = InsertService:LoadLocalAsset(a)
-			if b then 
-				table.insert(Objects, b) 
-			end
-		end
-		return Objects
-	end
-
-	local Dex = getobjects("rbxassetid://10055842438")[1]
-	Dex.Parent = PARENT
-
-	local function Load(Obj, Url)
-		local function GiveOwnGlobals(Func, Script)
-			local Fenv, RealFenv, FenvMt = {}, {
-				script = Script,
-				getupvalue = function(a, b)
-					return nil
-				end,
-				getreg = function()
-					return {}
-				end,
-				getprops = getprops or function(inst)
-					if getproperties then
-						local props = getproperties(inst)
-						if props[1] and gethiddenproperty then
-							local results = {}
-							for _,name in pairs(props) do
-								local success, res = pcall(gethiddenproperty, inst, name)
-								if success then
-									results[name] = res
-								end
-							end
-
-							return results
-						end
-
-						return props
-					end
-
-					return {}
-				end
-			}, {}
-			FenvMt.__index = function(a,b)
-				return RealFenv[b] == nil and getgenv()[b] or RealFenv[b]
-			end
-			FenvMt.__newindex = function(a, b, c)
-				if RealFenv[b] == nil then 
-					getgenv()[b] = c 
-				else 
-					RealFenv[b] = c 
-				end
-			end
-			setmetatable(Fenv, FenvMt)
-			pcall(setfenv, Func, Fenv)
-			return Func
-		end
-
-		local function LoadScripts(_, Script)
-			if Script:IsA("LocalScript") then
-				task.spawn(function()
-					GiveOwnGlobals(loadstring(Script.Source,"="..Script:GetFullName()), Script)()
-				end)
-			end
-			table.foreach(Script:GetChildren(), LoadScripts)
-		end
-
-		LoadScripts(nil, Obj)
-	end
-
-	Load(Dex)
+addcmd("remotespy", {"rspy", "cobalt", "cspy"}, function(args, speaker)
+    notify("加载中",'请稍等片刻')
+    -- Full credit to notpoiu, creator of Cobalt
+    loadstring(game:HttpGet("https://github.com/notpoiu/cobalt/releases/latest/download/Cobalt.luau"))()
 end)
 
-addcmd('remotespy',{'rspy'},function(args, speaker)
-	notify("加载中",'请稍等片刻')
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/SimpleSpyV3/main.lua"))()
+addcmd("simplespy", {"sspy"}, function(args, speaker)
+    notify("加载中",'请稍等片刻')
+    -- Full credit to exx, creator of SimpleSpy
+    -- also thanks to Amity for fixing
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/SimpleSpyV3/main.lua"))()
 end)
 
 addcmd('audiologger',{'alogger'},function(args, speaker)
@@ -11689,57 +11632,51 @@ end)
 flinging = false
 addcmd('fling',{},function(args, speaker)
 	flinging = false
-	for _, child in pairs(speaker.Character:GetDescendants()) do
+	for _, child in next, speaker.Character:GetDescendants() do
 		if child:IsA("BasePart") then
 			child.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5)
 		end
 	end
-	execCmd('noclip')
-	wait(.1)
+	execCmd('noclip nonotify')
+	task.wait(.1)
 	local bambam = Instance.new("BodyAngularVelocity")
 	bambam.Name = randomString()
 	bambam.Parent = getRoot(speaker.Character)
 	bambam.AngularVelocity = Vector3.new(0,99999,0)
 	bambam.MaxTorque = Vector3.new(0,math.huge,0)
 	bambam.P = math.huge
-	local Char = speaker.Character:GetChildren()
-	for i, v in next, Char do
+	for i, v in next, speaker.Character:GetChildren() do
 		if v:IsA("BasePart") then
-			v.CanCollide = false
 			v.Massless = true
-			v.Velocity = Vector3.new(0, 0, 0)
+			v.Velocity = Vector3.zero
 		end
 	end
 	flinging = true
-	local function flingDiedF()
+	flingDied = speaker.Character:FindFirstChildOfClass('Humanoid').Died:Connect(function()
 		execCmd('unfling')
-	end
-	flingDied = speaker.Character:FindFirstChildOfClass('Humanoid').Died:Connect(flingDiedF)
+	end)
 	repeat
 		bambam.AngularVelocity = Vector3.new(0,99999,0)
-		wait(.2)
+		task.wait(.2)
 		bambam.AngularVelocity = Vector3.new(0,0,0)
-		wait(.1)
+		task.wait(.1)
 	until flinging == false
 end)
 
 addcmd('unfling',{'nofling'},function(args, speaker)
-	execCmd('clip')
-	if flingDied then
-		flingDied:Disconnect()
-	end
+	execCmd('clip nonotify')
+	if flingDied then flingDied:Disconnect() end
 	flinging = false
-	wait(.1)
+	task.wait(.1)
 	local speakerChar = speaker.Character
 	if not speakerChar or not getRoot(speakerChar) then return end
-	for i,v in pairs(getRoot(speakerChar):GetChildren()) do
-		if v.ClassName == 'BodyAngularVelocity' then
+	for _, v in next, speakerChar:GetDescendants() do
+		if v:IsA("BasePart") then
+			v.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
+			v.Massless = false
+			v.Velocity = Vector3.zero
+		elseif v:IsA("BodyAngularVelocity") then
 			v:Destroy()
-		end
-	end
-	for _, child in pairs(speakerChar:GetDescendants()) do
-		if child.ClassName == "Part" or child.ClassName == "MeshPart" then
-			child.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
 		end
 	end
 end)
@@ -12302,6 +12239,14 @@ addcmd('hitbox',{},function(args, speaker)
 			end
 		end
 	end
+end)
+
+addcmd("hitboxes", {}, function(args, speaker)
+    settings():GetService("RenderSettings").ShowBoundingBoxes = true
+end)
+
+addcmd("unhitboxes", {}, function(args, speaker)
+    settings():GetService("RenderSettings").ShowBoundingBoxes = false
 end)
 
 addcmd('stareat',{'stare'},function(args, speaker)
@@ -13140,7 +13085,7 @@ end)
 
 if not isLegacyChat then
 	TextChatService.MessageReceived:Connect(function(message)
-		if message.TextSource then
+		if message.TextSource and message.Status ~= Enum.TextChatMessageStatus.InvalidTextChannelPermissions then
 			local player = Players:GetPlayerByUserId(message.TextSource.UserId)
 			if not player then return end
 
