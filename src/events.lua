@@ -629,6 +629,7 @@ function clearAllConnections()
     if labelUpdateConn then labelUpdateConn:Disconnect(); labelUpdateConn = nil end
     if pac then pac:Disconnect(); pac = nil end
     if prc then prc:Disconnect(); prc = nil end
+    autoThemeRunning = false
 end
 
 --======================================================================================
@@ -668,5 +669,30 @@ local labelUpdateConn = RunService.Stepped:Connect(function()
     end
 end)
 
+--=== 16. Auto Theme (time-based) ===
+local autoThemeRunning = false
+function enableAutoTheme()
+    if autoThemeRunning then return end
+    autoThemeRunning = true
+    local function applyThemeByTime()
+        local hour = tonumber(os.date("%H"))
+        local target = (hour >= 20 or hour < 5) and "Default" or "Light"
+        if ChronixUI.CurrentTheme ~= target then
+            ChronixUI:SetTheme(target)
+        end
+    end
+    applyThemeByTime()
+    task.spawn(function()
+        while autoThemeRunning do
+            task.wait(1800)
+            applyThemeByTime()
+        end
+    end)
+end
+function disableAutoTheme()
+    autoThemeRunning = false
+end
+
 -- Initialize default-on features
 enableAntiAFK()
+enableAutoTheme()
