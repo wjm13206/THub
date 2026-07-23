@@ -1,27 +1,13 @@
 -- Fling Module for Infinite Yield
 -- Provides fling, flyfling, walkfling, and invisfling functionality
--- Usage:
---   local flingModule = loadstring(game:HttpGet("raw_url_here"))()
---   flingModule.fling.enable()
---   flingModule.fling.disable()
---   flingModule.flyfling.enable(50) -- optional speed parameter
---   flingModule.flyfling.disable()
---   flingModule.walkfling.enable()
---   flingModule.walkfling.disable()
---   flingModule.invisfling.enable()
---   flingModule.invisfling.disable()
---   flingModule.unload() -- unload everything
 
 local FlingModule = {}
 
--- Services
 local cloneref = cloneref or clonereference or function(obj) return obj end
 local Players = cloneref(game:GetService("Players"))
 local RunService = cloneref(game:GetService("RunService"))
 local UserInputService = cloneref(game:GetService("UserInputService"))
-local TweenService = cloneref(game:GetService("TweenService"))
 local Workspace = cloneref(game:GetService("Workspace"))
-local Lighting = cloneref(game:GetService("Lighting"))
 
 local LocalPlayer = Players.LocalPlayer
 local function getRoot(char)
@@ -33,9 +19,12 @@ end
 
 local function breakVelocity()
     local V3 = Vector3.new(0, 0, 0)
-    for _, v in ipairs(LocalPlayer.Character:GetDescendants()) do
+    local char = LocalPlayer.Character
+    if not char then return end
+    for _, v in pairs(char:GetDescendants()) do
         if v:IsA("BasePart") then
-            v.Velocity, v.RotVelocity = V3, V3
+            v.Velocity = V3
+            v.RotVelocity = V3
         end
     end
 end
@@ -45,8 +34,14 @@ local flingActive = false
 local flingBodyVelocity = nil
 local flingDiedConnection = nil
 local flingLoopConnection = nil
+local flingSteppedConnection = nil
+local flingNoclipConn = nil
+local flingCharRemovingConn = nil
+local flingLastPosition = nil
 
 local function stopFling()
+    flingActive = false
+
     if flingDiedConnection then
         flingDiedConnection:Disconnect()
         flingDiedConnection = nil
@@ -55,23 +50,37 @@ local function stopFling()
         flingLoopConnection:Disconnect()
         flingLoopConnection = nil
     end
-    if flingBodyVelocity and flingBodyVelocity.Parent then
-        flingBodyVelocity:Destroy()
+    if flingSteppedConnection then
+        flingSteppedConnection:Disconnect()
+        flingSteppedConnection = nil
     end
+    if flingNoclipConn then
+        flingNoclipConn:Disconnect()
+        flingNoclipConn = nil
+    end
+    if flingCharRemovingConn then
+        flingCharRemovingConn:Disconnect()
+        flingCharRemovingConn = nil
+    end
+
+    pcall(function()
+        if flingBodyVelocity and flingBodyVelocity.Parent then
+            flingBodyVelocity:Destroy()
+        end
+    end)
     flingBodyVelocity = nil
 
-    -- Restore collision and physical properties
-    local char = LocalPlayer.Character
-    if char then
-        for _, child in pairs(char:GetDescendants()) do
-            if child:IsA("BasePart") then
-                child.CanCollide = true
-                child.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char then
+            for _, child in pairs(char:GetDescendants()) do
+                if child:IsA("BasePart") then
+                    child.CanCollide = true
+                    child.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
+                end
             end
         end
-    end
-
-    flingActive = false
+    end)
 end
 
 local function startFling()
@@ -83,28 +92,28 @@ local function startFling()
 
     local root = getRoot(char)
     if not root then return end
-    local lastPosition = root.Position
+    flingLastPosition = root.Position
 
-    -- 物理属性（适当降低密度，减小被检测风险）
-    for _, child in pairs(char:GetDescendants()) do
-        if child:IsA("BasePart") then
-            child.CustomPhysicalProperties = PhysicalProperties.new(5, 0.3, 0.5)
+    pcall(function()
+        for _, child in pairs(char:GetDescendants()) do
+            if child:IsA("BasePart") then
+                child.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5)
+            end
         end
-    end
+    end)
 
-    -- Noclip 循环
-    local function noclipLoop()
-        if char and char.Parent then
-            for _, child in pairs(char:GetDescendants()) do
+    flingNoclipConn = RunService.Stepped:Connect(function()
+        if not flingActive then return end
+        local c = LocalPlayer.Character
+        if c and c.Parent then
+            for _, child in pairs(c:GetDescendants()) do
                 if child:IsA("BasePart") and child.CanCollide == true and child.Name ~= "FloatPart" then
                     child.CanCollide = false
                 end
             end
         end
-    end
-    local noclipConnection = RunService.Stepped:Connect(noclipLoop)
+    end)
 
-    -- 创建 BodyAngularVelocity
     flingBodyVelocity = Instance.new("BodyAngularVelocity")
     flingBodyVelocity.Name = "__FlingVelocity"
     flingBodyVelocity.Parent = root
@@ -112,18 +121,8 @@ local function startFling()
     flingBodyVelocity.MaxTorque = Vector3.new(0, math.huge, 0)
     flingBodyVelocity.P = math.huge
 
-    -- 禁用碰撞、速度
-    for _, v in pairs(char:GetChildren()) do
-        if v:IsA("BasePart") then
-            v.CanCollide = false
-            v.Massless = true
-            v.Velocity = Vector3.zero
-        end
-    end
-
     flingActive = true
 
-    -- 死亡监听
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     if humanoid then
         flingDiedConnection = humanoid.Died:Connect(function()
@@ -131,63 +130,38 @@ local function startFling()
         end)
     end
 
-    -- ===== 核心：用 Stepped 在物理模拟前检测传送并清零速度 =====
-    local steppedConnection
-    steppedConnection = RunService.Stepped:Connect(function()
+    flingCharRemovingConn = LocalPlayer.CharacterRemoving:Connect(function()
+        stopFling()
+    end)
+
+    flingSteppedConnection = RunService.Stepped:Connect(function()
         if not flingActive then return end
         if not char or not char.Parent or not root or not root.Parent then
             stopFling()
             return
         end
-
         local currentPos = root.Position
-        local distance = (currentPos - lastPosition).Magnitude
-        -- 如果单帧移动超过 2000 studs，视为传送
-        if distance > 2000 then
-            -- 立刻清零所有速度（在物理计算前）
+        if (currentPos - flingLastPosition).Magnitude > 2000 then
             breakVelocity()
             if flingBodyVelocity then
                 flingBodyVelocity.AngularVelocity = Vector3.zero
             end
-            -- 更新位置记录，下一帧恢复甩飞
-            lastPosition = currentPos
-        else
-            lastPosition = currentPos
         end
+        flingLastPosition = currentPos
     end)
 
-    -- ===== 甩飞的交替逻辑保持用 Heartbeat =====
     flingLoopConnection = RunService.Heartbeat:Connect(function()
         if not flingActive then return end
         if not flingBodyVelocity or not flingBodyVelocity.Parent then
             stopFling()
             return
         end
-
         flingBodyVelocity.AngularVelocity = Vector3.new(0, 99999, 0)
         task.wait(0.2)
         if flingBodyVelocity then
             flingBodyVelocity.AngularVelocity = Vector3.new(0, 0, 0)
         end
         task.wait(0.1)
-    end)
-
-    -- 停止时清理 Stepped 连接
-    local oldStopFling = stopFling
-    stopFling = function()
-        if steppedConnection then
-            steppedConnection:Disconnect()
-            steppedConnection = nil
-        end
-        oldStopFling()
-    end
-
-    -- 清理 noclip
-    task.spawn(function()
-        while flingActive do
-            task.wait(0.5)
-        end
-        noclipConnection:Disconnect()
     end)
 end
 
@@ -243,14 +217,24 @@ local flyflingActive = false
 local flyflingVehicleFly = nil
 local flyflingWalkFling = nil
 local flyflingSpeed = 20
+local flyflingCharRemovingConn = nil
+local flyflingDiedConn = nil
 
 local function stopFlyFling()
+    if flyflingDiedConn then
+        flyflingDiedConn:Disconnect()
+        flyflingDiedConn = nil
+    end
+    if flyflingCharRemovingConn then
+        flyflingCharRemovingConn:Disconnect()
+        flyflingCharRemovingConn = nil
+    end
     if flyflingVehicleFly then
-        flyflingVehicleFly.disable()
+        pcall(flyflingVehicleFly.disable)
         flyflingVehicleFly = nil
     end
     if flyflingWalkFling then
-        flyflingWalkFling.disable()
+        pcall(flyflingWalkFling.disable)
         flyflingWalkFling = nil
     end
     breakVelocity()
@@ -264,8 +248,6 @@ local function startFlyFling(speed)
         flyflingSpeed = speed
     end
 
-    -- Load and start vehicle fly (using the fly function from original)
-    -- Simplified vehicle fly implementation
     local function startVehicleFly()
         local char = LocalPlayer.Character
         local humanoid = char and char:FindFirstChildOfClass("Humanoid")
@@ -343,35 +325,40 @@ local function startFlyFling(speed)
                 if keyDownConnection then keyDownConnection:Disconnect() end
                 if keyUpConnection then keyUpConnection:Disconnect() end
                 if renderConnection then renderConnection:Disconnect() end
-                if flyBodyVelocity then flyBodyVelocity:Destroy() end
-                if flyBodyGyro then flyBodyGyro:Destroy() end
+                pcall(function()
+                    if flyBodyVelocity then flyBodyVelocity:Destroy() end
+                    if flyBodyGyro then flyBodyGyro:Destroy() end
+                end)
                 if humanoid then humanoid.PlatformStand = false end
             end
         }
     end
 
-    -- Simplified walkfling
     local function startWalkFling()
         local walkActive = true
         local char = LocalPlayer.Character
         local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-        local flyflingDiedConn = nil
+        local ffDiedConn = nil
 
         if humanoid then
-            flyflingDiedConn = humanoid.Died:Connect(function()
+            ffDiedConn = humanoid.Died:Connect(function()
                 if walkActive then
                     stopFlyFling()
                 end
             end)
         end
 
-        -- Noclip
-        for _, child in pairs(char:GetDescendants()) do
-            if child:IsA("BasePart") then
-                child.CanCollide = false
-            end
+        if char then
+            pcall(function()
+                for _, child in pairs(char:GetDescendants()) do
+                    if child:IsA("BasePart") then
+                        child.CanCollide = false
+                    end
+                end
+            end)
         end
 
+        local moveVal = 0.1
         local walkLoop = RunService.Heartbeat:Connect(function()
             if not walkActive or not char or not char.Parent then
                 return
@@ -388,8 +375,8 @@ local function startFlyFling(speed)
 
                 task.wait()
                 if root and root.Parent then
-                    local moveVal = 0.1
                     root.Velocity = vel + Vector3.new(0, moveVal, 0)
+                    moveVal = moveVal * -1
                 end
             end
         end)
@@ -398,16 +385,31 @@ local function startFlyFling(speed)
             disable = function()
                 walkActive = false
                 if walkLoop then walkLoop:Disconnect() end
-                if flyflingDiedConn then flyflingDiedConn:Disconnect() end
-                -- Restore noclip
-                for _, child in pairs(char:GetDescendants()) do
-                    if child:IsA("BasePart") then
-                        child.CanCollide = true
+                if ffDiedConn then ffDiedConn:Disconnect() end
+                pcall(function()
+                    local c = LocalPlayer.Character
+                    if c then
+                        for _, child in pairs(c:GetDescendants()) do
+                            if child:IsA("BasePart") then
+                                child.CanCollide = true
+                            end
+                        end
                     end
-                end
+                end)
             end
         }
     end
+
+    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        flyflingDiedConn = humanoid.Died:Connect(function()
+            stopFlyFling()
+        end)
+    end
+
+    flyflingCharRemovingConn = LocalPlayer.CharacterRemoving:Connect(function()
+        stopFlyFling()
+    end)
 
     flyflingVehicleFly = startVehicleFly()
     flyflingWalkFling = startWalkFling()
@@ -425,8 +427,11 @@ FlingModule.flyfling = {
 local walkflingActive = false
 local walkflingLoop = nil
 local walkflingDiedConn = nil
+local walkflingCharRemovingConn = nil
 
 local function stopWalkFling()
+    walkflingActive = false
+
     if walkflingLoop then
         walkflingLoop:Disconnect()
         walkflingLoop = nil
@@ -435,17 +440,21 @@ local function stopWalkFling()
         walkflingDiedConn:Disconnect()
         walkflingDiedConn = nil
     end
-
-    local char = LocalPlayer.Character
-    if char then
-        for _, child in pairs(char:GetDescendants()) do
-            if child:IsA("BasePart") then
-                child.CanCollide = true
-            end
-        end
+    if walkflingCharRemovingConn then
+        walkflingCharRemovingConn:Disconnect()
+        walkflingCharRemovingConn = nil
     end
 
-    walkflingActive = false
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char then
+            for _, child in pairs(char:GetDescendants()) do
+                if child:IsA("BasePart") then
+                    child.CanCollide = true
+                end
+            end
+        end
+    end)
 end
 
 local function startWalkFling()
@@ -462,12 +471,17 @@ local function startWalkFling()
         end)
     end
 
-    -- Noclip
-    for _, child in pairs(char:GetDescendants()) do
-        if child:IsA("BasePart") then
-            child.CanCollide = false
+    walkflingCharRemovingConn = LocalPlayer.CharacterRemoving:Connect(function()
+        stopWalkFling()
+    end)
+
+    pcall(function()
+        for _, child in pairs(char:GetDescendants()) do
+            if child:IsA("BasePart") then
+                child.CanCollide = false
+            end
         end
-    end
+    end)
 
     walkflingActive = true
     local moveVal = 0.1
@@ -509,23 +523,15 @@ FlingModule.walkfling = {
 -- ============= INVISFLING =============
 local invisflingActive = false
 local invisflingCleanup = {}
+local invisflingCharRemovingConn = nil
 
 local function stopInvisFling()
     if not invisflingActive then return end
+    invisflingActive = false
 
-    -- Restore character
-    local char = LocalPlayer.Character
-    if char and invisflingCleanup.originalChar then
-        for _, v in pairs(char:GetChildren()) do
-            if v ~= invisflingCleanup.originalRoot and v.Name ~= "Humanoid" then
-                v:Destroy()
-            end
-        end
-
-        if invisflingCleanup.originalRoot and invisflingCleanup.originalRoot.Parent then
-            invisflingCleanup.originalRoot.Transparency = 0
-            invisflingCleanup.originalRoot.Color = Color3.new(1, 1, 1)
-        end
+    if invisflingCharRemovingConn then
+        invisflingCharRemovingConn:Disconnect()
+        invisflingCharRemovingConn = nil
     end
 
     if invisflingCleanup.steppedConn then
@@ -533,15 +539,34 @@ local function stopInvisFling()
     end
 
     if invisflingCleanup.flyCleanup then
-        invisflingCleanup.flyCleanup()
+        pcall(invisflingCleanup.flyCleanup)
     end
 
-    if invisflingCleanup.bodyThrust then
-        invisflingCleanup.bodyThrust:Destroy()
-    end
+    pcall(function()
+        if invisflingCleanup.bodyThrust then
+            invisflingCleanup.bodyThrust:Destroy()
+        end
+    end)
 
-    Workspace.CurrentCamera.CameraSubject = LocalPlayer.Character
-    invisflingActive = false
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char and invisflingCleanup.originalChar then
+            for _, v in pairs(char:GetChildren()) do
+                if v ~= invisflingCleanup.originalRoot and v.Name ~= "Humanoid" then
+                    v:Destroy()
+                end
+            end
+            if invisflingCleanup.originalRoot and invisflingCleanup.originalRoot.Parent then
+                invisflingCleanup.originalRoot.Transparency = 0
+                invisflingCleanup.originalRoot.Color = Color3.new(1, 1, 1)
+            end
+        end
+    end)
+
+    pcall(function()
+        Workspace.CurrentCamera.CameraSubject = LocalPlayer.Character
+    end)
+
     invisflingCleanup = {}
 end
 
@@ -557,7 +582,10 @@ local function startInvisFling()
         humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
     end
 
-    -- Create invis model
+    invisflingCharRemovingConn = LocalPlayer.CharacterRemoving:Connect(function()
+        stopInvisFling()
+    end)
+
     local fakeModel = Instance.new("Model")
     fakeModel.Parent = char
 
@@ -578,7 +606,6 @@ local function startInvisFling()
 
     torso.Position = Vector3.new(0, 9999, 0)
 
-    -- Swap characters
     local originalRoot = getRoot(char)
     invisflingCleanup.originalRoot = originalRoot
     invisflingCleanup.originalChar = char
@@ -588,7 +615,6 @@ local function startInvisFling()
     LocalPlayer.Character = char
     task.wait(3)
 
-    -- Cleanup and setup new humanoid
     local newHumanoid = Instance.new("Humanoid")
     newHumanoid.Parent = char
 
@@ -607,14 +633,12 @@ local function startInvisFling()
         root.CanCollide = false
     end
 
-    -- Noclip loop
     invisflingCleanup.steppedConn = RunService.Stepped:Connect(function()
         if LocalPlayer.Character and getRoot(LocalPlayer.Character) then
             getRoot(LocalPlayer.Character).CanCollide = false
         end
     end)
 
-    -- Fly
     local function startFly()
         local flyChar = LocalPlayer.Character
         local flyHumanoid = flyChar and flyChar:FindFirstChildOfClass("Humanoid")
@@ -665,15 +689,16 @@ local function startInvisFling()
             keyDown:Disconnect()
             keyUp:Disconnect()
             renderConn:Disconnect()
-            flyBodyVelocity:Destroy()
-            flyBodyGyro:Destroy()
+            pcall(function()
+                flyBodyVelocity:Destroy()
+                flyBodyGyro:Destroy()
+            end)
             if flyHumanoid then flyHumanoid.PlatformStand = false end
         end
     end
 
     invisflingCleanup.flyCleanup = startFly()
 
-    -- Body thrust for fling
     Workspace.CurrentCamera.CameraSubject = root
     invisflingCleanup.bodyThrust = Instance.new("BodyThrust")
     invisflingCleanup.bodyThrust.Parent = root
