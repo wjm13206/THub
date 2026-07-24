@@ -79,7 +79,7 @@ jobs:
             echo "请评估是否需要适配。"
           } | gh issue create \
             --title "上游 ${{ steps.commits.outputs.count }} 个新提交待适配" \
-            --body-file - \
-            --json number --jq '.number' > /tmp/issue-num.txt
-          gh issue edit "$(cat /tmp/issue-num.txt)" --add-label "upstream-batch" 2>/dev/null || true
+            --body-file - > /tmp/issue-url.txt
+          NUM=$(grep -oE '[0-9]+$' /tmp/issue-url.txt)
+          gh issue edit "$NUM" --add-label "upstream-batch" 2>/dev/null || true
           echo "${{ steps.commits.outputs.latest }}" > .last-alert-sha
