@@ -3,22 +3,20 @@
 -- 放置于 ReplicatedStorage 或 ServerScriptService 等合适位置
 
 local cloneref = cloneref or clonereference or function(obj) return obj end
-local UserInputService = cloneref(game:GetService("UserInputService"))
 local Players = cloneref(game:GetService("Players"))
 
 local GuiDeleter = {}
 local isEnabled = false
-local bindKey = Enum.KeyCode.Backspace -- 默认按键
+local bindKey = Enum.KeyCode.Backspace
 local inputBeganConnection = nil
+local UserInputService = cloneref(game:GetService("UserInputService"))
 local localPlayer = Players.LocalPlayer
+local PlayerGui = cloneref(localPlayer:FindFirstChildWhichIsA("PlayerGui"))
+local Mouse = cloneref(localPlayer:GetMouse())
 
--- 内部核心删除函数
 local function deleteGuisAtPosition()
 	pcall(function()
-		local playerGui = localPlayer:GetGuiObjectsAtPosition(
-			UserInputService:GetMouseLocation().X,
-			UserInputService:GetMouseLocation().Y
-		)
+		local playerGui = PlayerGui:GetGuiObjectsAtPosition(Mouse.X, Mouse.Y)
 		for _, gui in ipairs(playerGui) do
 			if gui.Visible then
 				gui:Destroy()
@@ -27,7 +25,6 @@ local function deleteGuisAtPosition()
 	end)
 end
 
--- 处理按键输入
 local function onInputBegan(input, gameProcessed)
 	if gameProcessed then return end
 	if input.KeyCode == bindKey then
