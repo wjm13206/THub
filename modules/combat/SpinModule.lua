@@ -62,9 +62,11 @@ local function playMusic()
 
     local function doPlay(assetId)
         spinSongId = assetId
-        data["basicdata"]["otherdata"]["musicbox"].SoundId = assetId
-        data["basicdata"]["otherdata"]["musicbox"].TimePosition = 0
-        data["basicdata"]["otherdata"]["musicbox"]:Play()
+        local musicbox = data["basicdata"]["otherdata"]["musicbox"]
+        musicbox.SoundId = assetId
+        musicbox.TimePosition = 0
+        musicbox.Looped = true
+        musicbox:Play()
     end
 
     if isfile(filePath) then
@@ -93,6 +95,7 @@ end
 
 local function stopMusic()
     if spinSongId and data["basicdata"]["otherdata"]["musicbox"].SoundId == spinSongId and data["basicdata"]["otherdata"]["musicData"]["isPlay"] then
+        data["basicdata"]["otherdata"]["musicbox"].Looped = false
         data["basicdata"]["otherdata"]["musicbox"]:Stop()
         spinSongId = nil
     end
