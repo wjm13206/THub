@@ -80,5 +80,6 @@ jobs:
           } | gh issue create \
             --title "上游 ${{ steps.commits.outputs.count }} 个新提交待适配" \
             --body-file - \
-            --label "upstream-batch"
+            --json number --jq '.number' > /tmp/issue-num.txt
+          gh issue edit "$(cat /tmp/issue-num.txt)" --add-label "upstream-batch" 2>/dev/null || true
           echo "${{ steps.commits.outputs.latest }}" > .last-alert-sha
