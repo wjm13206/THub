@@ -47,6 +47,13 @@ jobs:
           NUM=$(gh issue list --label "upstream-batch" --state open --json number --jq '.[0].number // empty')
           echo "issue_number=$NUM" >> "$GITHUB_OUTPUT"
 
+      - name: Ensure label exists
+        if: steps.commits.outputs.count > 0
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "upstream-batch" --description "上游新提交待适配" --color "f78c26" 2>/dev/null || true
+
       - name: Append to existing issue
         if: steps.commits.outputs.count > 0 && steps.existing.outputs.issue_number != ''
         env:
