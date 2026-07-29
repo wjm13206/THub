@@ -9,7 +9,7 @@ musicList = ConfigModule.createmusicconfig("music")
 data = {
     basicdata = {
         window = {
-            windowSize = (UserInputService.TouchEnabled and not UserInputService.MouseEnabled) and UDim2.new(0, 476, 0, 294) or UDim2.new(0, 680, 0, 420),
+            windowSize = (UserInputService and UserInputService.TouchEnabled and not UserInputService.MouseEnabled) and UDim2.new(0, 476, 0, 294) or UDim2.new(0, 680, 0, 420),
         },
         player = {
             name = LocalPlayer.Name,

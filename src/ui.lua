@@ -23,7 +23,7 @@ local function enableToggle(tab, label, onFn, offFn)
     tab:AddToggle({ Label = label, Default = false, Callback = function(v) if v then onFn() else offFn() end end })
 end
 
-local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local isMobile = UserInputService and UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 local mobileHidden = {
     ["飞行"] = true, ["帧飞行"] = true, ["载具飞行"] = true,
