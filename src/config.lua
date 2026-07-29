@@ -113,6 +113,9 @@ data = {
                 scanConnection = nil,
             },
             autoconnirc = mainConfig.autoconnirc and mainConfig.autoconnirc or false,
+            drawme = {
+                linkorpath = "",
+            },
         },
         hankermodule = {
             hkill = {
@@ -162,6 +165,7 @@ data = {
         { gameid = 8111911783, name = "后院生存" },
         { gameid = 5974510967, name = "最黑暗的时刻" },
         { gameid = 1709917610, name = "后悔电梯" },
+        { gameid = 7628118889, name = "画我" },
     },
     othergamedata = {
         west_wood = {
@@ -239,6 +243,9 @@ data = {
         DarkestHours = {
             Collectible = HighlightModule.new("Scrap", "fuzzy", "item"),
             Collectiblent = NameTagModule.new("Scrap", "fuzzy", 20, true, "[收集物]"),
+        },
+        drawme = {
+            files = {},
         },
         Regretevator = {
             coins = HighlightModule.new("Coin", "pathFuzzy", "normal"),

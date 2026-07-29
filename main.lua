@@ -83,6 +83,7 @@ modulesToFetch = {
     ["SnapReverse"] = baseUrl .. "/modules/movement/SnapReverse.lua",
     ["AntiLookBlocker"] = baseUrl .. "/modules/utility/AntiLookBlocker.lua",
     ["AimBotModule"] = baseUrl .. "/modules/combat/AimBotModule.lua",
+    ["DrawmeModule"] = baseUrl .. "/modules/games/DrawmeModule.lua",
 }
 local moduleContents = AsyncFileFetcher.fetchMultiple(modulesToFetch)
 local moduleKeys = {}

@@ -1919,6 +1919,84 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
             OtherGameTab:AddLabel("透视功能")
             local dh = data["othergamedata"]["DarkestHours"]
             enableToggle(OtherGameTab, "收集物", function() dh.Collectible.apply(); dh.Collectiblent:enable() end, function() dh.Collectible.destroy(); dh.Collectiblent:disable() end)
+        elseif GetgameInfo.name == "画我" then
+            OtherGameTab:AddTitle("画我 - 图片绘制工具")
+            OtherGameTab:AddLabel("将本地图片或网络图片绘制到 EditableImage 画布上")
+            local drawmeStatusLabel = OtherGameTab:AddLabel("就绪")
+            local drawmeFileDropdown = OtherGameTab:AddDropdown({
+                Label = "本地图片文件",
+                Options = {},
+                Default = "",
+                Callback = function(selected)
+                    if selected and selected ~= "" then
+                        data["basicdata"]["otherdata"]["drawme"]["linkorpath"] = "ChronixHubConfig/image/" .. selected
+                    end
+                end
+            })
+            local drawmeLinkInput = OtherGameTab:AddInput({
+                Label = "图片直链/路径",
+                Placeholder = "输入图片URL或文件路径",
+                Default = data["basicdata"]["otherdata"]["drawme"]["linkorpath"] or "",
+                Callback = function(text)
+                    data["basicdata"]["otherdata"]["drawme"]["linkorpath"] = text
+                end
+            })
+            local function refreshDrawmeFileList()
+                local files = {}
+                if listfiles then
+                    local ok, fileList = pcall(listfiles, "ChronixHubConfig/image/")
+                    if ok and fileList then
+                        for _, f in ipairs(fileList) do
+                            local name = string.match(f, "[^\\/]+$")
+                            if name then table.insert(files, name) end
+                        end
+                    end
+                end
+                data["othergamedata"]["drawme"]["files"] = files
+                if drawmeFileDropdown and drawmeFileDropdown.UpdateOptions then
+                    drawmeFileDropdown:UpdateOptions(files)
+                end
+            end
+            refreshDrawmeFileList()
+            OtherGameTab:AddButton({
+                Text = "刷新文件列表",
+                Callback = function()
+                    refreshDrawmeFileList()
+                    drawmeStatusLabel.Text = "已刷新文件列表"
+                end
+            })
+            OtherGameTab:AddButton({
+                Text = "放置图片",
+                Callback = function()
+                    local source = data["basicdata"]["otherdata"]["drawme"]["linkorpath"]
+                    if not source or source == "" then
+                        drawmeStatusLabel.Text = "错误: 未指定图片路径"
+                        return
+                    end
+                    drawmeStatusLabel.Text = "正在加载图片..."
+                    local ok, err = pcall(function()
+                        local result = DrawmeModule.loadAndDraw(source)
+                        if result == 0 then
+                            drawmeStatusLabel.Text = "成功: 图片已绘制"
+                        elseif result == 1 then
+                            drawmeStatusLabel.Text = "错误: 未找到 EditableImage 画布"
+                        elseif result == 2 then
+                            drawmeStatusLabel.Text = "错误: 文件不存在"
+                        elseif result == 3 then
+                            drawmeStatusLabel.Text = "错误: 网络请求失败"
+                        elseif result == 4 then
+                            drawmeStatusLabel.Text = "错误: 图片解码失败"
+                        elseif result == 5 then
+                            drawmeStatusLabel.Text = "错误: 写入画布失败"
+                        else
+                            drawmeStatusLabel.Text = "错误: 未知错误 (" .. tostring(result) .. ")"
+                        end
+                    end)
+                    if not ok then
+                        drawmeStatusLabel.Text = "错误: " .. tostring(err)
+                    end
+                end
+            })
         elseif GetgameInfo.name == "后悔电梯" then
             OtherGameTab:AddLabel("通用")
             enableToggle(OtherGameTab, "自动舔冰淇凌（确保快捷栏中有冰淇凌）", function() Regretevator_AutoIceCream:enable() end, function() Regretevator_AutoIceCream:disable() end)

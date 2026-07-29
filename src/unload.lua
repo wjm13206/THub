@@ -83,6 +83,7 @@ unloadTHub = function()
     SnapReverse.unload()
     AimBotModule.unload()
     ChatSpammer.unload()
+    if DrawmeModule then DrawmeModule.unload() end
 
     if data["basicdata"]["otherdata"]["audioData"]["scanConnection"] then data["basicdata"]["otherdata"]["audioData"]["scanConnection"]:Disconnect() end
     if noclipConnection then noclipConnection:Disconnect() end
