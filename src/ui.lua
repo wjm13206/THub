@@ -2028,11 +2028,7 @@ if mouseLockController then
     })
 end
 settingsContent:AddDivider()
-settingsContent:AddToggle({
-    Label = "自动连接IRC",
-    Default = data["basicdata"]["otherdata"]["autoconnirc"],
-    Callback = function(v) mainConfig.autoconnirc = v end
-})
+
 settingsContent:AddKeybind({
     Label = "灵魂出窍",
     Default = FreecamModule.getKeybind().Name,
