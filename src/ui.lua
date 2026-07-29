@@ -19,10 +19,19 @@ local function sliderLock(tab, sliderLabel, min, max, default, sliderCb, lockLab
 end
 
 local function enableToggle(tab, label, onFn, offFn)
+    if isMobile and mobileHidden[label] then return end
     tab:AddToggle({ Label = label, Default = false, Callback = function(v) if v then onFn() else offFn() end end })
 end
 
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+local mobileHidden = {
+    ["飞行"] = true, ["帧飞行"] = true, ["载具飞行"] = true,
+    ["点击传送"] = true, ["鼠标解锁"] = true,
+    ["瞬间回头"] = true, ["物品滚轮切换"] = true, ["望远镜"] = true,
+    ["平移"] = true, ["摄像头穿墙"] = true,
+    ["模型删除工具"] = true, ["GUI删除工具"] = true, ["模型信息查询工具"] = true,
+}
 
 local function safeGetKeyCode(key)
     if typeof(key) == "EnumItem" and key.EnumType == Enum.KeyCode then
@@ -75,6 +84,15 @@ sliderLock(basicTab, "世界重力", 0, 1000, data["basicdata"]["player"]["gravi
 
 -- ===== 工具 Tab =====
 local ToolsTab = mainWindow:CreateTab({ Name = "工具", HasIcon = true, IconName = "wrench" })
+if isMobile then
+    local origAddButton = ToolsTab.AddButton
+    function ToolsTab:AddButton(config)
+        if config and config.Text and (config.Text == "获得点击传送工具" or config.Text == "终止当前游戏进程") then
+            return
+        end
+        return origAddButton(self, config)
+    end
+end
 ToolsTab:AddTitle("各种实用工具")
 ToolsTab:AddToggle({
     Label = "防挂机",
@@ -191,13 +209,13 @@ ToolsTab:AddToggle({
         end
     end
 })
+enableToggle(ToolsTab, "空中移动", function() AirWalk.enable() end, function() AirWalk.disable() end)
+enableToggle(ToolsTab, "无摔落伤害", function() NoFall.enable() end, function() NoFall.disable() end)
+enableToggle(ToolsTab, "瞬间交互", function() InstantInteraction.enable() end, function() InstantInteraction.disable() end)
 enableToggle(ToolsTab, "平移", function()
     movementModule.enable()
     ChronixUI:Notify({ Title = "提示", Content = "按下↑↓←→键进行平移", Type = "info", Duration = 5 })
 end, function() movementModule.disable() end)
-enableToggle(ToolsTab, "空中移动", function() AirWalk.enable() end, function() AirWalk.disable() end)
-enableToggle(ToolsTab, "无摔落伤害", function() NoFall.enable() end, function() NoFall.disable() end)
-enableToggle(ToolsTab, "瞬间交互", function() InstantInteraction.enable() end, function() InstantInteraction.disable() end)
 ToolsTab:AddToggle({
     Label = "穿墙",
     Default = false,
@@ -1942,6 +1960,31 @@ infoTab:AddLabel(data["basicdata"]["otherdata"]["yiyan"]["data"]["hitokoto"])
 
 -- ===== 设置内容 =====
 settingsContent = mainWindow.SettingsElements
+if isMobile then
+    local hiddenKeybindLabels = {
+        ["灵魂出窍"] = true, ["望远镜"] = true, ["锁定视角"] = true,
+        ["滚轮切换按键"] = true, ["GUI删除工具"] = true, ["瞬间回头"] = true,
+        ["自动瞄准-绑定按键"] = true,
+    }
+    local hiddenSettingLabels = {
+        ["自动瞄准-使用鼠标控制"] = true, ["自动瞄准-鼠标模式"] = true,
+    }
+    local origAddKeybind = settingsContent.AddKeybind
+    function settingsContent:AddKeybind(config)
+        if config and config.Label and hiddenKeybindLabels[config.Label] then return end
+        return origAddKeybind(self, config)
+    end
+    local origAddToggle = settingsContent.AddToggle
+    function settingsContent:AddToggle(config)
+        if config and config.Label and hiddenSettingLabels[config.Label] then return end
+        return origAddToggle(self, config)
+    end
+    local origAddDropdown = settingsContent.AddDropdown
+    function settingsContent:AddDropdown(config)
+        if config and config.Label and hiddenSettingLabels[config.Label] then return end
+        return origAddDropdown(self, config)
+    end
+end
 settingsContent:AddInput({
     Label = "Roblox - 缩放倍率",
     Placeholder = "这里输入你的视角倍率",
@@ -1990,18 +2033,16 @@ settingsContent:AddToggle({
     Default = data["basicdata"]["otherdata"]["autoconnirc"],
     Callback = function(v) mainConfig.autoconnirc = v end
 })
-if not isMobile then
-    settingsContent:AddKeybind({
-        Label = "灵魂出窍",
-        Default = FreecamModule.getKeybind().Name,
-        Callback = function(key)
-            local newKey = safeGetKeyCode(key)
-            if newKey then
-                FreecamModule.setKeybind(newKey)
-            end
+settingsContent:AddKeybind({
+    Label = "灵魂出窍",
+    Default = FreecamModule.getKeybind().Name,
+    Callback = function(key)
+        local newKey = safeGetKeyCode(key)
+        if newKey then
+            FreecamModule.setKeybind(newKey)
         end
-    })
-end
+    end
+})
 settingsContent:AddKeybind({
     Label = "望远镜",
     Default = data["basicdata"]["releasetools"]["zoom"]:GetBindKey().Name,
@@ -2031,6 +2072,33 @@ settingsContent:AddKeybind({
         end
     end
 })
+settingsContent:AddKeybind({
+    Label = "GUI删除工具",
+    Default = GuiDeleter.getBindKey().Name,
+    Callback = function(key)
+        local newKey = safeGetKeyCode(key)
+            if newKey then
+            GuiDeleter.setBindKey(newKey)
+        end
+    end
+})
+settingsContent:AddKeybind({
+    Label = "瞬间回头",
+    Default = SnapReverse.GetKeyBind().Name,
+    Callback = function(key)
+        if key then
+            local newKey = safeGetKeyCode(key)
+            if newKey then
+                SnapReverse.SetKeyBind(newKey)
+            end
+        end
+    end
+})
+settingsContent:AddDivider()
+settingsKeybindInput(settingsContent, "飞行 (Ctrl+)", FlyModule.getbindkey().Name, function(k) FlyModule.setbindkey(k) end, "飞行速度", FlyModule.getflyspeed(), function(v) FlyModule.setflyspeed(v) end)
+settingsKeybindInput(settingsContent, "帧飞行 (Ctrl+)", CframeFly.getbindkey().Name, function(k) CframeFly.setbindkey(k) end, "帧飞行速度", CframeFly.getspeed(), function(v) CframeFly.setspeed(v) end)
+settingsKeybindInput(settingsContent, "载具飞行 (Ctrl+)", VehicleFly.getbindkey().Name, function(k) VehicleFly.setbindkey(k) end, "载具飞行速度", VehicleFly.getspeed(), function(v) VehicleFly.setspeed(v) end)
+settingsContent:AddDivider()
 settingsContent:AddInput({
     Label = "TPWalk距离",
     Placeholder = "",
@@ -2053,33 +2121,6 @@ settingsContent:AddInput({
         end
     end
 })
-settingsContent:AddKeybind({
-    Label = "GUI删除工具",
-    Default = GuiDeleter.getBindKey().Name,
-    Callback = function(key)
-        local newKey = safeGetKeyCode(key)
-        if newKey then
-            GuiDeleter.setBindKey(newKey)
-        end
-    end
-})
-settingsContent:AddKeybind({
-    Label = "瞬间回头",
-    Default = SnapReverse.GetKeyBind().Name,
-    Callback = function(key)
-        if key then
-            local newKey = safeGetKeyCode(key)
-            if newKey then
-                SnapReverse.SetKeyBind(newKey)
-            end
-        end
-    end
-})
-settingsContent:AddDivider()
-settingsKeybindInput(settingsContent, "飞行 (Ctrl+)", FlyModule.getbindkey().Name, function(k) FlyModule.setbindkey(k) end, "飞行速度", FlyModule.getflyspeed(), function(v) FlyModule.setflyspeed(v) end)
-settingsKeybindInput(settingsContent, "帧飞行 (Ctrl+)", CframeFly.getbindkey().Name, function(k) CframeFly.setbindkey(k) end, "帧飞行速度", CframeFly.getspeed(), function(v) CframeFly.setspeed(v) end)
-settingsKeybindInput(settingsContent, "载具飞行 (Ctrl+)", VehicleFly.getbindkey().Name, function(k) VehicleFly.setbindkey(k) end, "载具飞行速度", VehicleFly.getspeed(), function(v) VehicleFly.setspeed(v) end)
-settingsContent:AddDivider()
 settingsContent:AddKeybind({
     Label = "自动瞄准-绑定按键",
     Default = AimBotModule.GetKey().Name,
