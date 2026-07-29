@@ -28,12 +28,6 @@ local _cameraTween = nil
 local _fovCircle = nil
 local _connections = {}
 
--- 移动端检测
-local _isMobile = false
-local function _checkMobile()
-	_isMobile = _userInputService.TouchEnabled and not _userInputService.KeyboardEnabled
-end
-
 -- 服务引用
 local cloneref = cloneref or clonereference or function(obj) return obj end
 local _players = cloneref(game:GetService("Players"))
@@ -42,6 +36,12 @@ local _currentCamera = cloneref(game.Workspace.CurrentCamera)
 local _tweenService = cloneref(game:GetService("TweenService"))
 local _userInputService = cloneref(game:GetService("UserInputService"))
 local _runService = cloneref(game:GetService("RunService"))
+
+-- 移动端检测
+local _isMobile = false
+local function _checkMobile()
+	_isMobile = _userInputService and _userInputService.TouchEnabled and not _userInputService.KeyboardEnabled
+end
 
 -- 创建FOV圆圈
 local function _createFovCircle()

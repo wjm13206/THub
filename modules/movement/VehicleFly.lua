@@ -10,7 +10,7 @@ local RunService = cloneref(game:GetService("RunService"))
 local FLYING = false
 local bindKey = Enum.KeyCode.V
 local connection = nil
-local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local isMobile = UserInputService and UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 -- 默认速度 (对应源码 vehicleflyspeed = 1)
 local vehicleflyspeed = 1 

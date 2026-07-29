@@ -12,7 +12,7 @@ local enable = false
 local CFloop = nil
 local bindKey = Enum.KeyCode.F
 local connection = nil
-local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local isMobile = UserInputService and UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 local function toggleCFrameFly()
     if enable then

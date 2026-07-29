@@ -34,7 +34,7 @@ local lookSensitivity = 50
 local WHEEL_SENSITIVITY = 0.1
 
 -- 移动端支持
-local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local isMobile = UserInputService and UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 local autoEnabledOnMobile = false
 
 -- ========== 辅助函数 ==========

@@ -12,7 +12,7 @@ local enable = false
 local tpwalking = false
 local bindKey = Enum.KeyCode.F
 local connection = nil
-local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local isMobile = UserInputService and UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 local function togglefly()
 	if enable == true then
