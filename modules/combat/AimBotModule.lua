@@ -28,6 +28,12 @@ local _cameraTween = nil
 local _fovCircle = nil
 local _connections = {}
 
+-- 移动端检测
+local _isMobile = false
+local function _checkMobile()
+	_isMobile = _userInputService.TouchEnabled and not _userInputService.KeyboardEnabled
+end
+
 -- 服务引用
 local cloneref = cloneref or clonereference or function(obj) return obj end
 local _players = cloneref(game:GetService("Players"))
@@ -109,6 +115,9 @@ end
 
 -- 获取离鼠标最近的目标
 local function _getClosestToMouse()
+	if _isMobile then
+		return _getClosestToScreenCenter()
+	end
 	local aimFov = _fov
 	local targetPos = nil
 	local mouseLocation = _userInputService:GetMouseLocation()
@@ -136,8 +145,39 @@ local function _getClosestToMouse()
 	return targetPos
 end
 
+-- 获取离屏幕中心最近的目标（移动端）
+local function _getClosestToScreenCenter()
+	local aimFov = _fov
+	local targetPos = nil
+	local screenCenter = Vector2.new(_currentCamera.ViewportSize.X / 2, _currentCamera.ViewportSize.Y / 2)
+
+	for _, player in pairs(_players:GetPlayers()) do
+		if player ~= _localPlayer then
+			if not _teamCheck or _getTeam(player) ~= _getTeam(_localPlayer) then
+				if _isAlive(player) then
+					local targetPart = player.Character:FindFirstChild(_aimPart)
+					if targetPart then
+						local screenPos, onScreen = _currentCamera:WorldToViewportPoint(targetPart.Position)
+						local screenPos2D = Vector2.new(screenPos.X, screenPos.Y)
+						local magnitude = (screenPos2D - screenCenter).Magnitude
+
+						if onScreen and magnitude < aimFov and _isVisible(targetPart.Position, player.Character) then
+							aimFov = magnitude
+							targetPos = player
+						end
+					end
+				end
+			end
+		end
+	end
+
+	return targetPos
+end
+
 -- 设置输入监听
 local function _setupInputListeners()
+	if _isMobile then return end
+
 	-- 键盘输入
 	local keyBeganConn = _userInputService.InputBegan:Connect(function(input)
 		if input.KeyCode == _keybind and not _useMouse then
@@ -220,9 +260,15 @@ local function _setupMainLoop()
 		if _enabled and _showFov then
 			_fovCircle.Gui.Enabled = true
 			_fovCircle.Stroke.Enabled = true
-			local mousePos = _userInputService:GetMouseLocation()
-			_fovCircle.Frame.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y - 36)
-			_fovCircle.Frame.Size = UDim2.fromOffset(_fov * 1.5, _fov * 1.5)
+			if _isMobile then
+				local center = _currentCamera.ViewportSize / 2
+				_fovCircle.Frame.Position = UDim2.new(0, center.X, 0, center.Y - 36)
+				_fovCircle.Frame.Size = UDim2.fromOffset(_fov * 1.5 * 0.375, _fov * 1.5 * 0.375)
+			else
+				local mousePos = _userInputService:GetMouseLocation()
+				_fovCircle.Frame.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y - 36)
+				_fovCircle.Frame.Size = UDim2.fromOffset(_fov * 1.5, _fov * 1.5)
+			end
 		else
 			_fovCircle.Gui.Enabled = false
 			_fovCircle.Stroke.Enabled = false
@@ -289,6 +335,9 @@ end
 
 function AimBotModule.enable()
 	_enabled = true
+	if _isMobile then
+		_isAimKeyDown = true
+	end
 end
 
 function AimBotModule.disable()
@@ -408,6 +457,7 @@ function AimBotModule.unload()
 end
 
 -- 初始化
+_checkMobile()
 _createFovCircle()
 _setupInputListeners()
 _setupMainLoop()

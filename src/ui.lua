@@ -22,6 +22,8 @@ local function enableToggle(tab, label, onFn, offFn)
     tab:AddToggle({ Label = label, Default = false, Callback = function(v) if v then onFn() else offFn() end end })
 end
 
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
 local function safeGetKeyCode(key)
     if typeof(key) == "EnumItem" and key.EnumType == Enum.KeyCode then
         return key
@@ -182,7 +184,12 @@ ToolsTab:AddToggle({
 ToolsTab:AddToggle({
     Label = "灵魂出窍",
     Default = false,
-    Callback = function(v) FreecamModule.freecamenable = v end
+    Callback = function(v)
+        FreecamModule.freecamenable = v
+        if v and isMobile then
+            ChronixUI:Notify({ Title = "提示", Content = "双击屏幕左上角加速、双击左下角减速", Type = "info", Duration = 5 })
+        end
+    end
 })
 enableToggle(ToolsTab, "平移", function()
     movementModule.enable()
@@ -1983,16 +1990,18 @@ settingsContent:AddToggle({
     Default = data["basicdata"]["otherdata"]["autoconnirc"],
     Callback = function(v) mainConfig.autoconnirc = v end
 })
-settingsContent:AddKeybind({
-    Label = "灵魂出窍",
-    Default = FreecamModule.getKeybind().Name,
-    Callback = function(key)
-        local newKey = safeGetKeyCode(key)
-        if newKey then
-            FreecamModule.setKeybind(newKey)
+if not isMobile then
+    settingsContent:AddKeybind({
+        Label = "灵魂出窍",
+        Default = FreecamModule.getKeybind().Name,
+        Callback = function(key)
+            local newKey = safeGetKeyCode(key)
+            if newKey then
+                FreecamModule.setKeybind(newKey)
+            end
         end
-    end
-})
+    })
+end
 settingsContent:AddKeybind({
     Label = "望远镜",
     Default = data["basicdata"]["releasetools"]["zoom"]:GetBindKey().Name,

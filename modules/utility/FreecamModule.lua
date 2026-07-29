@@ -33,6 +33,10 @@ local cameraSpeed = DEFAULT_SPEED
 local lookSensitivity = 50
 local WHEEL_SENSITIVITY = 0.1
 
+-- 移动端支持
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local autoEnabledOnMobile = false
+
 -- ========== 辅助函数 ==========
 
 local function getRootPart()
@@ -78,40 +82,70 @@ end
 
 -- ========== 自由相机更新函数 ==========
 
+local function getMobileJoystickVector()
+	if not isMobile then return Vector3.new() end
+	local char = LocalPlayer.Character
+	if not char then return Vector3.new() end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hum then return Vector3.new() end
+	local moveDir = hum.MoveDirection
+	if moveDir.Magnitude < 0.01 then return Vector3.new() end
+	local cameraCF = Camera.CFrame
+	local right = cameraCF.RightVector
+	local forward = cameraCF.LookVector * Vector3.new(1, 0, 1)
+	if forward.Magnitude > 0.01 then
+		forward = forward.Unit
+	end
+	local flatMove = Vector3.new(moveDir.X, 0, moveDir.Z)
+	if flatMove.Magnitude < 0.01 then return Vector3.new() end
+	flatMove = flatMove.Unit
+	local camRight = Vector3.new(right.X, 0, right.Z)
+	if camRight.Magnitude > 0.01 then
+		camRight = camRight.Unit
+	end
+	local moveX = flatMove:Dot(camRight)
+	local moveZ = -flatMove:Dot(forward)
+	return Vector3.new(moveX, 0, moveZ)
+end
+
 local function updateFreecam(dt)
-    if not freecamEnabled then return end
-    
-    local moveSpeed = cameraSpeed * 50
-    local currentMoveVector = moveVector
-    
-    if UserInputService:IsKeyDown(Enum.KeyCode.E) then
-        currentMoveVector += Vector3.new(0, 1, 0)
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.Q) then
-        currentMoveVector += Vector3.new(0, -1, 0)
-    end
-    
-    local mouseDelta = UserInputService:GetMouseDelta()
-    local sensitivity = lookSensitivity * 0.004
-    
-    cameraRotation += Vector2.new(
-        -math.rad(mouseDelta.Y * sensitivity),
-        -math.rad(mouseDelta.X * sensitivity)
-    )
-    
-    cameraRotation = Vector2.new(
-        math.clamp(cameraRotation.X, -math.pi/2, math.pi/2),
-        cameraRotation.Y
-    )
-    
-    local rotation = CFrame.fromEulerAnglesYXZ(cameraRotation.X, cameraRotation.Y, 0)
-    local position = Camera.CFrame.Position
-    
-    if currentMoveVector.Magnitude > 0.01 and cameraSpeed > 0 then
-        position += rotation:VectorToWorldSpace(currentMoveVector.Unit) * moveSpeed * dt
-    end
-    
-    Camera.CFrame = CFrame.new(position) * rotation
+	if not freecamEnabled then return end
+	
+	local moveSpeed = cameraSpeed * 50
+	local currentMoveVector = moveVector
+
+	if isMobile then
+		currentMoveVector += getMobileJoystickVector()
+	else
+		if UserInputService:IsKeyDown(Enum.KeyCode.E) then
+			currentMoveVector += Vector3.new(0, 1, 0)
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.Q) then
+			currentMoveVector += Vector3.new(0, -1, 0)
+		end
+		
+		local mouseDelta = UserInputService:GetMouseDelta()
+		local sensitivity = lookSensitivity * 0.004
+		
+		cameraRotation += Vector2.new(
+			-math.rad(mouseDelta.Y * sensitivity),
+			-math.rad(mouseDelta.X * sensitivity)
+		)
+		
+		cameraRotation = Vector2.new(
+			math.clamp(cameraRotation.X, -math.pi/2, math.pi/2),
+			cameraRotation.Y
+		)
+	end
+	
+	local rotation = CFrame.fromEulerAnglesYXZ(cameraRotation.X, cameraRotation.Y, 0)
+	local position = Camera.CFrame.Position
+	
+	if currentMoveVector.Magnitude > 0.01 and cameraSpeed > 0 then
+		position += rotation:VectorToWorldSpace(currentMoveVector.Unit) * moveSpeed * dt
+	end
+	
+	Camera.CFrame = CFrame.new(position) * rotation
 end
 
 -- ========== 内部启用/禁用函数 ==========
@@ -158,17 +192,22 @@ end
 -- ========== 模块启用状态函数 ==========
 
 local function setModuleEnabled(value)
-    if moduleEnabled == value then return end
-    
-    moduleEnabled = value
-    
-    if value then
-    else
-        -- 禁用模块时，如果自由相机正在运行，先关闭它
-        if freecamEnabled then
-            internalDisable()
-        end
-    end
+	if moduleEnabled == value then return end
+	
+	moduleEnabled = value
+	
+	if value then
+		if isMobile then
+			autoEnabledOnMobile = true
+			internalEnable()
+		end
+	else
+		-- 禁用模块时，如果自由相机正在运行，先关闭它
+		if freecamEnabled then
+			internalDisable()
+		end
+		autoEnabledOnMobile = false
+	end
 end
 
 -- ========== 事件处理函数 ==========
@@ -231,19 +270,24 @@ local function onMouseWheel(input, gameProcessed)
 end
 
 local function onCharacterAdded(character)
-    task.wait(0.5)
-    
-    if freecamEnabled then
-        internalDisable()  -- 角色重生时自动关闭自由相机
-    else
-        unlockCharacter()
-    end
-    
-    local humanoid = character:WaitForChild("Humanoid", 2)
-    if humanoid then
-        Camera.CameraSubject = humanoid
-        Camera.CameraType = Enum.CameraType.Custom
-    end
+	task.wait(0.5)
+	
+	if freecamEnabled then
+		internalDisable()  -- 角色重生时自动关闭自由相机
+	else
+		unlockCharacter()
+	end
+	
+	local humanoid = character:WaitForChild("Humanoid", 2)
+	if humanoid then
+		Camera.CameraSubject = humanoid
+		Camera.CameraType = Enum.CameraType.Custom
+	end
+
+	if autoEnabledOnMobile and isMobile then
+		task.wait(0.1)
+		internalEnable()
+	end
 end
 
 local function onCharacterRemoving()
@@ -335,6 +379,7 @@ function FreeCam.unload()
     -- 重置所有状态变量
     freecamEnabled = false
     moduleEnabled = false  -- 模块也设为禁用状态
+    autoEnabledOnMobile = false
     cameraRotation = Vector2.new()
     moveVector = Vector3.new()
     cameraSpeed = DEFAULT_SPEED
