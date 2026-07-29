@@ -499,6 +499,73 @@ local function RemoveFog(remove)
     end
 end
 
+local noclipConnection = nil
+local noclipRespawn = nil
+
+function noclipenable(state)
+    if state then
+        if noclipConnection then return end
+        local function scanAndDisable()
+            local char = LocalPlayer.Character
+            if not char then return end
+            pcall(function() char:WaitForChild("HumanoidRootPart") end)
+            data["basicdata"]["releasetools"]["noclipParts"] = {}
+            for _, part in ipairs(char:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                    table.insert(data["basicdata"]["releasetools"]["noclipParts"], part)
+                end
+            end
+        end
+        scanAndDisable()
+        noclipRespawn = LocalPlayer.CharacterAdded:Connect(function()
+            task.wait(0.1)
+            scanAndDisable()
+        end)
+        noclipConnection = game:GetService("RunService").Stepped:Connect(function()
+            local parts = data["basicdata"]["releasetools"]["noclipParts"]
+            if #parts == 0 then
+                scanAndDisable()
+            end
+            for _, part in ipairs(parts) do
+                if part and part.Parent then
+                    part.CanCollide = false
+                end
+            end
+        end)
+        data["basicdata"]["releasetools"]["noclip"] = true
+    else
+        if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
+        if noclipRespawn then noclipRespawn:Disconnect(); noclipRespawn = nil end
+        for _, part in pairs(data["basicdata"]["releasetools"]["noclipParts"]) do
+            if part and part.Parent then part.CanCollide = true end
+        end
+        data["basicdata"]["releasetools"]["noclipParts"] = {}
+        data["basicdata"]["releasetools"]["noclip"] = false
+    end
+end
+
+local JR = nil
+
+function infjumpenable(state)
+    if state then
+        if JR then return end
+        JR = UserInputService.JumpRequest:Connect(function()
+            local c = LocalPlayer.Character
+            if c and c.Parent then
+                local hum = c:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum:ChangeState("Jumping")
+                end
+            end
+        end)
+        data["basicdata"]["releasetools"]["infjump"] = true
+    else
+        if JR then JR:Disconnect(); JR = nil end
+        data["basicdata"]["releasetools"]["infjump"] = false
+    end
+end
+
 function convertToSmallCaps(text)
     local map = {
         a='ᴀ', b='ʙ', c='ᴄ', d='ᴅ', e='ᴇ', f='ғ', g='ɢ', h='ʜ', i='ɪ', j='ᴊ',

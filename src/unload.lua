@@ -5,6 +5,8 @@
 
 unloadTHub = function()
     RemoveFog(false)
+    if data["basicdata"]["releasetools"]["infjump"] then infjumpenable(false) end
+    if data["basicdata"]["releasetools"]["noclip"] then noclipenable(false) end
     disableDeathAnnounce()
     local char = LocalPlayer.Character
     if char then
@@ -23,12 +25,6 @@ unloadTHub = function()
     toggleInteraction("TouchTransmitter", false); toggleInteraction("ClickDetector", false); toggleInteraction("ProximityPrompt", false)
     waypointDisplayEnabled = false
     _G.THubisLoaded = false; _G.THubLoading = false; loadingTimedOut = true
-    for _, part in pairs(data["basicdata"]["releasetools"]["noclipParts"]) do
-        part.CanCollide = true
-    end
-    data["basicdata"]["releasetools"]["noclipParts"] = {}
-    data["basicdata"]["releasetools"]["noclip"] = false
-    data["basicdata"]["releasetools"]["infjump"] = false
     if data["basicdata"]["releasetools"]["supernightvision"] then Lighting.Brightness = data["basicdata"]["releasetools"]["originalBrightness"]; data["basicdata"]["releasetools"]["supernightvision"] = false end
     if data["basicdata"]["releasetools"]["nightvision"] then Lighting.Ambient = Color3.new(0, 0, 0); data["basicdata"]["releasetools"]["nightvision"] = false end
     data["basicdata"]["otherdata"]["musicbox"]:Stop()

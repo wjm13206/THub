@@ -195,51 +195,22 @@ ToolsTab:AddToggle({
     Label = "穿墙",
     Default = false,
     Callback = function(v)
-        data["basicdata"]["releasetools"]["noclip"] = v
-        if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
-        if noclipRespawn then noclipRespawn:Disconnect(); noclipRespawn = nil end
-        if not v then
-            for _, part in ipairs(data["basicdata"]["releasetools"]["noclipParts"]) do
-                if part and part.Parent then part.CanCollide = true end
-            end
-            data["basicdata"]["releasetools"]["noclipParts"] = {}
-            return
+        if v then
+            noclipenable(true)
+        else
+            noclipenable(false)
         end
-        local function scanAndDisable()
-            local char = LocalPlayer.Character
-            if not char then return end
-            pcall(function() char:WaitForChild("HumanoidRootPart") end)
-            data["basicdata"]["releasetools"]["noclipParts"] = {}
-            for _, part in ipairs(char:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                    table.insert(data["basicdata"]["releasetools"]["noclipParts"], part)
-                end
-            end
-        end
-        scanAndDisable()
-        noclipRespawn = LocalPlayer.CharacterAdded:Connect(scanAndDisable)
     end
 })
 ToolsTab:AddToggle({
     Label = "连跳",
     Default = false,
     Callback = function(v)
-        data["basicdata"]["releasetools"]["infjump"] = v
-        if JR then JR:Disconnect(); JR = nil end
-        JR = UserInputService.JumpRequest:Connect(function()
-            if not data["basicdata"]["releasetools"]["infjump"] then
-                JR:Disconnect(); JR = nil
-            else
-                local c = LocalPlayer.Character
-                if c and c.Parent then
-                    local hum = c:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        hum:ChangeState("Jumping")
-                    end
-                end
-            end
-        end)
+        if v then
+            infjumpenable(true)
+        else
+            infjumpenable(false)
+        end
     end
 })
 local _autoJumpLast = 0
