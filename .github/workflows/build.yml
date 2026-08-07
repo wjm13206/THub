@@ -1,0 +1,35 @@
+name: THub Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  BUILD_NUMBER: ${{ github.run_number }}
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: build-number
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 0
+
+      - name: Bake build number
+        run: |
+          printf '{\n  "build": %s\n}\n' "$BUILD_NUMBER" > build.json
+          cat build.json
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add build.json
+          git commit -m "build: 构建号 $BUILD_NUMBER [skip ci]" || exit 0
+          git push

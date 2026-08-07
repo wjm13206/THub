@@ -2038,6 +2038,17 @@ infoTab:AddLabel(data["basicdata"]["otherdata"]["yiyan"]["data"]["hitokoto"])
 
 -- ===== 设置内容 =====
 settingsContent = mainWindow.SettingsElements
+-- 构建号显示
+buildLabel = settingsContent:AddLabel("构建号: 正在获取...")
+task.spawn(function()
+    local ok, res = pcall(AsyncFileFetcher.fetchSingle, "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/build.json")
+    if ok and res then
+        local okd, d = pcall(HttpService.JSONDecode, HttpService, res)
+        if okd and d and d.build then
+            if buildLabel then buildLabel.Text = "构建号: " .. tostring(d.build) end
+        end
+    end
+end)
 if isMobile then
     local hiddenKeybindLabels = {
         ["灵魂出窍"] = true, ["望远镜"] = true, ["锁定视角"] = true,
