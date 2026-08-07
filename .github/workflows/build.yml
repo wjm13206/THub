@@ -10,26 +10,31 @@ env:
   BUILD_NUMBER: ${{ github.run_number }}
 
 jobs:
-  bump:
+  release:
     runs-on: ubuntu-latest
     concurrency:
-      group: build-number
+      group: build-release
       cancel-in-progress: false
     steps:
       - name: Checkout
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Bake build number
-        run: |
-          printf '{\n  "build": %s\n}\n' "$BUILD_NUMBER" > build.json
-          cat build.json
-
-      - name: Commit and push
+      - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Sync dev to main
+        run: |
+          git checkout main
+          git reset --hard dev
+      - name: Bake build number
+        run: |
+          printf '{\n  "build": %s\n}\n' "$BUILD_NUMBER" > build.json
+          echo "--- build.json ---"
+          cat build.json
+      - name: Commit and push to main
+        run: |
           git add build.json
-          git commit -m "build: 构建号 $BUILD_NUMBER [skip ci]" || exit 0
-          git push
+          git commit -m "build: 构建号 $BUILD_NUMBER [skip ci]" || true
+          git push origin main
