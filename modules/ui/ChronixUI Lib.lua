@@ -2172,6 +2172,7 @@ function ChronixUI:CreateWindow(config)
         Default = ChronixUI.Settings.BackgroundBlur,
         Callback = function(value)
             ChronixUI.Settings.BackgroundBlur = value
+            if uiSettings then uiSettings.BackgroundBlur = value end
             
             -- 根据当前菜单状态决定是否应用模糊
             if windowVisible and not windowData.Minimized then
@@ -2196,6 +2197,7 @@ function ChronixUI:CreateWindow(config)
         Default = ChronixUI.Settings.PrivacyMode,
         Callback = function(value)
             ChronixUI.Settings.PrivacyMode = value
+            if uiSettings then uiSettings.PrivacyMode = value end
             -- 更新底部信息栏显示
             updatePlayerInfoDisplay()
         
