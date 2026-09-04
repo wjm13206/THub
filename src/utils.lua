@@ -11,10 +11,10 @@ function enableDeathAnnounce()
 
     local connections = {}
     local function onPlayerDied(player)
-        ChronixUI:Notify({
+        WindUI:Notify({
             Title = "死亡播报",
             Content = string.format("%s (%s) 死亡", player.DisplayName, player.Name),
-            Type = "info",
+            Icon = "info",
             Duration = 3
         })
     end
@@ -634,7 +634,7 @@ function TeleportTo(x, y, z)
  		return false
  	end
  	rootPart.CFrame = CFrame.new(Vector3.new(x, y, z))
-    ChronixUI:Notify({ Title = "提示", Content = string.format("✅ 已传送到 (%.1f, %.1f, %.1f)", x, y, z), Type = "success", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = string.format("✅ 已传送到 (%.1f, %.1f, %.1f)", x, y, z), Icon = "check", Duration = 5 })
 	return true
 end
 
@@ -666,7 +666,7 @@ function TeleportToPresent(presentNumber)
  	end
 	local targetCFrame = CFrame.new(giftCFrame.Position + Vector3.new(0, 3, 0))
 	rootPart.CFrame = targetCFrame
-    ChronixUI:Notify({ Title = "提示", Content = string.format("✅ 已传送到礼物 #%d！", presentNumber), Type = "success", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = string.format("✅ 已传送到礼物 #%d！", presentNumber), Icon = "check", Duration = 5 })
 	return true
 end
 
@@ -683,12 +683,12 @@ function detectEntity(instance)
         for entityName, entityInfo in pairs(data["othergamedata"]["delesions_office"]["entitys"]) do
             if instance.Name == entityName then
                 if data["othergamedata"]["delesions_office"]["entitywarning"] then
-                    ChronixUI:Notify({ Title = "！警告！", Content = "实体" .. entityInfo.name .. "已生成！\n" .. entityInfo.tip, Type = "warning", Duration = 5 })
+                    WindUI:Notify({ Title = "！警告！", Content = "实体" .. entityInfo.name .. "已生成！\n" .. entityInfo.tip, Icon = "triangle-alert", Duration = 5 })
                     if data["othergamedata"]["delesions_office"]["tipotherplayer"] then ChatControl:chat("警告！实体" .. entityInfo.name .. "已生成！" .. entityInfo.tip) end
                 end
                 if data["othergamedata"]["delesions_office"]["auto013"] then
                     if instance.Name == "UnknownEntity" then
-                        ChronixUI:Notify({ Title = "自动EN-013", Content = "正在自动键入'staycalmstayfocused'...", Type = "warning", Duration = 5 })
+                        WindUI:Notify({ Title = "自动EN-013", Content = "正在自动键入'staycalmstayfocused'...", Icon = "triangle-alert", Duration = 5 })
                         task.wait(2)
                         local str = "staycalmstayfocused"
                         for i = 1, #str do

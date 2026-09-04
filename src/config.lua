@@ -7,10 +7,7 @@ ConfigModule.setmain("THubConfig")
 mainConfig = ConfigModule.createconfig("main")
 musicList = ConfigModule.createmusicconfig("music")
 
--- UI 设置持久化：读入历史 JSON（若无历史则用默认值）
-uiSettings = ConfigModule.createconfig("settings")
-ChronixUI.Settings.BackgroundBlur = uiSettings.BackgroundBlur ~= false
-ChronixUI.Settings.PrivacyMode = uiSettings.PrivacyMode or false
+
 data = {
     basicdata = {
         window = {

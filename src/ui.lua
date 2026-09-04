@@ -1,29 +1,42 @@
 --!native
 --!optimize 2
 
---=============================================================================================
 
-local mainWindow = ChronixUI:CreateWindow({
-    Name = "THubv3",
-    Size = data["basicdata"]["window"]["windowSize"],
-
-    CloseCallback = function()
-        unloadTHub()
-    end
-})
-
--- Helper functions to reduce duplicate code
-local function sliderLock(tab, sliderLabel, min, max, default, sliderCb, lockLabel, lockCb)
-    tab:AddSlider({ Label = sliderLabel, Min = min, Max = max, Default = default, Callback = sliderCb })
-    tab:AddToggle({ Label = lockLabel, Default = false, Callback = lockCb })
-end
-
-local function enableToggle(tab, label, onFn, offFn)
-    if isMobile and mobileHidden[label] then return end
-    tab:AddToggle({ Label = label, Default = false, Callback = function(v) if v then onFn() else offFn() end end })
-end
 
 local isMobile = UserInputService and UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+THubWindow = WindUI:CreateWindow({
+    Title = "THub V3",
+    Author = "by Furrycalin & 0988",
+    Folder = "THub",
+    Icon = "zap",
+    Size = data["basicdata"]["window"]["windowSize"],
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "Dark",
+    Resizable = true,
+    SideBarWidth = 200,
+    HideSearchBar = false,
+    ScrollBarEnabled = true,
+})
+local mainWindow = THubWindow
+
+mainWindow:Tag({
+    Title = "V3 WindUI",
+    Icon = "github",
+    Color = Color3.fromHex("#1c1c1c"),
+})
+
+-- 侧边栏分组
+local SecCommon = mainWindow:Section({ Title = "常用" })
+local SecTeleport = mainWindow:Section({ Title = "传送" })
+local SecMedia = mainWindow:Section({ Title = "娱乐媒体" })
+local SecVisual = mainWindow:Section({ Title = "视觉" })
+local SecRisk = mainWindow:Section({ Title = "风险功能" })
+local SecInfo = mainWindow:Section({ Title = "信息与设置" })
+
+--=============================================================================================
+-- Helpers
+--=============================================================================================
 
 local mobileHidden = {
     ["飞行"] = true, ["帧飞行"] = true, ["载具飞行"] = true,
@@ -48,126 +61,175 @@ local function safeGetKeyCode(key)
     end
     return nil
 end
+ 
 
-local function settingsKeybindInput(tab, bindLabel, defaultKey, setKey, inputLabel, defaultVal, setVal)
-    tab:AddKeybind({ Label = bindLabel, Default = defaultKey, Callback = function(key)
-        if key then
-            local nk = safeGetKeyCode(key)
-            if nk then
-                setKey(nk)
+local function keyName(key)
+    if typeof(key) == "EnumItem" then
+        return key.Name
+    end
+    if type(key) == "string" then
+        return key
+    end
+    return "G"
+end
+
+local function sliderLock(tab, flagBase, sliderLabel, min, max, default, sliderCb, lockLabel, lockCb)
+    local step = 1
+    if (min % 1 ~= 0) or (max % 1 ~= 0) then
+        step = 0.1
+    end
+    tab:Slider({
+        Title = sliderLabel,
+        Flag = flagBase,
+        Step = step,
+        Value = { Min = min, Max = max, Default = default },
+        Callback = sliderCb,
+    })
+    tab:Toggle({
+        Title = lockLabel,
+        Flag = flagBase .. "_Lock",
+        Value = false,
+        Callback = lockCb,
+    })
+end
+
+local function enableToggle(tab, flag, label, onFn, offFn)
+    if isMobile and mobileHidden[label] then return end
+    tab:Toggle({
+        Title = label,
+        Flag = flag,
+        Value = false,
+        Callback = function(v) if v then onFn() else offFn() end end,
+    })
+end
+
+local function settingsKeybindInput(tab, flagBase, bindLabel, defaultKey, setKey, inputLabel, defaultVal, setVal)
+    tab:Keybind({
+        Title = bindLabel,
+        Flag = flagBase .. "_Key",
+        Value = keyName(defaultKey),
+        Callback = function(key)
+            if key then
+                local nk = safeGetKeyCode(key)
+                if nk then
+                    setKey(nk)
+                end
             end
-        end
-    end })
-    tab:AddInput({ Label = inputLabel, Placeholder = "", Default = defaultVal, Callback = function(text)
-        local n = tonumber(text); if n then setVal(n) end
-    end })
+        end,
+    })
+    tab:Input({
+        Title = inputLabel,
+        Flag = flagBase .. "_Val",
+        Value = tostring(defaultVal),
+        Placeholder = "",
+        Callback = function(text)
+            local n = tonumber(text); if n then setVal(n) end
+        end,
+    })
 end
 
 -- ===== 基础设置 Tab =====
-local basicTab = mainWindow:CreateTab({ Name = "基础设置", HasIcon = true, IconName = "pencil-ruler" })
-basicTab:AddTitle("基础数据修改")
-sliderLock(basicTab, "玩家移速", 0, 1000, data["basicdata"]["player"]["speed"],
+local basicTab = SecCommon:Tab({ Title = "基础设置", Icon = "pencil-ruler" })
+basicTab:Section({ Title = "基础数据修改", Opened = true })
+sliderLock(basicTab, "THub_Basic_Speed", "玩家移速", 0, 1000, data["basicdata"]["player"]["speed"],
     function(v) LocalPlayer.Character.Humanoid.WalkSpeed = v; data["basicdata"]["player"]["speed"] = v end,
     "锁定玩家移速", function(v) data["basicdata"]["player"]["islockspeed"] = v; requestSpoofHooks() end)
-sliderLock(basicTab, "跳跃力量", 0, 1000, data["basicdata"]["player"]["jump"],
+sliderLock(basicTab, "THub_Basic_Jump", "跳跃力量", 0, 1000, data["basicdata"]["player"]["jump"],
     function(v) LocalPlayer.Character.Humanoid.JumpPower = v; data["basicdata"]["player"]["jump"] = v end,
     "锁定跳跃力量", function(v) data["basicdata"]["player"]["islockjump"] = v; requestSpoofHooks() end)
-sliderLock(basicTab, "最大血量", 0, 1000, data["basicdata"]["player"]["maxhealth"],
+sliderLock(basicTab, "THub_Basic_MaxHealth", "最大血量", 0, 1000, data["basicdata"]["player"]["maxhealth"],
     function(v) LocalPlayer.Character.Humanoid.MaxHealth = v; data["basicdata"]["player"]["maxhealth"] = v end,
     "锁定最大血量", function(v) if v then enableLockMaxHealth() else disableLockMaxHealth() end end)
-sliderLock(basicTab, "当前血量", 0, 1000, data["basicdata"]["player"]["health"],
+sliderLock(basicTab, "THub_Basic_Health", "当前血量", 0, 1000, data["basicdata"]["player"]["health"],
     function(v) LocalPlayer.Character.Humanoid.Health = v; data["basicdata"]["player"]["health"] = v end,
     "锁定当前血量", function(v) if v then enableLockHealth() else disableLockHealth() end end)
-sliderLock(basicTab, "世界重力", 0, 1000, data["basicdata"]["player"]["gravity"],
+sliderLock(basicTab, "THub_Basic_Gravity", "世界重力", 0, 1000, data["basicdata"]["player"]["gravity"],
     function(v) Workspace.Gravity = v; data["basicdata"]["player"]["gravity"] = v end,
     "锁定世界重力", function(v) if v then enableLockGravity() else disableLockGravity() end end)
 
 -- ===== 工具 Tab =====
-local ToolsTab = mainWindow:CreateTab({ Name = "工具", HasIcon = true, IconName = "wrench" })
-if isMobile then
-    local origAddButton = ToolsTab.AddButton
-    function ToolsTab:AddButton(config)
-        if config and config.Text and (config.Text == "获得点击传送工具" or config.Text == "终止当前游戏进程") then
-            return
-        end
-        return origAddButton(self, config)
-    end
-end
-ToolsTab:AddTitle("各种实用工具")
-ToolsTab:AddToggle({
-    Label = "防挂机",
-    Default = true,
-    Callback = function(v) if v then enableAntiAFK() else disableAntiAFK() end end
+local ToolsTab = SecCommon:Tab({ Title = "工具", Icon = "wrench" })
+ToolsTab:Section({ Title = "各种实用工具", Opened = true })
+ToolsTab:Toggle({
+    Title = "防挂机",
+    Flag = "THub_Tool_AntiAFK",
+    Value = true,
+    Callback = function(v) if v then enableAntiAFK() else disableAntiAFK() end end,
 })
-ToolsTab:AddToggle({
-    Label = "保留THub - 传送后自动执行",
-    Default = false,
-    Callback = function(v) if v then enableKeepTHub() else disableKeepTHub() end end
+ToolsTab:Toggle({
+    Title = "保留THub - 传送后自动执行",
+    Flag = "THub_Tool_KeepTHub",
+    Value = false,
+    Callback = function(v) if v then enableKeepTHub() else disableKeepTHub() end end,
 })
-enableToggle(ToolsTab, "飞行", function()
+enableToggle(ToolsTab, "THub_Tool_Fly", "飞行", function()
     FlyModule.enable()
-    ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl+" .. FlyModule.getbindkey().Name .. "开关飞行状态", Type = "info", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = "按住Ctrl+" .. FlyModule.getbindkey().Name .. "开关飞行状态", Icon = "info", Duration = 5 })
 end, function() FlyModule.disable() end)
-enableToggle(ToolsTab, "帧飞行", function()
+enableToggle(ToolsTab, "THub_Tool_CframeFly", "帧飞行", function()
     CframeFly.enable()
-    ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl+" .. CframeFly.getbindkey().Name .. "开关飞行状态", Type = "info", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = "按住Ctrl+" .. CframeFly.getbindkey().Name .. "开关飞行状态", Icon = "info", Duration = 5 })
 end, function() CframeFly.disable() end)
-enableToggle(ToolsTab, "载具飞行", function()
+enableToggle(ToolsTab, "THub_Tool_VehicleFly", "载具飞行", function()
     VehicleFly.enable()
-    ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl+" .. VehicleFly.getbindkey().Name .. "开关飞行状态", Type = "info", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = "按住Ctrl+" .. VehicleFly.getbindkey().Name .. "开关飞行状态", Icon = "info", Duration = 5 })
 end, function() VehicleFly.disable() end)
-enableToggle(ToolsTab, "点击传送", function()
+enableToggle(ToolsTab, "THub_Tool_ClickTP", "点击传送", function()
     TeleportModule.enable()
-    ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl并点击来传送", Type = "info", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = "按住Ctrl并点击来传送", Icon = "info", Duration = 5 })
 end, function() TeleportModule.disable() end)
-enableToggle(ToolsTab, "玩家透视", function() PlayerESP.enable() end, function() PlayerESP.disable() end)
-enableToggle(ToolsTab, "NPC透视", function() data["basicdata"]["releasetools"]["npc"]:enable() end, function() data["basicdata"]["releasetools"]["npc"]:disable() end)
-enableToggle(ToolsTab, "TPWalk", function() tpWalk:Enabled(true) end, function() tpWalk:Enabled(false) end)
-enableToggle(ToolsTab, "鼠标解锁", function()
+enableToggle(ToolsTab, "THub_Tool_PlayerESP", "玩家透视", function() PlayerESP.enable() end, function() PlayerESP.disable() end)
+enableToggle(ToolsTab, "THub_Tool_NPCESP", "NPC透视", function() data["basicdata"]["releasetools"]["npc"]:enable() end, function() data["basicdata"]["releasetools"]["npc"]:disable() end)
+enableToggle(ToolsTab, "THub_Tool_TPWalk", "TPWalk", function() tpWalk:Enabled(true) end, function() tpWalk:Enabled(false) end)
+enableToggle(ToolsTab, "THub_Tool_MouseUnlock", "鼠标解锁", function()
     MouseUnlockModule.enable()
-    ChronixUI:Notify({ Title = "提示", Content = "按下K+L组合键开关解锁鼠标", Type = "info", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = "按下K+L组合键开关解锁鼠标", Icon = "info", Duration = 5 })
 end, function() MouseUnlockModule.disable() end)
-enableToggle(ToolsTab, "锁定视角", function()
+enableToggle(ToolsTab, "THub_Tool_LockCamera", "锁定视角", function()
     LockCameraModule.enable()
-    ChronixUI:Notify({ Title = "提示", Content = "按住" .. LockCameraModule.getBindKey().Name .. "键来锁定视角", Type = "info", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = "按住" .. LockCameraModule.getBindKey().Name .. "键来锁定视角", Icon = "info", Duration = 5 })
 end, function() LockCameraModule.disable() end)
-enableToggle(ToolsTab, "瞬间转向", function() SnapTurn.enable() end, function() SnapTurn.disable() end)
-enableToggle(ToolsTab, "瞬间回头", function()
+enableToggle(ToolsTab, "THub_Tool_SnapTurn", "瞬间转向", function() SnapTurn.enable() end, function() SnapTurn.disable() end)
+enableToggle(ToolsTab, "THub_Tool_SnapReverse", "瞬间回头", function()
     SnapReverse.enable()
-    ChronixUI:Notify({ Title = "提示", Content = "按下" .. SnapReverse.GetKeyBind().Name .. "键来瞬间回头", Type = "info", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = "按下" .. SnapReverse.GetKeyBind().Name .. "键来瞬间回头", Icon = "info", Duration = 5 })
 end, function() SnapReverse.disable() end)
-enableToggle(ToolsTab, "自动瞄准", function() AimBotModule.enable() end, function() AimBotModule.disable() end)
-enableToggle(ToolsTab, "物品滚轮切换", function()
-    ChronixUI:Notify({ Title = "提示", Content = "按住" .. ScrollSwitch:getbind().Name .. "键并滚动鼠标滚轮来切换物品", Type = "info", Duration = 5 })
+enableToggle(ToolsTab, "THub_Tool_Aimbot", "自动瞄准", function() AimBotModule.enable() end, function() AimBotModule.disable() end)
+enableToggle(ToolsTab, "THub_Tool_ScrollSwitch", "物品滚轮切换", function()
+    WindUI:Notify({ Title = "提示", Content = "按住" .. ScrollSwitch:getbind().Name .. "键并滚动鼠标滚轮来切换物品", Icon = "info", Duration = 5 })
     ScrollSwitch:enable()
 end, function() ScrollSwitch:disable() end)
-enableToggle(ToolsTab, "望远镜", function()
+enableToggle(ToolsTab, "THub_Tool_Zoom", "望远镜", function()
     data["basicdata"]["releasetools"]["zoom"]:enable()
-    ChronixUI:Notify({ Title = "提示", Content = "按住" .. tostring(data["basicdata"]["releasetools"]["zoom"]:GetBindKey()):gsub("^Enum%.%w+%.", "") .. "键放大", Type = "info", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = "按住" .. tostring(data["basicdata"]["releasetools"]["zoom"]:GetBindKey()):gsub("^Enum%.%w+%.", "") .. "键放大", Icon = "info", Duration = 5 })
 end, function() data["basicdata"]["releasetools"]["zoom"]:disable() end)
-enableToggle(ToolsTab, "隐身", function() PlayerVisibleModule.enable() end, function() PlayerVisibleModule.disable() end)
-enableToggle(ToolsTab, "查看落脚点", function() FootstepHighlighter.enable() end, function() FootstepHighlighter.disable() end)
-enableToggle(ToolsTab, "落地特效", function() LandingEffect.enable() end, function() LandingEffect.disable() end)
-ToolsTab:AddToggle({
-    Label = "夜视",
-    Default = false,
-    Callback = function(v) if v then enableNightVision() else disableNightVision() end end
+enableToggle(ToolsTab, "THub_Tool_Invisible", "隐身", function() PlayerVisibleModule.enable() end, function() PlayerVisibleModule.disable() end)
+enableToggle(ToolsTab, "THub_Tool_Footstep", "查看落脚点", function() FootstepHighlighter.enable() end, function() FootstepHighlighter.disable() end)
+enableToggle(ToolsTab, "THub_Tool_Landing", "落地特效", function() LandingEffect.enable() end, function() LandingEffect.disable() end)
+ToolsTab:Toggle({
+    Title = "夜视",
+    Flag = "THub_Tool_NightVision",
+    Value = false,
+    Callback = function(v) if v then enableNightVision() else disableNightVision() end end,
 })
-ToolsTab:AddToggle({
-    Label = "超级夜视",
-    Default = false,
-    Callback = function(v) if v then enableSuperNightVision() else disableSuperNightVision() end end
+ToolsTab:Toggle({
+    Title = "超级夜视",
+    Flag = "THub_Tool_SuperNightVision",
+    Value = false,
+    Callback = function(v) if v then enableSuperNightVision() else disableSuperNightVision() end end,
 })
-enableToggle(ToolsTab, "阻挡射线检测", function() AntiLookBlocker.enable() end, function() AntiLookBlocker.disable() end)
-ToolsTab:AddToggle({
-    Label = "随身灯笼",
-    Default = false,
-    Callback = function(v) data["basicdata"]["releasetools"]["Lantern"]["enable"] = v end
+enableToggle(ToolsTab, "THub_Tool_AntiLookBlocker", "阻挡射线检测", function() AntiLookBlocker.enable() end, function() AntiLookBlocker.disable() end)
+ToolsTab:Toggle({
+    Title = "随身灯笼",
+    Flag = "THub_Tool_Lantern",
+    Value = false,
+    Callback = function(v) data["basicdata"]["releasetools"]["Lantern"]["enable"] = v end,
 })
-ToolsTab:AddToggle({
-    Label = "超级光明",
-    Default = false,
-    Callback = function(v) data["basicdata"]["releasetools"]["SuperLighter"]["enable"] = v end
+ToolsTab:Toggle({
+    Title = "超级光明",
+    Flag = "THub_Tool_SuperLighter",
+    Value = false,
+    Callback = function(v) data["basicdata"]["releasetools"]["SuperLighter"]["enable"] = v end,
 })
 local xrayLastUpdate = 0
 local xrayLoop = nil
@@ -185,63 +247,69 @@ local function toggleXrayLoop(enable)
         if xrayLoop then xrayLoop:Disconnect(); xrayLoop = nil end
     end
 end
-ToolsTab:AddToggle({
-    Label = "X光",
-    Default = false,
+ToolsTab:Toggle({
+    Title = "X光",
+    Flag = "THub_Tool_Xray",
+    Value = false,
     Callback = function(v)
         data["basicdata"]["releasetools"]["xray"] = v
         toggleXrayLoop(v)
         if v then xray(true) else xray(false) end
-    end
+    end,
 })
-ToolsTab:AddToggle({
-    Label = "显示隐藏部件",
-    Default = false,
-    Callback = function(v) showpartsfunction(v) end
+ToolsTab:Toggle({
+    Title = "显示隐藏部件",
+    Flag = "THub_Tool_ShowParts",
+    Value = false,
+    Callback = function(v) showpartsfunction(v) end,
 })
-ToolsTab:AddToggle({
-    Label = "灵魂出窍",
-    Default = false,
+ToolsTab:Toggle({
+    Title = "灵魂出窍",
+    Flag = "THub_Tool_Freecam",
+    Value = false,
     Callback = function(v)
         FreecamModule.freecamenable = v
         if v and isMobile then
-            ChronixUI:Notify({ Title = "提示", Content = "双击屏幕左上角加速、双击左下角减速", Type = "info", Duration = 5 })
+            WindUI:Notify({ Title = "提示", Content = "双击屏幕左上角加速、双击左下角减速", Icon = "info", Duration = 5 })
         end
-    end
+    end,
 })
-enableToggle(ToolsTab, "空中移动", function() AirWalk.enable() end, function() AirWalk.disable() end)
-enableToggle(ToolsTab, "无摔落伤害", function() NoFall.enable() end, function() NoFall.disable() end)
-enableToggle(ToolsTab, "瞬间交互", function() InstantInteraction.enable() end, function() InstantInteraction.disable() end)
-enableToggle(ToolsTab, "平移", function()
+enableToggle(ToolsTab, "THub_Tool_AirWalk", "空中移动", function() AirWalk.enable() end, function() AirWalk.disable() end)
+enableToggle(ToolsTab, "THub_Tool_NoFall", "无摔落伤害", function() NoFall.enable() end, function() NoFall.disable() end)
+enableToggle(ToolsTab, "THub_Tool_InstantInteract", "瞬间交互", function() InstantInteraction.enable() end, function() InstantInteraction.disable() end)
+enableToggle(ToolsTab, "THub_Tool_Move", "平移", function()
     movementModule.enable()
-    ChronixUI:Notify({ Title = "提示", Content = "按下↑↓←→键进行平移", Type = "info", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = "按下↑↓←→键进行平移", Icon = "info", Duration = 5 })
 end, function() movementModule.disable() end)
-ToolsTab:AddToggle({
-    Label = "穿墙",
-    Default = false,
+ToolsTab:Toggle({
+    Title = "穿墙",
+    Flag = "THub_Tool_Noclip",
+    Value = false,
     Callback = function(v)
         if v then
             noclipenable(true)
         else
             noclipenable(false)
         end
-    end
+    end,
 })
-ToolsTab:AddToggle({
-    Label = "连跳",
-    Default = false,
+ToolsTab:Toggle({
+    Title = "连跳",
+    Flag = "THub_Tool_InfJump",
+    Value = false,
     Callback = function(v)
         if v then
             infjumpenable(true)
         else
             infjumpenable(false)
         end
-    end
+    end,
 })
 local _autoJumpLast = 0
-ToolsTab:AddToggle({
-    Label = "自动跳跃",
-    Default = false,
+ToolsTab:Toggle({
+    Title = "自动跳跃",
+    Flag = "THub_Tool_AutoJump",
+    Value = false,
     Callback = function(v)
         data["basicdata"]["releasetools"]["autojump"] = v
         if v then
@@ -266,188 +334,205 @@ ToolsTab:AddToggle({
                 autoJumpConnection = nil
             end
         end
-    end
+    end,
 })
-enableToggle(ToolsTab, "固定到世界", function()
+enableToggle(ToolsTab, "THub_Tool_Anchor", "固定到世界", function()
     LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.Anchored = true
 end, function()
     LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.Anchored = false
 end)
-enableToggle(ToolsTab, "旁观模式", function() SpectatorModule.start() end, function() SpectatorModule.close() end)
-enableToggle(ToolsTab, "摄像头穿墙", function() NoclipCam.enable(LocalPlayer) end, function() NoclipCam.disable() end)
-ToolsTab:AddToggle({ Label = "防击倒", Default = false, Callback = function(v) if v then enableAntiFall() else disableAntiFall() end end })
-enableToggle(ToolsTab, "晕厥康复", function() StandRecovery:enableDetection() end, function() StandRecovery:disableDetection() end)
-enableToggle(ToolsTab, "防甩飞", function() FlingDetector.enable(LocalPlayer) end, function() FlingDetector.disable() end)
-enableToggle(ToolsTab, "反物理劫持", function() AntiVoidModule.enable() end, function() AntiVoidModule.disable() end)
-enableToggle(ToolsTab, "移除移动部件", function() MovingPartCleaner.enable() end, function() MovingPartCleaner.disable() end)
-enableToggle(ToolsTab, "防御立场", function() DefenseField.enable() end, function() DefenseField.disable() end)
-ToolsTab:AddToggle({
-    Label = "管理员检测",
-    Default = false,
-    Callback = function(v) if v then enableStaffCheck() else disableStaffCheck() end end
+enableToggle(ToolsTab, "THub_Tool_Spectate", "旁观模式", function() SpectatorModule.start() end, function() SpectatorModule.close() end)
+enableToggle(ToolsTab, "THub_Tool_NoclipCam", "摄像头穿墙", function() NoclipCam.enable(LocalPlayer) end, function() NoclipCam.disable() end)
+ToolsTab:Toggle({ Title = "防击倒", Flag = "THub_Tool_AntiFall", Value = false, Callback = function(v) if v then enableAntiFall() else disableAntiFall() end end })
+enableToggle(ToolsTab, "THub_Tool_StandRecovery", "晕厥康复", function() StandRecovery:enableDetection() end, function() StandRecovery:disableDetection() end)
+enableToggle(ToolsTab, "THub_Tool_FlingDetector", "防甩飞", function() FlingDetector.enable(LocalPlayer) end, function() FlingDetector.disable() end)
+enableToggle(ToolsTab, "THub_Tool_AntiVoid", "反物理劫持", function() AntiVoidModule.enable() end, function() AntiVoidModule.disable() end)
+enableToggle(ToolsTab, "THub_Tool_MovingPartCleaner", "移除移动部件", function() MovingPartCleaner.enable() end, function() MovingPartCleaner.disable() end)
+enableToggle(ToolsTab, "THub_Tool_DefenseField", "防御立场", function() DefenseField.enable() end, function() DefenseField.disable() end)
+ToolsTab:Toggle({
+    Title = "管理员检测",
+    Flag = "THub_Tool_StaffCheck",
+    Value = false,
+    Callback = function(v) if v then enableStaffCheck() else disableStaffCheck() end end,
 })
-enableToggle(ToolsTab, "死亡播报", function() enableDeathAnnounce() end, function() disableDeathAnnounce() end)
-ToolsTab:AddToggle({
-    Label = "防死亡",
-    Default = false,
-    Callback = function(v) if v then enableAntiDead() else disableAntiDead() end end
+enableToggle(ToolsTab, "THub_Tool_DeathAnnounce", "死亡播报", function() enableDeathAnnounce() end, function() disableDeathAnnounce() end)
+ToolsTab:Toggle({
+    Title = "防死亡",
+    Flag = "THub_Tool_AntiDead",
+    Value = false,
+    Callback = function(v) if v then enableAntiDead() else disableAntiDead() end end,
 })
-ToolsTab:AddToggle({
-    Label = "聊天重发",
-    Default = false,
-    Callback = function(v) if v then enableChatResend() else disableChatResend() end end
+ToolsTab:Toggle({
+    Title = "聊天重发",
+    Flag = "THub_Tool_ChatResend",
+    Value = false,
+    Callback = function(v) if v then enableChatResend() else disableChatResend() end end,
 })
-enableToggle(ToolsTab, "聊天偷听", function() ChatSpy.enable() end, function() ChatSpy.disable() end)
-enableToggle(ToolsTab, "自动喊话器", function() ChatSpammer.enable() end, function() ChatSpammer.disable() end)
-ToolsTab:AddInput({
-    Label = "喊话内容（每行一条）",
-    Height = 80,
-    Default = ChatSpammer.getMessagesAsText(),
-    Callback = function(text) ChatSpammer.setMessagesFromText(text) end
+enableToggle(ToolsTab, "THub_Tool_ChatSpy", "聊天偷听", function() ChatSpy.enable() end, function() ChatSpy.disable() end)
+enableToggle(ToolsTab, "THub_Tool_ChatSpammer", "自动喊话器", function() ChatSpammer.enable() end, function() ChatSpammer.disable() end)
+ToolsTab:Input({
+    Title = "喊话内容（每行一条）",
+    Flag = "THub_Tool_SpamText",
+    Value = ChatSpammer.getMessagesAsText(),
+    Type = "Textarea",
+    Placeholder = "每行一条喊话内容",
+    Callback = function(text) ChatSpammer.setMessagesFromText(text) end,
 })
-ToolsTab:AddSlider({ Label = "喊话间隔（秒）", Min = 0.5, Max = 60, Default = ChatSpammer.getInterval(), Callback = function(v) ChatSpammer.setInterval(v) end })
-ToolsTab:AddToggle({ Label = "随机模式", Default = ChatSpammer.isRandomMode(), Callback = function(v) ChatSpammer.setRandom(v) end })
-enableToggle(ToolsTab, "坐下", function() LocalPlayer.Character:FindFirstChild("Humanoid").Sit = true end, function() LocalPlayer.Character:FindFirstChild("Humanoid").Sit = false end)
-ToolsTab:AddToggle({
-    Label = "防踢出",
-    Default = false,
+ToolsTab:Slider({
+    Title = "喊话间隔（秒）",
+    Flag = "THub_Tool_SpamInterval",
+    Step = 0.1,
+    Value = { Min = 0.5, Max = 60, Default = ChatSpammer.getInterval() },
+    Callback = function(v) ChatSpammer.setInterval(v) end,
+})
+ToolsTab:Toggle({ Title = "随机模式", Flag = "THub_Tool_SpamRandom", Value = ChatSpammer.isRandomMode(), Callback = function(v) ChatSpammer.setRandom(v) end })
+enableToggle(ToolsTab, "THub_Tool_Sit", "坐下", function() LocalPlayer.Character:FindFirstChild("Humanoid").Sit = true end, function() LocalPlayer.Character:FindFirstChild("Humanoid").Sit = false end)
+ToolsTab:Toggle({
+    Title = "防踢出",
+    Flag = "THub_Tool_AntiKick",
+    Value = false,
     Callback = function(v)
         if v then
             local success, message = AntiKickModule.enable()
             if message == "Incompatible Exploit: missing hookmetamethod or LocalPlayer not accessible" then
-                ChronixUI:Notify({ Title = "不支持的漏洞", Content = (identifyexecutor and identifyexecutor() or "UnKnown") .. "暂不支持此功能", Type = "error", Duration = 5 })
+                WindUI:Notify({ Title = "不支持的漏洞", Content = (identifyexecutor and identifyexecutor() or "UnKnown") .. "暂不支持此功能", Icon = "x", Duration = 5 })
             end
         else
             AntiKickModule.disable()
         end
-    end
+    end,
 })
-enableToggle(ToolsTab, "模型删除工具", function()
+enableToggle(ToolsTab, "THub_Tool_DeleteTool", "模型删除工具", function()
     DeleteTool.enable()
-    ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl键点击来删除指向的模型", Type = "info", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = "按住Ctrl键点击来删除指向的模型", Icon = "info", Duration = 5 })
 end, function() DeleteTool.disable() end)
-enableToggle(ToolsTab, "GUI删除工具", function()
+enableToggle(ToolsTab, "THub_Tool_GuiDeleter", "GUI删除工具", function()
     GuiDeleter.enable()
-    ChronixUI:Notify({ Title = "提示", Content = "按下" .. GuiDeleter.getBindKey().Name .. "键来删除鼠标指向的UI", Type = "info", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = "按下" .. GuiDeleter.getBindKey().Name .. "键来删除鼠标指向的UI", Icon = "info", Duration = 5 })
 end, function() GuiDeleter.disable() end)
-enableToggle(ToolsTab, "模型信息查询工具", function()
+enableToggle(ToolsTab, "THub_Tool_ClickInspect", "模型信息查询工具", function()
     ClickInspectModule.enable()
-    ChronixUI:Notify({ Title = "提示", Content = "按下Ctrl键点击来查看模型信息", Type = "info", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = "按下Ctrl键点击来查看模型信息", Icon = "info", Duration = 5 })
 end, function() ClickInspectModule.disable() end)
-ToolsTab:AddToggle({
-    Label = "禁用购买提示框",
-    Default = false,
+ToolsTab:Toggle({
+    Title = "禁用购买提示框",
+    Flag = "THub_Tool_NoPurchasePrompt",
+    Value = false,
     Callback = function(v)
         if v then
             CoreGui.PurchasePromptApp.Enabled = false
         else
             CoreGui.PurchasePromptApp.Enabled = true
         end
-    end
+    end,
 })
-ToolsTab:AddToggle({
-    Label = "禁用游戏暂停",
-    Default = false,
-    Callback = function(v) if v then enableNetworkPauseDisable() else disableNetworkPauseDisable() end end
+ToolsTab:Toggle({
+    Title = "禁用游戏暂停",
+    Flag = "THub_Tool_NoPause",
+    Value = false,
+    Callback = function(v) if v then enableNetworkPauseDisable() else disableNetworkPauseDisable() end end,
 })
-enableToggle(ToolsTab, "游戏翻译", function()
+enableToggle(ToolsTab, "THub_Tool_Translate", "游戏翻译", function()
     TranslationModule.enable()
-    ChronixUI:Notify({ Title = "提示", Content = "正在翻译中，可能会比较慢\n速度限制2次/s", Type = "info", Duration = 10 })
+    WindUI:Notify({ Title = "提示", Content = "正在翻译中，可能会比较慢\n速度限制2次/s", Icon = "info", Duration = 10 })
 end, function() TranslationModule.disable() end)
-enableToggle(ToolsTab, "透视触点实例", function() TCPHighLight.touchinterest.enable() end, function() TCPHighLight.touchinterest.disable() end)
-ToolsTab:AddToggle({ Label = "禁用触点实例", Default = false, Callback = function(v) toggleInteraction("TouchTransmitter", v); ChronixUI:Notify({ Title = "提示", Content = v and "已禁用所有触点" or "已恢复所有触点", Type = "info" }) end })
-enableToggle(ToolsTab, "透视点击触发实例", function() TCPHighLight.clickdetectors.enable() end, function() TCPHighLight.clickdetectors.disable() end)
-ToolsTab:AddToggle({ Label = "禁用点击触发实例", Default = false, Callback = function(v) toggleInteraction("ClickDetector", v) end })
-enableToggle(ToolsTab, "透视可交互实例", function() TCPHighLight.proximityprompts.enable() end, function() TCPHighLight.proximityprompts.disable() end)
-ToolsTab:AddToggle({ Label = "禁用可交互实例", Default = false, Callback = function(v) toggleInteraction("ProximityPrompt", v) end })
-ToolsTab:AddButton({ Text = "触发所有触点实例", Callback = function()
-	local Root = LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart or LocalPlayer.Character:FindFirstChildWhichIsA("BasePart")
-	if not firetouchinterest then
-		ChronixUI:Notify({ Title = "错误", Content = "你的执行器不支持此功能。", Type = "error", Duration = 5 })
-		return
-	end
-	local function Touch(x)
-		x = x.FindFirstAncestorWhichIsA(x, "Part")
-		if x then
-			return task.spawn(function()
-				firetouchinterest(x, Root, 1, wait() and firetouchinterest(x, Root, 0))
-			end)
-		end
-		x.CFrame = Root.CFrame
-	end
-	for _, v in ipairs(Workspace:GetDescendants()) do
-		if v.IsA(v, "TouchTransmitter") then
-			Touch(v)
-		end
-	end
-end })
-ToolsTab:AddButton({ Text = "触发所有点击触发实例", Callback = function()
-    if fireclickdetector then
-		for _, descendant in ipairs(Workspace:GetDescendants()) do
-			if descendant:IsA("ClickDetector") then
-				fireclickdetector(descendant)
-			end
-		end
-	else
-		ChronixUI:Notify({ Title = "错误", Content = "你的执行器不支持此功能。", Type = "error", Duration = 5 })
-	end
-end })
-ToolsTab:AddButton({ Text = "触发所有可交互实例", Callback = function()
-    if fireproximityprompt then
-		for _, descendant in ipairs(Workspace:GetDescendants()) do
-			if descendant:IsA("ProximityPrompt") then
-				fireproximityprompt(descendant)
-			end
-		end
-	else
-		ChronixUI:Notify({ Title = "错误", Content = "你的执行器不支持此功能。", Type = "error", Duration = 5 })
-	end
-end })
-ToolsTab:AddButton({ Text = "回满血", Callback = function() LocalPlayer.Character.Humanoid.Health = LocalPlayer.Character.Humanoid.MaxHealth end })
-ToolsTab:AddButton({ Text = "自杀", Callback = function() LocalPlayer.Character.Humanoid.Health = 0 end })
-ToolsTab:AddButton({ Text = "强制自杀", Callback = function() respawn() end })
-ToolsTab:AddButton({ Text = "原地重生", Callback = function() refresh() end })
-ToolsTab:AddButton({ Text = "设置当前位置为重生点", Callback = function() data["basicdata"]["releasetools"]["spawnpos"] = LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.CFrame end })
-ToolsTab:AddButton({ Text = "恢复默认重生点", Callback = function() data["basicdata"]["releasetools"]["spawnpos"] = nil end })
-ToolsTab:AddButton({ Text = "回到最后的死亡点", Callback = function() if data["basicdata"]["releasetools"]["lastDeath"] ~= nil then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.CFrame = data["basicdata"]["releasetools"]["lastDeath"] else ChronixUI:Notify({ Title = "错误", Content = "没有记录的死亡点。", Type = "error", Duration = 5 }) end end })
-ToolsTab:AddButton({ Text = "获取游戏内全部工具", Callback = function() gettools() end })
-ToolsTab:AddButton({ Text = "移除全部工具", Callback = function() removetools() end })
-ToolsTab:AddButton({ Text = "丢弃手中工具", Callback = function() drophandtool(); ChronixUI:Notify({ Title = "掉落工具", Content = "已丢弃手中工具", Type = "success", Duration = 3 }) end })
-ToolsTab:AddButton({ Text = "丢弃全部工具", Callback = function() droptool(); ChronixUI:Notify({ Title = "掉落工具", Content = "已丢弃全部工具", Type = "success", Duration = 3 }) end })
-ToolsTab:AddButton({ Text = "获得点击传送工具", Callback = function()
-    local backpack = LocalPlayer:FindFirstChildWhichIsA("Backpack")
-    if backpack and backpack:FindFirstChild("手持点击传送") then
-        ChronixUI:Notify({ Title = "提示", Content = "点击传送工具已存在", Type = "info", Duration = 2 })
+enableToggle(ToolsTab, "THub_Tool_TCPTouch", "透视触点实例", function() TCPHighLight.touchinterest.enable() end, function() TCPHighLight.touchinterest.disable() end)
+ToolsTab:Toggle({ Title = "禁用触点实例", Flag = "THub_Tool_NoTouch", Value = false, Callback = function(v) toggleInteraction("TouchTransmitter", v); WindUI:Notify({ Title = "提示", Content = v and "已禁用所有触点" or "已恢复所有触点", Icon = "info" }) end })
+enableToggle(ToolsTab, "THub_Tool_TCPClick", "透视点击触发实例", function() TCPHighLight.clickdetectors.enable() end, function() TCPHighLight.clickdetectors.disable() end)
+ToolsTab:Toggle({ Title = "禁用点击触发实例", Flag = "THub_Tool_NoClick", Value = false, Callback = function(v) toggleInteraction("ClickDetector", v) end })
+enableToggle(ToolsTab, "THub_Tool_TCPrompt", "透视可交互实例", function() TCPHighLight.proximityprompts.enable() end, function() TCPHighLight.proximityprompts.disable() end)
+ToolsTab:Toggle({ Title = "禁用可交互实例", Flag = "THub_Tool_NoPrompt", Value = false, Callback = function(v) toggleInteraction("ProximityPrompt", v) end })
+ToolsTab:Button({ Title = "触发所有触点实例", Callback = function()
+    local Root = LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart or LocalPlayer.Character:FindFirstChildWhichIsA("BasePart")
+    if not firetouchinterest then
+        WindUI:Notify({ Title = "错误", Content = "你的执行器不支持此功能。", Icon = "x", Duration = 5 })
         return
     end
-    local mouse = LocalPlayer:GetMouse()
-    local newTool = Instance.new("Tool")
-    newTool.RequiresHandle = false
-    newTool.Name = "手持点击传送"
-    newTool.Parent = backpack
-    newTool.Activated:Connect(function()
-        local pos = mouse.Hit + Vector3.new(0, 2.5, 0)
-        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos.X, pos.Y, pos.Z)
-    end)
+    local function Touch(x)
+        x = x.FindFirstAncestorWhichIsA(x, "Part")
+        if x then
+            return task.spawn(function()
+                firetouchinterest(x, Root, 1, wait() and firetouchinterest(x, Root, 0))
+            end)
+        end
+        x.CFrame = Root.CFrame
+    end
+    for _, v in ipairs(Workspace:GetDescendants()) do
+        if v.IsA(v, "TouchTransmitter") then
+            Touch(v)
+        end
+    end
 end })
-ToolsTab:AddButton({ Text = "重新加入当前房间(服务器)", Callback = function() rejoinCurrentGame() end })
-ToolsTab:AddButton({ Text = "切换角色为R6", Callback = function() promptNewRig("R6") end })
-ToolsTab:AddButton({ Text = "切换角色为R15", Callback = function() promptNewRig("R15") end })
-ToolsTab:AddButton({ Text = "切换时间为白天", Callback = function() setDay() end })
-ToolsTab:AddButton({ Text = "切换时间为黑夜", Callback = function() setNight() end })
-ToolsTab:AddToggle({
-    Label = "禁用雾效",
-    Default = false,
-    Callback = function(v) RemoveFog(v) end
+ToolsTab:Button({ Title = "触发所有点击触发实例", Callback = function()
+    if fireclickdetector then
+        for _, descendant in ipairs(Workspace:GetDescendants()) do
+            if descendant:IsA("ClickDetector") then
+                fireclickdetector(descendant)
+            end
+        end
+    else
+        WindUI:Notify({ Title = "错误", Content = "你的执行器不支持此功能。", Icon = "x", Duration = 5 })
+    end
+end })
+ToolsTab:Button({ Title = "触发所有可交互实例", Callback = function()
+    if fireproximityprompt then
+        for _, descendant in ipairs(Workspace:GetDescendants()) do
+            if descendant:IsA("ProximityPrompt") then
+                fireproximityprompt(descendant)
+            end
+        end
+    else
+        WindUI:Notify({ Title = "错误", Content = "你的执行器不支持此功能。", Icon = "x", Duration = 5 })
+    end
+end })
+ToolsTab:Button({ Title = "回满血", Callback = function() LocalPlayer.Character.Humanoid.Health = LocalPlayer.Character.Humanoid.MaxHealth end })
+ToolsTab:Button({ Title = "自杀", Callback = function() LocalPlayer.Character.Humanoid.Health = 0 end })
+ToolsTab:Button({ Title = "强制自杀", Callback = function() respawn() end })
+ToolsTab:Button({ Title = "原地重生", Callback = function() refresh() end })
+ToolsTab:Button({ Title = "设置当前位置为重生点", Callback = function() data["basicdata"]["releasetools"]["spawnpos"] = LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.CFrame end })
+ToolsTab:Button({ Title = "恢复默认重生点", Callback = function() data["basicdata"]["releasetools"]["spawnpos"] = nil end })
+ToolsTab:Button({ Title = "回到最后的死亡点", Callback = function() if data["basicdata"]["releasetools"]["lastDeath"] ~= nil then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.CFrame = data["basicdata"]["releasetools"]["lastDeath"] else WindUI:Notify({ Title = "错误", Content = "没有记录的死亡点。", Icon = "x", Duration = 5 }) end end })
+ToolsTab:Button({ Title = "获取游戏内全部工具", Callback = function() gettools() end })
+ToolsTab:Button({ Title = "移除全部工具", Callback = function() removetools() end })
+ToolsTab:Button({ Title = "丢弃手中工具", Callback = function() drophandtool(); WindUI:Notify({ Title = "掉落工具", Content = "已丢弃手中工具", Icon = "check", Duration = 3 }) end })
+ToolsTab:Button({ Title = "丢弃全部工具", Callback = function() droptool(); WindUI:Notify({ Title = "掉落工具", Content = "已丢弃全部工具", Icon = "check", Duration = 3 }) end })
+if not isMobile then
+    ToolsTab:Button({ Title = "获得点击传送工具", Callback = function()
+        local backpack = LocalPlayer:FindFirstChildWhichIsA("Backpack")
+        if backpack and backpack:FindFirstChild("手持点击传送") then
+            WindUI:Notify({ Title = "提示", Content = "点击传送工具已存在", Icon = "info", Duration = 2 })
+            return
+        end
+        local mouse = LocalPlayer:GetMouse()
+        local newTool = Instance.new("Tool")
+        newTool.RequiresHandle = false
+        newTool.Name = "手持点击传送"
+        newTool.Parent = backpack
+        newTool.Activated:Connect(function()
+            local pos = mouse.Hit + Vector3.new(0, 2.5, 0)
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos.X, pos.Y, pos.Z)
+        end)
+    end })
+end
+ToolsTab:Button({ Title = "重新加入当前房间(服务器)", Callback = function() rejoinCurrentGame() end })
+ToolsTab:Button({ Title = "切换角色为R6", Callback = function() promptNewRig("R6") end })
+ToolsTab:Button({ Title = "切换角色为R15", Callback = function() promptNewRig("R15") end })
+ToolsTab:Button({ Title = "切换时间为白天", Callback = function() setDay() end })
+ToolsTab:Button({ Title = "切换时间为黑夜", Callback = function() setNight() end })
+ToolsTab:Toggle({
+    Title = "禁用雾效",
+    Flag = "THub_Tool_NoFog",
+    Value = false,
+    Callback = function(v) RemoveFog(v) end,
 })
-ToolsTab:AddButton({ Text = "优化世界光效", Callback = function() loadstring(cloneref(game):HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/visual/WorldShader.lua"))() end })
-ToolsTab:AddButton({ Text = "打印当前坐标", Callback = function()
+ToolsTab:Button({ Title = "优化世界光效", Callback = function() loadstring(cloneref(game):HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/visual/WorldShader.lua"))() end })
+ToolsTab:Button({ Title = "打印当前坐标", Callback = function()
     local position1 = LocalPlayer.Character.HumanoidRootPart.Position
     print(string.format("[THub] 玩家坐标: (%.2f, %.2f, %.2f)", position1.X, position1.Y, position1.Z))
 end })
-ToolsTab:AddButton({ Text = "开启控制台界面", Callback = function() StarterGui:SetCore("DevConsoleVisible", true) end })
-ToolsTab:AddButton({ Text = "启用所有ROBLOXUI", Callback = function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true) end })
-ToolsTab:AddButton({ Text = "获取建筑工具", Callback = function()
+ToolsTab:Button({ Title = "开启控制台界面", Callback = function() StarterGui:SetCore("DevConsoleVisible", true) end })
+ToolsTab:Button({ Title = "启用所有ROBLOXUI", Callback = function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true) end })
+ToolsTab:Button({ Title = "获取建筑工具", Callback = function()
     local backpack = LocalPlayer:FindFirstChildWhichIsA("Backpack")
     if not backpack then return end
     local existing = 0
@@ -455,40 +540,41 @@ ToolsTab:AddButton({ Text = "获取建筑工具", Callback = function()
         if v:IsA("HopperBin") then existing += 1 end
     end
     if existing >= 4 then
-        ChronixUI:Notify({ Title = "提示", Content = "背包中已有建筑工具", Type = "info", Duration = 2 })
+        WindUI:Notify({ Title = "提示", Content = "背包中已有建筑工具", Icon = "info", Duration = 2 })
         return
     end
     for i = 1, 4 do
-		local Tool = Instance.new("HopperBin")
-		Tool.BinType = i
-		Tool.Name = randomString()
-		Tool.Parent = backpack
-	end
-end })
-
-ToolsTab:AddButton({ Text = "终止当前游戏进程", Callback = function()
-    if messagebox then
-        local result = messagebox("Do you want to end the current game?\n\nIt may be used in situations where exit is not possible.", "Roblox", 4 + 32)
-        if result == 6 then game:Shutdown() end
-    else
-        data["basicdata"]["releasetools"]["exitgame"] = data["basicdata"]["releasetools"]["exitgame"] + 1
-        if data["basicdata"]["releasetools"]["exitgame"] == 1 then ChronixUI:Notify({ Title = "警告", Content = "你确定要终止游戏进程吗？", Type = "warning", Duration = 10 }) end
-        if data["basicdata"]["releasetools"]["exitgame"] == 2 then ChronixUI:Notify({ Title = "警告", Content = "再次确定？", Type = "warning", Duration = 10 }) end
-        if data["basicdata"]["releasetools"]["exitgame"] == 3 then ChronixUI:Notify({ Title = "警告", Content = "最终确定？", Type = "warning", Duration = 10 }) end
-        if data["basicdata"]["releasetools"]["exitgame"] == 4 then game:Shutdown() end
+        local Tool = Instance.new("HopperBin")
+        Tool.BinType = i
+        Tool.Name = randomString()
+        Tool.Parent = backpack
     end
 end })
+if not isMobile then
+    ToolsTab:Button({ Title = "终止当前游戏进程", Callback = function()
+        if messagebox then
+            local result = messagebox("Do you want to end the current game?\n\nIt may be used in situations where exit is not possible.", "Roblox", 4 + 32)
+            if result == 6 then game:Shutdown() end
+        else
+            data["basicdata"]["releasetools"]["exitgame"] = data["basicdata"]["releasetools"]["exitgame"] + 1
+            if data["basicdata"]["releasetools"]["exitgame"] == 1 then WindUI:Notify({ Title = "警告", Content = "你确定要终止游戏进程吗？", Icon = "triangle-alert", Duration = 10 }) end
+            if data["basicdata"]["releasetools"]["exitgame"] == 2 then WindUI:Notify({ Title = "警告", Content = "再次确定？", Icon = "triangle-alert", Duration = 10 }) end
+            if data["basicdata"]["releasetools"]["exitgame"] == 3 then WindUI:Notify({ Title = "警告", Content = "最终确定？", Icon = "triangle-alert", Duration = 10 }) end
+            if data["basicdata"]["releasetools"]["exitgame"] == 4 then game:Shutdown() end
+        end
+    end })
+end
 
 -- ===== 脚本中心 Tab =====
-local scripthubTab = mainWindow:CreateTab({ Name = "脚本中心", HasIcon = true, IconName = "computer" })
-scripthubTab:AddTitle("由作者推荐的脚本 - 注意大部分脚本未经过验证，请谨慎使用。")
+local scripthubTab = SecCommon:Tab({ Title = "脚本中心", Icon = "monitor" })
+scripthubTab:Section({ Title = "由作者推荐的脚本 - 注意大部分脚本未经过验证，请谨慎使用。", Opened = true })
 local function addscripts(name, link)
-    scripthubTab:AddButton({ Text = name, Callback = function()
-        ChronixUI:Notify({ Title = "提示", Content = name .. "正在启动，请耐心等待。", Type = "info", Duration = 5 })
+    scripthubTab:Button({ Title = name, Callback = function()
+        WindUI:Notify({ Title = "提示", Content = name .. "正在启动，请耐心等待。", Icon = "info", Duration = 5 })
 
         local content, success = AsyncFileFetcher.fetchSingle(link)
-        if success then loadstring(content)() else ChronixUI:Notify({ Title = "提示", Content = name .. "启动失败。", Type = "warning", Duration = 5 }) end
-        ChronixUI:Notify({ Title = "提示", Content = name .. "启动成功。", Type = "success", Duration = 5 })
+        if success then loadstring(content)() else WindUI:Notify({ Title = "提示", Content = name .. "启动失败。", Icon = "triangle-alert", Duration = 5 }) end
+        WindUI:Notify({ Title = "提示", Content = name .. "启动成功。", Icon = "check", Duration = 5 })
     end })
 end
 for index, scriptInfo in ipairs(data["scriptlist"]) do
@@ -497,28 +583,28 @@ end
 
 -- ===== 玩家传送 Tab =====
 local function createPlayerButton(player)
-    return playerteleporterTab:AddButton({
-        Text = player.DisplayName .. " (" .. player.Name .. ")",
+    return playerteleporterTab:Button({
+        Title = player.DisplayName .. " (" .. player.Name .. ")",
         Callback = function()
             local character = LocalPlayer.Character
             if character and character:FindFirstChild("HumanoidRootPart") then
                 local targetCharacter = player.Character
                 if targetCharacter and targetCharacter:FindFirstChild("HumanoidRootPart") then
                     character:SetPrimaryPartCFrame(CFrame.new(targetCharacter.HumanoidRootPart.Position))
-                    ChronixUI:Notify({ Title = "传送成功", Content = "已传送到 " .. player.DisplayName, Type = "success", Duration = 2 })
+                    WindUI:Notify({ Title = "传送成功", Content = "已传送到 " .. player.DisplayName, Icon = "check", Duration = 2 })
                 else
-                    ChronixUI:Notify({ Title = "传送失败", Content = "目标玩家角色不存在", Type = "error", Duration = 2 })
+                    WindUI:Notify({ Title = "传送失败", Content = "目标玩家角色不存在", Icon = "x", Duration = 2 })
                 end
             else
-                ChronixUI:Notify({ Title = "传送失败", Content = "无法获取你的角色", Type = "error", Duration = 2 })
+                WindUI:Notify({ Title = "传送失败", Content = "无法获取你的角色", Icon = "x", Duration = 2 })
             end
         end
     })
 end
 
-playerteleporterTab = mainWindow:CreateTab({ Name = "玩家传送", HasIcon = true, IconName = "contact-round" })
-playerteleporterTab:AddTitle("玩家列表")
-playerteleporterTab:AddDivider()
+playerteleporterTab = SecTeleport:Tab({ Title = "玩家传送", Icon = "contact-round" })
+playerteleporterTab:Section({ Title = "玩家列表", Opened = true })
+playerteleporterTab:Divider()
 playerButtons = {}
 function updatePlayerList()
     local currentPlayers = {}
@@ -542,10 +628,11 @@ playerListAddedConn = Players.PlayerAdded:Connect(updatePlayerList)
 playerListRemovingConn = Players.PlayerRemoving:Connect(updatePlayerList)
 
 -- ===== 路径点传送 Tab =====
-waypointTab = mainWindow:CreateTab({ Name = "路径点传送", HasIcon = true, IconName = "map-pinned" })
+waypointTab = SecTeleport:Tab({ Title = "路径点传送", Icon = "map-pinned" })
 waypointConfig = ConfigModule.createconfig("waypoint/data/" .. game.GameId)
 waypointsData = waypointConfig.waypointsData and waypointConfig.waypointsData or {}
 waypointUIElements = {}
+waypointTitleMap = {}
 waypointDisplayEnabled = false
 local waypointHeartbeatConnection = nil
 function startWaypointHeartbeat()
@@ -645,8 +732,7 @@ function clearWaypointList()
             end
         end
     end
-waypointUIElements = {}
-waypointTitleMap = {}
+    waypointUIElements = {}
     waypointTitleMap = {}
 end
 local function updateWaypointTitle(id)
@@ -655,14 +741,14 @@ local function updateWaypointTitle(id)
     local wp = waypointsData[id]
     if not wp then return end
     local noteStr = type(wp.note) == "string" and wp.note ~= "" and (" - " .. wp.note) or ""
-    if type(entry.title.setText) == "function" then
-        entry.title:setText(string.format("📍 路径点 #%d%s", id, noteStr))
+    if entry.title and type(entry.title.SetTitle) == "function" then
+        entry.title:SetTitle(string.format("📍 路径点 #%d%s", id, noteStr))
     end
 end
 local function buildWaypointElements(waypoint)
     local elements = {}
     if waypoint.id > 1 then
-        local divider = waypointTab:AddDivider()
+        local divider = waypointTab:Divider()
         table.insert(elements, divider)
     end
     local idNum = tonumber(waypoint.id) or 0
@@ -671,7 +757,7 @@ local function buildWaypointElements(waypoint)
     if noteStr ~= "" then
         titleText = titleText .. " - " .. noteStr
     end
-    local title = waypointTab:AddTitle(titleText)
+    local title = waypointTab:Section({ Title = titleText, Opened = true })
     table.insert(elements, title)
     waypointTitleMap[waypoint.id] = { title = title }
     local pos = waypoint.position
@@ -679,12 +765,12 @@ local function buildWaypointElements(waypoint)
     local y = pos and pos.Y or 0
     local z = pos and pos.Z or 0
     local coordText = string.format("坐标: X: %.1f, Y: %.1f, Z: %.1f", x, y, z)
-    local coordLabel = waypointTab:AddLabel(coordText)
+    local coordLabel = waypointTab:Paragraph({ Title = coordText })
     table.insert(elements, coordLabel)
-    local noteInput = waypointTab:AddInput({
-        Label = "备注",
+    local noteInput = waypointTab:Input({
+        Title = "备注",
         Placeholder = "输入备注信息...",
-        Default = noteStr,
+        Value = noteStr,
         Callback = function(text)
             waypoint.note = text or ""
             waypointConfig.waypointsData = waypointsData
@@ -692,37 +778,37 @@ local function buildWaypointElements(waypoint)
         end
     })
     table.insert(elements, noteInput)
-    local teleportBtn = waypointTab:AddButton({
-        Text = "🚀 传送到此路径点",
+    local teleportBtn = waypointTab:Button({
+        Title = "🚀 传送到此路径点",
         Callback = function()
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") then
                 local targetPos = Vector3.new(pos.X, pos.Y, pos.Z)
                 char:SetPrimaryPartCFrame(CFrame.new(targetPos))
-                ChronixUI:Notify({ Title = "传送成功", Content = string.format("已传送到 %s", noteStr ~= "" and noteStr or "路径点"), Type = "success", Duration = 2 })
+                WindUI:Notify({ Title = "传送成功", Content = string.format("已传送到 %s", noteStr ~= "" and noteStr or "路径点"), Icon = "check", Duration = 2 })
             else
-                ChronixUI:Notify({ Title = "传送失败", Content = "无法获取你的角色", Type = "error", Duration = 2 })
+                WindUI:Notify({ Title = "传送失败", Content = "无法获取你的角色", Icon = "x", Duration = 2 })
             end
         end
     })
     table.insert(elements, teleportBtn)
-    local tweenBtn = waypointTab:AddButton({
-        Text = "🎯 缓动到此路径点",
+    local tweenBtn = waypointTab:Button({
+        Title = "🎯 缓动到此路径点",
         Callback = function()
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
                 local targetPos = Vector3.new(pos.X, pos.Y, pos.Z)
                 local root = char.HumanoidRootPart
                 TweenService:Create(root, TweenInfo.new(1.5, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)}):Play()
-                ChronixUI:Notify({ Title = "缓动中", Content = string.format("正在缓动到 %s", noteStr ~= "" and noteStr or "路径点"), Type = "info", Duration = 2 })
+                WindUI:Notify({ Title = "缓动中", Content = string.format("正在缓动到 %s", noteStr ~= "" and noteStr or "路径点"), Icon = "info", Duration = 2 })
             else
-                ChronixUI:Notify({ Title = "缓动失败", Content = "无法获取你的角色", Type = "error", Duration = 2 })
+                WindUI:Notify({ Title = "缓动失败", Content = "无法获取你的角色", Icon = "x", Duration = 2 })
             end
         end
     })
     table.insert(elements, tweenBtn)
-    local walkBtn = waypointTab:AddButton({
-        Text = "🚶 步行到此路径点",
+    local walkBtn = waypointTab:Button({
+        Title = "🚶 步行到此路径点",
         Callback = function()
             local char = LocalPlayer.Character
             if char and char:FindFirstChildOfClass("Humanoid") then
@@ -733,20 +819,19 @@ local function buildWaypointElements(waypoint)
                     task.wait(0.1)
                 end
                 humanoid.WalkToPoint = targetPos
-                ChronixUI:Notify({ Title = "步行中", Content = string.format("正在走向 %s", noteStr ~= "" and noteStr or "路径点"), Type = "info", Duration = 2 })
+                WindUI:Notify({ Title = "步行中", Content = string.format("正在走向 %s", noteStr ~= "" and noteStr or "路径点"), Icon = "info", Duration = 2 })
             else
-                ChronixUI:Notify({ Title = "步行失败", Content = "无法获取你的角色", Type = "error", Duration = 2 })
+                WindUI:Notify({ Title = "步行失败", Content = "无法获取你的角色", Icon = "x", Duration = 2 })
             end
         end
     })
     table.insert(elements, walkBtn)
-    local deleteBtn = waypointTab:AddButton({
-        Text = "🗑️ 删除此路径点",
+    local deleteBtn = waypointTab:Button({
+        Title = "🗑️ 删除此路径点",
         Callback = function()
             local removed = table.remove(waypointsData, waypoint.id)
             if removed then
-                local entry = waypointTitleMap[waypoint.id]
-                if entry then waypointTitleMap[waypoint.id] = nil end
+                waypointTitleMap[waypoint.id] = nil
                 local elements = waypointUIElements[waypoint.id]
                 if elements then
                     for _, element in ipairs(elements) do
@@ -761,7 +846,7 @@ local function buildWaypointElements(waypoint)
             end
             waypointConfig.waypointsData = waypointsData
             updateWaypointDisplay()
-            ChronixUI:Notify({ Title = "已删除", Content = "路径点已移除", Type = "info", Duration = 1 })
+            WindUI:Notify({ Title = "已删除", Content = "路径点已移除", Icon = "info", Duration = 1 })
         end
     })
     table.insert(elements, deleteBtn)
@@ -793,58 +878,57 @@ function addWaypoint(pos, note)
     waypointConfig.waypointsData = waypointsData
     updateWaypointDisplay()
 end
-waypointTab:AddTitle("路径点管理")
-waypointTab:AddDivider()
-waypointTab:AddLabel("点击下方按钮保存当前位置作为路径点")
-waypointTab:AddToggle({
-    Label = "在世界中显示路径点",
-    Default = false,
+waypointTab:Section({ Title = "路径点管理", Opened = true })
+waypointTab:Divider()
+waypointTab:Paragraph({ Title = "点击下方按钮保存当前位置作为路径点" })
+waypointTab:Toggle({
+    Title = "在世界中显示路径点",
+    Flag = "THub_Waypoint_Show",
+    Value = false,
     Callback = function(v)
         waypointDisplayEnabled = v
         updateWaypointDisplay()
     end
 })
-waypointTab:AddButton({
-    Text = "➕ 添加当前路径点",
+waypointTab:Button({
+    Title = "➕ 添加当前路径点",
     Callback = function()
         if LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart then
             local position = LocalPlayer.Character.HumanoidRootPart.Position
             addWaypoint(position)
-            ChronixUI:Notify({ Title = "路径点已添加", Content = string.format("位置: (%.1f, %.1f, %.1f)", position.X, position.Y, position.Z), Type = "success", Duration = 2 })
+            WindUI:Notify({ Title = "路径点已添加", Content = string.format("位置: (%.1f, %.1f, %.1f)", position.X, position.Y, position.Z), Icon = "check", Duration = 2 })
         else
-            ChronixUI:Notify({ Title = "添加失败", Content = "无法获取当前位置", Type = "error", Duration = 2 })
+            WindUI:Notify({ Title = "添加失败", Content = "无法获取当前位置", Icon = "x", Duration = 2 })
         end
     end
 })
-waypointTab:AddDivider()
-waypointTab:AddTitle("已保存的路径点")
-waypointTab:AddDivider()
+waypointTab:Divider()
+waypointTab:Section({ Title = "已保存的路径点", Opened = true })
+waypointTab:Divider()
 if #waypointsData > 0 then refreshWaypointList() end
 
 -- ===== 音乐播放器 Tab =====
 local musicislink = false
-musicTab = mainWindow:CreateTab({ Name = "音乐播放器", HasIcon = true, IconName = "music" })
-musicTab:AddTitle("音乐播放器")
-musicTab:AddDivider()
-musicTab:AddLabel("选择预设音乐 (rbxassetid)")
-musicDropdown = musicTab:AddDropdown({
-    Label = "预设音乐ID",
-    Options = data["basicdata"]["otherdata"]["musicData"]["musicIds"],
-    Default = data["basicdata"]["otherdata"]["musicData"]["currentId"],
+musicTab = SecMedia:Tab({ Title = "音乐播放器", Icon = "music" })
+musicTab:Section({ Title = "音乐播放器", Opened = true })
+musicTab:Divider()
+musicTab:Paragraph({ Title = "选择预设音乐 (rbxassetid)" })
+musicDropdown = musicTab:Dropdown({
+    Title = "预设音乐ID",
+    Values = data["basicdata"]["otherdata"]["musicData"]["musicIds"],
+    Value = data["basicdata"]["otherdata"]["musicData"]["currentId"],
     Callback = function(selected)
         data["basicdata"]["otherdata"]["musicData"]["currentId"] = selected
         if customIdInput then
-            local textBox = customIdInput:FindFirstChildOfClass("TextBox")
-            if textBox then
-                textBox.Text = selected
-            end
+            customIdInput:Set(selected)
         end
     end
 })
-othermusicDropdown = musicTab:AddDropdown({
-    Label = "外部音乐",
-    Options = (function() local names = {}; for musicname, _ in pairs(musicList) do table.insert(names, musicname) end; return names end)(),
-    Default = "",
+othermusicDropdown = musicTab:Dropdown({
+    Title = "外部音乐",
+    Values = (function() local names = {}; for musicname, _ in pairs(musicList) do table.insert(names, musicname) end; return names end)(),
+    Value = nil,
+    AllowNone = true,
     Callback = function(selected)
         for musicname, assid in pairs(musicList) do
             if musicname == selected then
@@ -854,9 +938,9 @@ othermusicDropdown = musicTab:AddDropdown({
         end
     end
 })
-local linkmusic = musicTab:AddInput({
-    Label = "音乐直链",
-    Default = "",
+local linkmusic = musicTab:Input({
+    Title = "音乐直链",
+    Value = "",
     Placeholder = "输入音乐直链",
     Callback = function(text)
         if text and text ~= "" then
@@ -866,11 +950,11 @@ local linkmusic = musicTab:AddInput({
         end
     end
 })
-musicTab:AddDivider()
-musicTab:AddLabel("或手动输入自定义ID")
-customIdInput = musicTab:AddInput({
-    Label = "自定义音乐ID",
-    Default = data["basicdata"]["otherdata"]["musicData"]["currentId"],
+musicTab:Divider()
+musicTab:Paragraph({ Title = "或手动输入自定义ID" })
+customIdInput = musicTab:Input({
+    Title = "自定义音乐ID",
+    Value = tostring(data["basicdata"]["otherdata"]["musicData"]["currentId"]),
     Placeholder = "输入 rbxassetid，例如: 142376088",
     Callback = function(text)
         if text and text ~= "" then
@@ -878,34 +962,34 @@ customIdInput = musicTab:AddInput({
         end
     end
 })
-musicTab:AddDivider()
-musicTab:AddLabel("播放控制")
+musicTab:Divider()
+musicTab:Paragraph({ Title = "播放控制" })
 playStopButton = nil
 pauseResumeButton = nil
-playStopButton = musicTab:AddButton({
-    Text = "▶️ 播放",
+playStopButton = musicTab:Button({
+    Title = "▶️ 播放",
     Callback = function()
         if data["basicdata"]["otherdata"]["musicData"]["isPlay"] then
             data["basicdata"]["otherdata"]["musicbox"]:Stop()
             data["basicdata"]["otherdata"]["musicData"]["isPlay"] = false
             data["basicdata"]["otherdata"]["musicData"]["isPause"] = false
-            playStopButton.Text = "▶️ 播放"
+            playStopButton:SetTitle("▶️ 播放")
             if pauseResumeButton then
-                pauseResumeButton.Text = "⏸️ 暂停"
+                pauseResumeButton:SetTitle("⏸️ 暂停")
             end
-            ChronixUI:Notify({ Title = "已停止", Content = "音乐播放已停止", Type = "info", Duration = 2 })
+            WindUI:Notify({ Title = "已停止", Content = "音乐播放已停止", Icon = "info", Duration = 2 })
         else
             if data["basicdata"]["otherdata"]["musicData"]["currentId"] == "link" then
-                ChronixUI:Notify({ Title = "提示", Content = "正在读取链接内容，请稍等...", Type = "info", Duration = 3 })
+                WindUI:Notify({ Title = "提示", Content = "正在读取链接内容，请稍等...", Icon = "info", Duration = 3 })
                 local errorCode, result = ConfigModule.downloadAudio(data["basicdata"]["otherdata"]["musicData"]["currentlink"])
                 if errorCode == 0 then
                     data["basicdata"]["otherdata"]["musicData"]["currentId"] = tostring(result)
                 elseif errorCode == 1 then
-                    ChronixUI:Notify({ Title = "播放失败", Content = "不是一个有效的直链音频", Type = "error", Duration = 3 })
+                    WindUI:Notify({ Title = "播放失败", Content = "不是一个有效的直链音频", Icon = "x", Duration = 3 })
                 elseif errorCode == 2 then
-                    ChronixUI:Notify({ Title = "播放失败", Content = "缓存文件失败", Type = "error", Duration = 3 })
+                    WindUI:Notify({ Title = "播放失败", Content = "缓存文件失败", Icon = "x", Duration = 3 })
                 elseif errorCode == 3 then
-                    ChronixUI:Notify({ Title = "播放失败", Content = "获取资产ID失败", Type = "error", Duration = 3 })
+                    WindUI:Notify({ Title = "播放失败", Content = "获取资产ID失败", Icon = "x", Duration = 3 })
                 end
             end
             data["basicdata"]["otherdata"]["musicbox"]["SoundId"] = (not string.find(data["basicdata"]["otherdata"]["musicData"]["currentId"], "rbxasset://")) and ("rbxassetid://" .. data["basicdata"]["otherdata"]["musicData"]["currentId"]) or data["basicdata"]["otherdata"]["musicData"]["currentId"]
@@ -921,101 +1005,101 @@ playStopButton = musicTab:AddButton({
                 data["basicdata"]["otherdata"]["musicData"]["isPlay"] = true
                 data["basicdata"]["otherdata"]["musicData"]["isPause"] = false
                 data["basicdata"]["otherdata"]["musicbox"].TimePosition = 0
-                playStopButton.Text = "⏹️ 停止"
+                playStopButton:SetTitle("⏹️ 停止")
                 if pauseResumeButton then
-                    pauseResumeButton.Text = "⏸️ 暂停"
+                    pauseResumeButton:SetTitle("⏸️ 暂停")
                 end
-                ChronixUI:Notify({ Title = "正在播放", Content = musicislink and data["basicdata"]["otherdata"]["musicData"]["currentlink"] or (productInfo.Name or ""), Type = "info", Duration = 3 })
+                WindUI:Notify({ Title = "正在播放", Content = musicislink and data["basicdata"]["otherdata"]["musicData"]["currentlink"] or (productInfo.Name or ""), Icon = "info", Duration = 3 })
             else
-                ChronixUI:Notify({ Title = "播放失败", Content = "无效的rbxassetid", Type = "error", Duration = 3 })
+                WindUI:Notify({ Title = "播放失败", Content = "无效的rbxassetid", Icon = "x", Duration = 3 })
                 data["basicdata"]["otherdata"]["musicData"]["isPlay"] = false
             end
         end
     end
 })
-pauseResumeButton = musicTab:AddButton({
-    Text = "⏸️ 暂停",
+pauseResumeButton = musicTab:Button({
+    Title = "⏸️ 暂停",
     Callback = function()
         if not data["basicdata"]["otherdata"]["musicData"]["isPlay"] then
-            ChronixUI:Notify({ Title = "无法操作", Content = "请先播放音乐", Type = "warning", Duration = 2 })
+            WindUI:Notify({ Title = "无法操作", Content = "请先播放音乐", Icon = "triangle-alert", Duration = 2 })
             return
         end
         if data["basicdata"]["otherdata"]["musicData"]["isPause"] then
             data["basicdata"]["otherdata"]["musicbox"]["TimePosition"] = data["basicdata"]["otherdata"]["musicData"]["PlayLocation"]
             data["basicdata"]["otherdata"]["musicbox"]:Play()
             data["basicdata"]["otherdata"]["musicData"]["isPause"] = false
-            pauseResumeButton.Text = "⏸️ 暂停"
-            ChronixUI:Notify({ Title = "继续播放", Content = "音乐已恢复", Type = "info", Duration = 1 })
+            pauseResumeButton:SetTitle("⏸️ 暂停")
+            WindUI:Notify({ Title = "继续播放", Content = "音乐已恢复", Icon = "info", Duration = 1 })
         else
             data["basicdata"]["otherdata"]["musicData"]["PlayLocation"] = data["basicdata"]["otherdata"]["musicbox"]["TimePosition"]
             data["basicdata"]["otherdata"]["musicbox"]:Stop()
             data["basicdata"]["otherdata"]["musicData"]["isPause"] = true
-            pauseResumeButton.Text = "▶️ 继续"
-            ChronixUI:Notify({ Title = "已暂停", Content = "音乐已暂停", Type = "info", Duration = 1 })
+            pauseResumeButton:SetTitle("▶️ 继续")
+            WindUI:Notify({ Title = "已暂停", Content = "音乐已暂停", Icon = "info", Duration = 1 })
         end
     end
 })
-loopButton = musicTab:AddButton({
-    Text = "🔄 循环播放",
+loopButton = musicTab:Button({
+    Title = "🔄 循环播放",
     Callback = function()
         data["basicdata"]["otherdata"]["musicbox"]["Looped"] = not data["basicdata"]["otherdata"]["musicbox"]["Looped"]
-        loopButton.Text = data["basicdata"]["otherdata"]["musicbox"]["Looped"] and "🔁 不循环播放" or "🔄 循环播放"
-        ChronixUI:Notify({ Title = "设置已更改", Content = data["basicdata"]["otherdata"]["musicbox"]["Looped"] and "已开启循环播放" or "已关闭循环播放", Type = "info", Duration = 1 })
+        loopButton:SetTitle(data["basicdata"]["otherdata"]["musicbox"]["Looped"] and "🔁 不循环播放" or "🔄 循环播放")
+        WindUI:Notify({ Title = "设置已更改", Content = data["basicdata"]["otherdata"]["musicbox"]["Looped"] and "已开启循环播放" or "已关闭循环播放", Icon = "info", Duration = 1 })
     end
 })
-musicTab:AddDivider()
-musicTab:AddLabel("音量控制")
-volumeLabel = musicTab:AddLabel(string.format("当前音量: %.0f%%", data["basicdata"]["otherdata"]["musicbox"]["Volume"] * 100))
-musicTab:AddButton({
-    Text = "🔊 音量 +",
+musicTab:Divider()
+musicTab:Paragraph({ Title = "音量控制" })
+volumeLabel = musicTab:Paragraph({ Title = string.format("当前音量: %.0f%%", data["basicdata"]["otherdata"]["musicbox"]["Volume"] * 100) })
+musicTab:Button({
+    Title = "🔊 音量 +",
     Callback = function()
         if data["basicdata"]["otherdata"]["musicbox"]["Volume"] < 1 then
             data["basicdata"]["otherdata"]["musicbox"]["Volume"] = math.min(1, data["basicdata"]["otherdata"]["musicbox"]["Volume"] + 0.1)
-            volumeLabel.Text = string.format("当前音量: %.0f%%", data["basicdata"]["otherdata"]["musicbox"]["Volume"] * 100)
+            volumeLabel:SetTitle(string.format("当前音量: %.0f%%", data["basicdata"]["otherdata"]["musicbox"]["Volume"] * 100))
         end
     end
 })
-musicTab:AddButton({
-    Text = "🔉 音量 -",
+musicTab:Button({
+    Title = "🔉 音量 -",
     Callback = function()
         if data["basicdata"]["otherdata"]["musicbox"]["Volume"] > 0 then
             data["basicdata"]["otherdata"]["musicbox"]["Volume"] = math.max(0, data["basicdata"]["otherdata"]["musicbox"]["Volume"] - 0.1)
-            volumeLabel.Text = string.format("当前音量: %.0f%%", data["basicdata"]["otherdata"]["musicbox"]["Volume"] * 100)
+            volumeLabel:SetTitle(string.format("当前音量: %.0f%%", data["basicdata"]["otherdata"]["musicbox"]["Volume"] * 100))
         end
     end
 })
-musicTab:AddDivider()
-musicTab:AddLabel("音高控制")
-pitchLabel = musicTab:AddLabel(string.format("当前音高: %.1f", data["basicdata"]["otherdata"]["musicbox"]["Pitch"]))
-musicTab:AddButton({
-    Text = "🎵 音高 +",
+musicTab:Divider()
+musicTab:Paragraph({ Title = "音高控制" })
+pitchLabel = musicTab:Paragraph({ Title = string.format("当前音高: %.1f", data["basicdata"]["otherdata"]["musicbox"]["Pitch"]) })
+musicTab:Button({
+    Title = "🎵 音高 +",
     Callback = function()
         data["basicdata"]["otherdata"]["musicbox"]["Pitch"] = data["basicdata"]["otherdata"]["musicbox"]["Pitch"] + 0.1
-        pitchLabel.Text = string.format("当前音高: %.1f", data["basicdata"]["otherdata"]["musicbox"]["Pitch"])
+        pitchLabel:SetTitle(string.format("当前音高: %.1f", data["basicdata"]["otherdata"]["musicbox"]["Pitch"]))
     end
 })
-musicTab:AddButton({
-    Text = "🎵 音高 -",
+musicTab:Button({
+    Title = "🎵 音高 -",
     Callback = function()
         if data["basicdata"]["otherdata"]["musicbox"]["Pitch"] > 0.1 then
             data["basicdata"]["otherdata"]["musicbox"]["Pitch"] = data["basicdata"]["otherdata"]["musicbox"]["Pitch"] - 0.1
-            pitchLabel.Text = string.format("当前音高: %.1f", data["basicdata"]["otherdata"]["musicbox"]["Pitch"])
+            pitchLabel:SetTitle(string.format("当前音高: %.1f", data["basicdata"]["otherdata"]["musicbox"]["Pitch"]))
         end
     end
 })
-musicTab:AddButton({
-    Text = "🔄 重置音高",
+musicTab:Button({
+    Title = "🔄 重置音高",
     Callback = function()
         data["basicdata"]["otherdata"]["musicbox"]["Pitch"] = 1
-        pitchLabel.Text = string.format("当前音高: %.1f", data["basicdata"]["otherdata"]["musicbox"]["Pitch"])
+        pitchLabel:SetTitle(string.format("当前音高: %.1f", data["basicdata"]["otherdata"]["musicbox"]["Pitch"]))
     end
 })
-musicTab:AddDivider()
-musicTab:AddLabel("💡 提示：可从下拉框选择预设音乐，或手动输入自定义ID")
-musicTab:AddLabel("📝 自定义ID格式：纯数字，如 142376088")
+musicTab:Divider()
+musicTab:Paragraph({ Title = "💡 提示：可从下拉框选择预设音乐，或手动输入自定义ID" })
+musicTab:Paragraph({ Title = "📝 自定义ID格式：纯数字，如 142376088" })
 
 -- ===== 音频检查器 Tab =====
-audioCheckerTab = mainWindow:CreateTab({ Name = "音频检查器", HasIcon = true, IconName = "audio-waveform" })
+audioCheckerTab = SecMedia:Tab({ Title = "音频检查器", Icon = "audio-waveform" })
 testIdLabel = nil
 function getAllSounds(parent)
     local sounds = {}
@@ -1063,7 +1147,7 @@ function refreshAudioList()
     clearAudioList()
     local loudSounds = getLoudSounds(data["basicdata"]["otherdata"]["audioData"]["threshold"])
     if #loudSounds == 0 then
-        local emptyLabel = audioCheckerTab:AddLabel("未检测到超过阈值的音频")
+        local emptyLabel = audioCheckerTab:Paragraph({ Title = "未检测到超过阈值的音频" })
         table.insert(data["basicdata"]["otherdata"]["audioData"]["audioListItems"], emptyLabel)
     else
         for _, soundInfo in ipairs(loudSounds) do
@@ -1072,15 +1156,15 @@ function refreshAudioList()
                 soundInfo.Loudness,
                 soundInfo.Parent
             )
-            local soundButton = audioCheckerTab:AddButton({
-                Text = displayText,
+            local soundButton = audioCheckerTab:Button({
+                Title = displayText,
                 Callback = function()
                     if soundInfo.CleanSoundId then
                         data["basicdata"]["otherdata"]["audioData"]["currentSelectedId"] = soundInfo.CleanSoundId
                         if testIdLabel then
-                            testIdLabel.Text = "当前选中ID: " .. soundInfo.CleanSoundId
+                            testIdLabel:SetTitle("当前选中ID: " .. soundInfo.CleanSoundId)
                         end
-                        ChronixUI:Notify({ Title = "已选中", Content = "音频ID: " .. soundInfo.CleanSoundId .. "\n来源: " .. soundInfo.FullPath, Type = "info", Duration = 3 })
+                        WindUI:Notify({ Title = "已选中", Content = "音频ID: " .. soundInfo.CleanSoundId .. "\n来源: " .. soundInfo.FullPath, Icon = "info", Duration = 3 })
                     end
                 end
             })
@@ -1111,11 +1195,11 @@ function startAudioScanning()
         end)
     end
 end
-audioCheckerTab:AddTitle("音频检查器")
-audioCheckerTab:AddLabel("筛选响度阈值 (建议10-50)")
-thresholdInput = audioCheckerTab:AddInput({
-    Label = "响度阈值",
-    Default = tostring(data["basicdata"]["otherdata"]["audioData"]["threshold"]),
+audioCheckerTab:Section({ Title = "音频检查器", Opened = true })
+audioCheckerTab:Paragraph({ Title = "筛选响度阈值 (建议10-50)" })
+thresholdInput = audioCheckerTab:Input({
+    Title = "响度阈值",
+    Value = tostring(data["basicdata"]["otherdata"]["audioData"]["threshold"]),
     Placeholder = "输入阈值，例如: 30",
     Callback = function(text)
         local num = tonumber(text)
@@ -1135,53 +1219,54 @@ local function clearAudioListUI()
     end
     data["basicdata"]["otherdata"]["audioData"]["audioListItems"] = {}
 end
-audioCheckerTab:AddToggle({
-    Label = "开始检测音频",
-    Default = false,
+audioCheckerTab:Toggle({
+    Title = "开始检测音频",
+    Flag = "THub_Audio_Enable",
+    Value = false,
     Callback = function(v)
         data["basicdata"]["otherdata"]["audioData"]["enable"] = v
         if v then
             data["basicdata"]["otherdata"]["audioData"]["lastScanTime"] = tick()
             startAudioScanning()
-            ChronixUI:Notify({ Title = "已开启", Content = "开始检测游戏中播放的音频", Type = "success", Duration = 2 })
+            WindUI:Notify({ Title = "已开启", Content = "开始检测游戏中播放的音频", Icon = "check", Duration = 2 })
         else
             if data["basicdata"]["otherdata"]["audioData"]["scanConnection"] then
                 data["basicdata"]["otherdata"]["audioData"]["scanConnection"]:Disconnect()
                 data["basicdata"]["otherdata"]["audioData"]["scanConnection"] = nil
             end
             clearAudioListUI()
-            ChronixUI:Notify({ Title = "已关闭", Content = "音频检测已停止", Type = "info", Duration = 2 })
+            WindUI:Notify({ Title = "已关闭", Content = "音频检测已停止", Icon = "info", Duration = 2 })
         end
     end
 })
-audioCheckerTab:AddDivider()
-audioCheckerTab:AddTitle("测试播放")
-testIdLabel = audioCheckerTab:AddLabel("当前选中ID: 未选择")
-audioCheckerTab:AddButton({
-    Text = "📋 复制选中ID到剪贴板",
+audioCheckerTab:Divider()
+audioCheckerTab:Section({ Title = "测试播放", Opened = true })
+testIdLabel = audioCheckerTab:Paragraph({ Title = "当前选中ID: 未选择" })
+audioCheckerTab:Button({
+    Title = "📋 复制选中ID到剪贴板",
     Callback = function()
         if data["basicdata"]["otherdata"]["audioData"]["currentSelectedId"] then
             setclipboard(data["basicdata"]["otherdata"]["audioData"]["currentSelectedId"])
-            ChronixUI:Notify({ Title = "已复制", Content = data["basicdata"]["otherdata"]["audioData"]["currentSelectedId"] .. " 已复制到剪贴板", Type = "info", Duration = 2 })
+            WindUI:Notify({ Title = "已复制", Content = data["basicdata"]["otherdata"]["audioData"]["currentSelectedId"] .. " 已复制到剪贴板", Icon = "info", Duration = 2 })
         else
-            ChronixUI:Notify({ Title = "未选中", Content = "请先点击音频列表中的项目", Type = "warning", Duration = 2 })
+            WindUI:Notify({ Title = "未选中", Content = "请先点击音频列表中的项目", Icon = "triangle-alert", Duration = 2 })
         end
     end
 })
 testSoundEndedConn = nil
-testPlayButton = audioCheckerTab:AddButton({
-    Text = "🎵 尝试播放",
+testPlayButton = audioCheckerTab:Button({
+    Title = "🎵 尝试播放",
     Callback = function()
         if not data["basicdata"]["otherdata"]["audioData"]["currentSelectedId"] then
-            ChronixUI:Notify({ Title = "无法播放", Content = "请先选中一个音频ID", Type = "warning", Duration = 2 })
+            WindUI:Notify({ Title = "无法播放", Content = "请先选中一个音频ID", Icon = "triangle-alert", Duration = 2 })
             return
         end
         if data["basicdata"]["otherdata"]["audioData"]["isTesting"] then
             data["basicdata"]["otherdata"]["testSound"]:Stop()
             data["basicdata"]["otherdata"]["audioData"]["isTesting"] = false
-            testPlayButton.Text = "🎵 尝试播放"
+            testPlayButton:SetTitle("🎵 尝试播放")
             if testSoundEndedConn then testSoundEndedConn:Disconnect(); testSoundEndedConn = nil end
-            ChronixUI:Notify({ Title = "已停止", Content = "测试播放已停止", Type = "info", Duration = 1 })
+            WindUI:Notify({ Title = "已停止", Content = "测试播放已停止", Icon = "info", Duration = 1 })
         else
             local soundId = "rbxassetid://" .. data["basicdata"]["otherdata"]["audioData"]["currentSelectedId"]
             data["basicdata"]["otherdata"]["testSound"]["SoundId"] = soundId
@@ -1191,30 +1276,30 @@ testPlayButton = audioCheckerTab:AddButton({
             if success and productInfo then
                 data["basicdata"]["otherdata"]["testSound"]:Play()
                 data["basicdata"]["otherdata"]["audioData"]["isTesting"] = true
-                testPlayButton.Text = "⏹️ 结束播放"
-                testIdLabel.Text = "测试ID: " .. data["basicdata"]["otherdata"]["audioData"]["currentSelectedId"]
-                ChronixUI:Notify({ Title = "正在播放", Content = productInfo.Name, Type = "info", Duration = 2 })
+                testPlayButton:SetTitle("⏹️ 结束播放")
+                testIdLabel:SetTitle("测试ID: " .. data["basicdata"]["otherdata"]["audioData"]["currentSelectedId"])
+                WindUI:Notify({ Title = "正在播放", Content = productInfo.Name, Icon = "info", Duration = 2 })
                 if testSoundEndedConn then testSoundEndedConn:Disconnect() end
                 testSoundEndedConn = data["basicdata"]["otherdata"]["testSound"]["Ended"]:Connect(function()
                     if data["basicdata"]["otherdata"]["audioData"]["isTesting"] then
                         data["basicdata"]["otherdata"]["audioData"]["isTesting"] = false
-                        testPlayButton.Text = "🎵 尝试播放"
+                        testPlayButton:SetTitle("🎵 尝试播放")
                         testSoundEndedConn = nil
                     end
                 end)
             else
-                ChronixUI:Notify({ Title = "播放失败", Content = data["basicdata"]["otherdata"]["audioData"]["currentSelectedId"] .. " 不是一个有效的音频ID", Type = "error", Duration = 2 })
+                WindUI:Notify({ Title = "播放失败", Content = data["basicdata"]["otherdata"]["audioData"]["currentSelectedId"] .. " 不是一个有效的音频ID", Icon = "x", Duration = 2 })
             end
         end
     end
 })
-audioCheckerTab:AddDivider()
-audioCheckerTab:AddTitle("检测到的音频")
-audioCheckerTab:AddLabel("点击任意音频可选中并复制ID")
-audioCheckerTab:AddDivider()
+audioCheckerTab:Divider()
+audioCheckerTab:Section({ Title = "检测到的音频", Opened = true })
+audioCheckerTab:Paragraph({ Title = "点击任意音频可选中并复制ID" })
+audioCheckerTab:Divider()
 
 -- ===== 聊天接收器 Tab =====
-chatReceiverTab = mainWindow:CreateTab({ Name = "聊天接收器", HasIcon = true, IconName = "messages-square" })
+chatReceiverTab = SecMedia:Tab({ Title = "聊天接收器", Icon = "messages-square" })
 local CHAT_MAX = 100
 chatMessages = {}
 function clearChatMessages()
@@ -1235,39 +1320,38 @@ local function trimChatMessages()
 end
 function addChatMessage(sender, text)
     local messageText = sender .. ": " .. text
-    local messageLabel = chatReceiverTab:AddLabel(messageText)
+    local messageLabel = chatReceiverTab:Paragraph({ Title = messageText })
     table.insert(chatMessages, messageLabel)
-    local copyButton = chatReceiverTab:AddButton({
-        Text = "📋 复制这条消息",
+    local copyButton = chatReceiverTab:Button({
+        Title = "📋 复制这条消息",
         Callback = function()
             local fullText = sender .. ": " .. text
             setclipboard(fullText)
-            ChronixUI:Notify({ Title = "已复制", Content = "消息已复制到剪贴板", Type = "info", Duration = 2 })
+            WindUI:Notify({ Title = "已复制", Content = "消息已复制到剪贴板", Icon = "info", Duration = 2 })
         end
     })
     table.insert(chatMessages, copyButton)
-    local divider = chatReceiverTab:AddDivider()
+    local divider = chatReceiverTab:Divider()
     table.insert(chatMessages, divider)
     trimChatMessages()
 end
-chatReceiverTab:AddTitle("📨 聊天接收器")
-chatReceiverTab:AddDivider()
-chatReceiverTab:AddLabel("实时接收游戏中所有玩家的聊天消息")
-chatReceiverTab:AddDivider()
-chatReceiverTab:AddTitle("消息列表")
-chatReceiverTab:AddButton({
-    Text = "🗑️ 清空所有消息",
+chatReceiverTab:Section({ Title = "📨 聊天接收器", Opened = true })
+chatReceiverTab:Divider()
+chatReceiverTab:Paragraph({ Title = "实时接收游戏中所有玩家的聊天消息" })
+chatReceiverTab:Divider()
+chatReceiverTab:Section({ Title = "消息列表", Opened = true })
+chatReceiverTab:Button({
+    Title = "🗑️ 清空所有消息",
     Callback = function()
         clearChatMessages()
-        ChronixUI:Notify({ Title = "已清空", Content = "所有聊天消息已清除", Type = "info", Duration = 1 })
+        WindUI:Notify({ Title = "已清空", Content = "所有聊天消息已清除", Icon = "info", Duration = 1 })
     end
 })
-chatReceiverTab:AddDivider()
-chatReceiverTab:AddLabel("💡 提示：点击消息下方的按钮可复制该条消息")
-
+chatReceiverTab:Divider()
+chatReceiverTab:Paragraph({ Title = "💡 提示：点击消息下方的按钮可复制该条消息" })
 
 -- ===== 滤镜控制器 Tab =====
-filterTab = mainWindow:CreateTab({ Name = "滤镜控制器", HasIcon = true, IconName = "sparkles" })
+filterTab = SecVisual:Tab({ Title = "滤镜控制器", Icon = "sparkles" })
 dynamicControls = {}
 staticControls = {}
 function refreshFilterList(showNotification)
@@ -1280,55 +1364,58 @@ function refreshFilterList(showNotification)
     local allEffects = getAllPostEffects()
     local colorCorrection = getColorCorrectionEffect()
     if #allEffects == 0 then
-        local noEffectLabel = filterTab:AddLabel("未检测到任何后处理特效")
+        local noEffectLabel = filterTab:Paragraph({ Title = "未检测到任何后处理特效" })
         table.insert(dynamicControls, noEffectLabel)
         return
     end
-    local titleLabel = filterTab:AddTitle("后处理特效开关")
+    local titleLabel = filterTab:Section({ Title = "后处理特效开关", Opened = true })
     table.insert(dynamicControls, titleLabel)
     for _, effect in ipairs(allEffects) do
         local displayName = string.format("%s (%s)", effect.Name, effect.ClassName)
-        local toggle = filterTab:AddToggle({
-            Label = displayName,
-            Default = effect.Enabled,
+        local toggle = filterTab:Toggle({
+            Title = displayName,
+            Value = effect.Enabled,
             Callback = function(enabled)
                 effect.Enabled = enabled
                 local status = enabled and "启用" or "禁用"
-                ChronixUI:Notify({ Title = "滤镜状态", Content = effect.Name .. " 已" .. status, Type = enabled and "success" or "info", Duration = 2 })
+                WindUI:Notify({ Title = "滤镜状态", Content = effect.Name .. " 已" .. status, Icon = enabled and "check" or "info", Duration = 2 })
             end
         })
         table.insert(dynamicControls, toggle)
     end
     if colorCorrection then
-        local divider = filterTab:AddDivider()
+        local divider = filterTab:Divider()
         table.insert(dynamicControls, divider)
-        local colorTitle = filterTab:AddTitle("颜色微调")
+        local colorTitle = filterTab:Section({ Title = "颜色微调", Opened = true })
         table.insert(dynamicControls, colorTitle)
-        local saturationSlider = filterTab:AddSlider({
-            Label = "饱和度 (Saturation)", Min = -1, Max = 1, Default = colorCorrection.Saturation,
+        local saturationSlider = filterTab:Slider({
+            Title = "饱和度 (Saturation)", Step = 0.01,
+            Value = { Min = -1, Max = 1, Default = colorCorrection.Saturation },
             Callback = function(value) colorCorrection.Saturation = value end
         })
         table.insert(dynamicControls, saturationSlider)
-        local brightnessSlider = filterTab:AddSlider({
-            Label = "亮度 (Brightness)", Min = -1, Max = 1, Default = colorCorrection.Brightness,
+        local brightnessSlider = filterTab:Slider({
+            Title = "亮度 (Brightness)", Step = 0.01,
+            Value = { Min = -1, Max = 1, Default = colorCorrection.Brightness },
             Callback = function(value) colorCorrection.Brightness = value end
         })
         table.insert(dynamicControls, brightnessSlider)
-        local contrastSlider = filterTab:AddSlider({
-            Label = "对比度 (Contrast)", Min = -1, Max = 1, Default = colorCorrection.Contrast,
+        local contrastSlider = filterTab:Slider({
+            Title = "对比度 (Contrast)", Step = 0.01,
+            Value = { Min = -1, Max = 1, Default = colorCorrection.Contrast },
             Callback = function(value) colorCorrection.Contrast = value end
         })
         table.insert(dynamicControls, contrastSlider)
-        local tintColorPicker = filterTab:AddColorPicker({
-            Label = "色调颜色 (TintColor)", Default = colorCorrection.TintColor,
+        local tintColorPicker = filterTab:Colorpicker({
+            Title = "色调颜色 (TintColor)", Default = colorCorrection.TintColor,
             Callback = function(color) colorCorrection.TintColor = color end
         })
         table.insert(dynamicControls, tintColorPicker)
     end
-    local resetDivider = filterTab:AddDivider()
+    local resetDivider = filterTab:Divider()
     table.insert(dynamicControls, resetDivider)
-    local resetButton = filterTab:AddButton({
-        Text = "重置所有滤镜为默认状态",
+    local resetButton = filterTab:Button({
+        Title = "重置所有滤镜为默认状态",
         Callback = function()
             for _, effect in ipairs(getAllPostEffects()) do
                 effect.Enabled = true
@@ -1339,14 +1426,14 @@ function refreshFilterList(showNotification)
                     effect.TintColor = Color3.new(1, 1, 1)
                 end
             end
-            ChronixUI:Notify({ Title = "滤镜控制器", Content = "所有滤镜已重置为默认状态", Type = "success", Duration = 3 })
+            WindUI:Notify({ Title = "滤镜控制器", Content = "所有滤镜已重置为默认状态", Icon = "check", Duration = 3 })
             refreshFilterList(true)
         end
     })
     table.insert(dynamicControls, resetButton)
-    local colorBlindDivider = filterTab:AddDivider()
+    local colorBlindDivider = filterTab:Divider()
     table.insert(dynamicControls, colorBlindDivider)
-    local colorBlindTitle = filterTab:AddTitle("🎨 色盲模拟器")
+    local colorBlindTitle = filterTab:Section({ Title = "🎨 色盲模拟器", Opened = true })
     table.insert(dynamicControls, colorBlindTitle)
     local colorBlindModes = {
         { name = "正常", config = { Saturation = 0, Brightness = 0, Contrast = 0, TintColor = Color3.new(1, 1, 1) } },
@@ -1361,64 +1448,62 @@ function refreshFilterList(showNotification)
     }
     local currentColorBlindMode = "正常"
     local function applyColorBlindMode(modeConfig)
-        local colorCorrection = getColorCorrectionEffect()
-        if not colorCorrection then
-            colorCorrection = Instance.new("ColorCorrectionEffect")
-            colorCorrection.Name = "THub_ColorCorrection"
-            colorCorrection.Parent = Lighting
+        local cc = getColorCorrectionEffect()
+        if not cc then
+            cc = Instance.new("ColorCorrectionEffect")
+            cc.Name = "THub_ColorCorrection"
+            cc.Parent = Lighting
         end
-        colorCorrection.Enabled = true
-        colorCorrection.Saturation = modeConfig.Saturation
-        colorCorrection.Brightness = modeConfig.Brightness
-        colorCorrection.Contrast = modeConfig.Contrast
-        colorCorrection.TintColor = modeConfig.TintColor
+        cc.Enabled = true
+        cc.Saturation = modeConfig.Saturation
+        cc.Brightness = modeConfig.Brightness
+        cc.Contrast = modeConfig.Contrast
+        cc.TintColor = modeConfig.TintColor
     end
     local modeNames = {}
     for _, mode in ipairs(colorBlindModes) do
         table.insert(modeNames, mode.name)
     end
-    local colorBlindDropdown = filterTab:AddDropdown({
-        Label = "选择色盲模式",
-        Options = modeNames,
-        Default = "正常",
+    local colorBlindDropdown = filterTab:Dropdown({
+        Title = "选择色盲模式",
+        Values = modeNames,
+        Value = "正常",
         Callback = function(selected)
             currentColorBlindMode = selected
             for _, mode in ipairs(colorBlindModes) do
                 if mode.name == selected then
                     applyColorBlindMode(mode.config)
-                    ChronixUI:Notify({ Title = "色盲模拟器", Content = "已切换到: " .. selected, Type = "info", Duration = 2 })
+                    WindUI:Notify({ Title = "色盲模拟器", Content = "已切换到: " .. selected, Icon = "info", Duration = 2 })
                     break
                 end
             end
         end
     })
     table.insert(dynamicControls, colorBlindDropdown)
-    local colorBlindNote = filterTab:AddLabel("💡 选择一种色盲模式来模拟对应的视觉体验")
+    local colorBlindNote = filterTab:Paragraph({ Title = "💡 选择一种色盲模式来模拟对应的视觉体验" })
     table.insert(dynamicControls, colorBlindNote)
-    if mainWindow.RefreshContent then
-        mainWindow:RefreshContent()
-    end
     if showNotification == true then
-        ChronixUI:Notify({ Title = "滤镜控制器", Content = "已刷新，找到 " .. #allEffects .. " 个特效", Type = "success", Duration = 2 })
+        WindUI:Notify({ Title = "滤镜控制器", Content = "已刷新，找到 " .. #allEffects .. " 个特效", Icon = "check", Duration = 2 })
     end
 end
-local refreshButton = filterTab:AddButton({
-    Text = "手动刷新滤镜列表",
+local refreshButton = filterTab:Button({
+    Title = "手动刷新滤镜列表",
     Callback = function()
         refreshFilterList(true)
     end
 })
 table.insert(staticControls, refreshButton)
-local staticDivider = filterTab:AddDivider()
+local staticDivider = filterTab:Divider()
 table.insert(staticControls, staticDivider)
 refreshFilterList(false)
 
 -- ===== 自定义称号 Tab =====
-playertitleTab = mainWindow:CreateTab({ Name = "自定义称号", HasIcon = true, IconName = "tag" })
-playertitleTab:AddTitle("自定义你的称号")
-playertitleTab:AddToggle({
-    Label = "功能开关",
-    Default = false,
+playertitleTab = SecVisual:Tab({ Title = "自定义称号", Icon = "tag" })
+playertitleTab:Section({ Title = "自定义你的称号", Opened = true })
+playertitleTab:Toggle({
+    Title = "功能开关",
+    Flag = "THub_Title_Enable",
+    Value = false,
     Callback = function(v)
         if v then
             data["basicdata"]["otherdata"]["playertitle"]["tag"]:enable()
@@ -1427,46 +1512,52 @@ playertitleTab:AddToggle({
         end
     end
 })
-playertitleTab:AddInput({
-    Label = "称号文本",
+playertitleTab:Input({
+    Title = "称号文本",
+    Flag = "THub_Title_Text",
     Placeholder = "",
-    Default = data["basicdata"]["otherdata"]["playertitle"]["text"],
+    Value = data["basicdata"]["otherdata"]["playertitle"]["text"],
     Callback = function(text)
         data["basicdata"]["otherdata"]["playertitle"]["text"] = text
     end
 })
-playertitleTab:AddColorPicker({
-    Label = "称号颜色",
+playertitleTab:Colorpicker({
+    Title = "称号颜色",
     Default = hexToColor3(data["basicdata"]["otherdata"]["playertitle"]["color"]),
     Callback = function(color)
         data["basicdata"]["otherdata"]["playertitle"]["color"] = color3ToHex(color)
     end
 })
-playertitleTab:AddSlider({
-    Label = "字号",
-    Min = 1, Max = 50, Default = data["basicdata"]["otherdata"]["playertitle"]["size"],
+playertitleTab:Slider({
+    Title = "字号",
+    Flag = "THub_Title_Size",
+    Step = 1,
+    Value = { Min = 1, Max = 50, Default = data["basicdata"]["otherdata"]["playertitle"]["size"] },
     Callback = function(v) data["basicdata"]["otherdata"]["playertitle"]["size"] = v end
 })
-playertitleTab:AddToggle({
-    Label = "加粗",
-    Default = false,
+playertitleTab:Toggle({
+    Title = "加粗",
+    Flag = "THub_Title_Bold",
+    Value = false,
     Callback = function(v) data["basicdata"]["otherdata"]["playertitle"]["bold"] = v end
 })
-playertitleTab:AddToggle({
-    Label = "倾斜",
-    Default = false,
+playertitleTab:Toggle({
+    Title = "倾斜",
+    Flag = "THub_Title_Italic",
+    Value = false,
     Callback = function(v) data["basicdata"]["otherdata"]["playertitle"]["italic"] = v end
 })
-playertitleTab:AddInput({
-    Label = "字体",
+playertitleTab:Input({
+    Title = "字体",
+    Flag = "THub_Title_Font",
     Placeholder = "",
-    Default = data["basicdata"]["otherdata"]["playertitle"]["font"],
+    Value = data["basicdata"]["otherdata"]["playertitle"]["font"],
     Callback = function(text)
         data["basicdata"]["otherdata"]["playertitle"]["font"] = text
     end
 })
-playertitleTab:AddButton({
-    Text = "应用更改",
+playertitleTab:Button({
+    Title = "应用更改",
     Callback = function()
         data["basicdata"]["otherdata"]["playertitle"]["tag"]:update({
             text = data["basicdata"]["otherdata"]["playertitle"]["text"],
@@ -1481,8 +1572,8 @@ playertitleTab:AddButton({
 
 -- ===== 服务器查询 Tab =====
 serverQuery = ServerFinderModule.new()
-serverTab = mainWindow:CreateTab({ Name = "服务器查询", HasIcon = true, IconName = "server" })
-serverTab:AddTitle("公共服务器列表")
+serverTab = SecTeleport:Tab({ Title = "服务器查询", Icon = "server" })
+serverTab:Section({ Title = "公共服务器列表", Opened = true })
 serverUIElements = {}
 function clearServerList()
     for _, elementList in ipairs(serverUIElements) do
@@ -1497,12 +1588,12 @@ end
 isRefreshing = false
 function refreshServerList()
     if isRefreshing then
-        ChronixUI:Notify({ Title = "提示", Content = "正在刷新中，请稍候...", Type = "warning", Duration = 2 })
+        WindUI:Notify({ Title = "提示", Content = "正在刷新中，请稍候...", Icon = "triangle-alert", Duration = 2 })
         return
     end
     clearServerList()
     isRefreshing = true
-    local loadingLabel = serverTab:AddLabel("⏳ 正在获取服务器列表...")
+    local loadingLabel = serverTab:Paragraph({ Title = "⏳ 正在获取服务器列表..." })
     table.insert(serverUIElements, {loadingLabel})
     serverQuery:refreshAsync(function(servers)
         isRefreshing = false
@@ -1511,13 +1602,13 @@ function refreshServerList()
         end
         clearServerList()
         if #servers == 0 then
-            local emptyLabel = serverTab:AddLabel("⚠️ 没有找到公共服务器，或 API 出错。")
+            local emptyLabel = serverTab:Paragraph({ Title = "⚠️ 没有找到公共服务器，或 API 出错。" })
             table.insert(serverUIElements, {emptyLabel})
             return
         end
-        local infoLabel = serverTab:AddLabel("点击下方按钮可加入对应服务器")
+        local infoLabel = serverTab:Paragraph({ Title = "点击下方按钮可加入对应服务器" })
         table.insert(serverUIElements, {infoLabel})
-        local divider1 = serverTab:AddDivider()
+        local divider1 = serverTab:Divider()
         table.insert(serverUIElements, {divider1})
         for _, serverData in ipairs(servers) do
             local entryElements = {}
@@ -1530,111 +1621,109 @@ function refreshServerList()
             elseif ping < 100 then quality = "好"
             end
             local infoText = string.format("玩家: %d/%d | Ping: %dms | 质量: %s", players, maxPlayers, ping, quality)
-            local sInfoLabel = serverTab:AddLabel(infoText)
+            local sInfoLabel = serverTab:Paragraph({ Title = infoText })
             table.insert(entryElements, sInfoLabel)
-            local idLabel = serverTab:AddLabel("ID: " .. tostring(serverData.id))
+            local idLabel = serverTab:Paragraph({ Title = "ID: " .. tostring(serverData.id) })
             table.insert(entryElements, idLabel)
-            local joinBtn = serverTab:AddButton({
-                Text = "🚀 加入此服务器",
+            local joinBtn = serverTab:Button({
+                Title = "🚀 加入此服务器",
                 Callback = function()
                     local ok, err = pcall(function()
                         TeleportService:TeleportToPlaceInstance(game.PlaceId, serverData.id, LocalPlayer)
                     end)
                     if not ok then
-                        ChronixUI:Notify({ Title = "传送失败", Content = "无法加入服务器: " .. tostring(err), Type = "error", Duration = 3 })
+                        WindUI:Notify({ Title = "传送失败", Content = "无法加入服务器: " .. tostring(err), Icon = "x", Duration = 3 })
                     end
                 end
             })
             table.insert(entryElements, joinBtn)
-            local sDivider = serverTab:AddDivider()
+            local sDivider = serverTab:Divider()
             table.insert(entryElements, sDivider)
             table.insert(serverUIElements, entryElements)
         end
-        if mainWindow.RefreshContent then
-            mainWindow:RefreshContent()
-        end
     end)
 end
-serverTab:AddButton({
-    Text = "🔄 刷新服务器列表",
+serverTab:Button({
+    Title = "🔄 刷新服务器列表",
     Callback = function()
         refreshServerList()
     end
 })
-serverTab:AddDivider()
-serverTab:AddLabel("💡 点击刷新按钮获取当前游戏的公共服务器")
-serverTab:AddLabel("⚠️ 服务器数据来自 Roblox 官方 API，可能会有延迟")
+serverTab:Divider()
+serverTab:Paragraph({ Title = "💡 点击刷新按钮获取当前游戏的公共服务器" })
+serverTab:Paragraph({ Title = "⚠️ 服务器数据来自 Roblox 官方 API，可能会有延迟" })
 refreshServerList()
 
 -- ===== 恶劣功能 Tab =====
-hankerTab = mainWindow:CreateTab({ Name = "恶劣功能", HasIcon = true, IconName = "shield-alert" })
-hankerTab:AddTitle("使用此部分的功能会导致封号")
-hankerTab:AddDivider()
-hankerTab:AddLabel("普通功能")
-enableToggle(hankerTab, "循环OOF", function() LoopOofModule.enable() end, function() LoopOofModule.disable() end)
-hankerTab:AddButton({ Text = "获得打飞机工具", Callback = function() getjerktool() end })
-hankerTab:AddDivider()
-hankerTab:AddLabel("背起了行囊")
-hankerTab:AddInput({
-    Label = "旋转速度",
+hankerTab = SecRisk:Tab({ Title = "恶劣功能", Icon = "shield-alert" })
+hankerTab:Section({ Title = "使用此部分的功能会导致封号", Opened = true })
+hankerTab:Divider()
+hankerTab:Paragraph({ Title = "普通功能" })
+enableToggle(hankerTab, "THub_Hank_LoopOof", "循环OOF", function() LoopOofModule.enable() end, function() LoopOofModule.disable() end)
+hankerTab:Button({ Title = "获得打飞机工具", Callback = function() getjerktool() end })
+hankerTab:Divider()
+hankerTab:Paragraph({ Title = "背起了行囊" })
+hankerTab:Input({
+    Title = "旋转速度",
+    Flag = "THub_Hank_SpinSpeed",
     Placeholder = "",
-    Default = 20,
+    Value = "20",
     Callback = function(text)
         data["basicdata"]["hankermodule"]["spin"]["speed"] = tonumber(text)
         if SpinModule.isEnabled() then SpinModule.setSpeed(data["basicdata"]["hankermodule"]["spin"]["speed"]) end
     end
 })
-enableToggle(hankerTab, "开始旋转", function() SpinModule.enable(data["basicdata"]["hankermodule"]["spin"]["speed"]) end, function() SpinModule.disable() end)
-hankerTab:AddDivider()
-hankerTab:AddLabel("击飞功能")
-enableToggle(hankerTab, "旋转击飞(Ctrl+G)", function() FlingModule.fling.setShortcutEnabled(true) end, function() FlingModule.fling.setShortcutEnabled(false) end)
-enableToggle(hankerTab, "飞行击飞", function() FlingModule.flyfling.enable(2) end, function() FlingModule.flyfling.disable() end)
-enableToggle(hankerTab, "走路击飞", function() FlingModule.walkfling.enable() end, function() FlingModule.walkfling.disable() end)
-enableToggle(hankerTab, "隐身击飞", function() FlingModule.invisfling.enable() end, function() FlingModule.invisfling.disable() end)
-hankerTab:AddDivider()
-hankerTab:AddLabel("击杀玩家")
-hankerTab:AddInput({
-    Label = "要击杀的玩家名",
+enableToggle(hankerTab, "THub_Hank_Spin", "开始旋转", function() SpinModule.enable(data["basicdata"]["hankermodule"]["spin"]["speed"]) end, function() SpinModule.disable() end)
+hankerTab:Divider()
+hankerTab:Paragraph({ Title = "击飞功能" })
+enableToggle(hankerTab, "THub_Hank_FlingKey", "旋转击飞(Ctrl+G)", function() FlingModule.fling.setShortcutEnabled(true) end, function() FlingModule.fling.setShortcutEnabled(false) end)
+enableToggle(hankerTab, "THub_Hank_FlyFling", "飞行击飞", function() FlingModule.flyfling.enable(2) end, function() FlingModule.flyfling.disable() end)
+enableToggle(hankerTab, "THub_Hank_WalkFling", "走路击飞", function() FlingModule.walkfling.enable() end, function() FlingModule.walkfling.disable() end)
+enableToggle(hankerTab, "THub_Hank_InvisFling", "隐身击飞", function() FlingModule.invisfling.enable() end, function() FlingModule.invisfling.disable() end)
+hankerTab:Divider()
+hankerTab:Paragraph({ Title = "击杀玩家" })
+hankerTab:Input({
+    Title = "要击杀的玩家名",
     Placeholder = "",
-    Default = "PlayerName",
+    Value = "PlayerName",
     Callback = function(text)
         data["basicdata"]["hankermodule"]["hkill"]["killname"] = text
     end
 })
-hankerTab:AddInput({
-    Label = "距离",
+hankerTab:Input({
+    Title = "距离",
     Placeholder = "",
-    Default = 100,
+    Value = "100",
     Callback = function(text)
         data["basicdata"]["hankermodule"]["hkill"]["killrange"] = tonumber(text) or 100
     end
 })
-hankerTab:AddToggle({
-    Label = "全部玩家",
-    Default = false,
+hankerTab:Toggle({
+    Title = "全部玩家",
+    Value = false,
     Callback = function(v) data["basicdata"]["hankermodule"]["hkill"]["killall"] = v end
 })
-hankerTab:AddToggle({
-    Label = "全图",
-    Default = false,
+hankerTab:Toggle({
+    Title = "全图",
+    Value = false,
     Callback = function(v) data["basicdata"]["hankermodule"]["hkill"]["killany"] = v end
 })
-hankerTab:AddButton({ Text = "开始击杀", Callback = function()
+hankerTab:Button({ Title = "开始击杀", Callback = function()
     HandleKillModule.kill(data["basicdata"]["hankermodule"]["hkill"]["killall"] and "All" or data["basicdata"]["hankermodule"]["hkill"]["killname"], data["basicdata"]["hankermodule"]["hkill"]["killany"] and "Infinity" or data["basicdata"]["hankermodule"]["hkill"]["killrange"])
 end })
-hankerTab:AddDivider()
-hankerTab:AddLabel("甩飞传送")
-hankerTab:AddDivider()
+hankerTab:Divider()
+hankerTab:Paragraph({ Title = "甩飞传送" })
+hankerTab:Divider()
 
 local function executeFlingTeleport(player)
     local myChar = LocalPlayer.Character
     if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then
-        ChronixUI:Notify({ Title = "错误", Content = "无法获取你的角色", Type = "error", Duration = 2 })
+        WindUI:Notify({ Title = "错误", Content = "无法获取你的角色", Icon = "x", Duration = 2 })
         return
     end
     local targetChar = player.Character
     if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then
-        ChronixUI:Notify({ Title = "错误", Content = "目标玩家角色不存在", Type = "error", Duration = 2 })
+        WindUI:Notify({ Title = "错误", Content = "目标玩家角色不存在", Icon = "x", Duration = 2 })
         return
     end
     local originalPos = myChar.HumanoidRootPart.CFrame
@@ -1706,10 +1795,11 @@ local function getPlayerOptions()
     end
     return names
 end
-flingTeleportDropdown = hankerTab:AddDropdown({
-    Label = "选择要甩飞的玩家",
-    Options = getPlayerOptions(),
-    Default = "",
+flingTeleportDropdown = hankerTab:Dropdown({
+    Title = "选择要甩飞的玩家",
+    Values = getPlayerOptions(),
+    Value = nil,
+    AllowNone = true,
     Callback = function(selected)
         local player = flingTeleportPlayerMap[selected]
         if player then executeFlingTeleport(player) end
@@ -1718,68 +1808,68 @@ flingTeleportDropdown = hankerTab:AddDropdown({
 function updateFlingTeleportPlayerList()
     if flingTeleportDropdown then
         local options = getPlayerOptions()
-        flingTeleportDropdown:UpdateOptions(options)
+        flingTeleportDropdown:Refresh(options)
     end
 end
 
 -- ===== 支持的游戏 Tab =====
-supportedgamesTab = mainWindow:CreateTab({ Name = "支持的游戏", HasIcon = true, IconName = "swords" })
-supportedgamesTab:AddTitle("支持的游戏")
+supportedgamesTab = SecTeleport:Tab({ Title = "支持的游戏", Icon = "swords" })
+supportedgamesTab:Section({ Title = "支持的游戏", Opened = true })
 for _, GetgameInfo in ipairs(data["Supported_Games"]) do
     if GetgameInfo.gameid then
-        supportedgamesTab:AddButton({ Text = GetgameInfo.name .. "(点击进入)", Callback = function() if game.GameId == GetgameInfo.gameid then ChronixUI:Notify({ Title = "提示", Content = "你已经在这个游戏里了。", Type = "warning", Duration = 5 }) else GameTeleport.teleportByGameId(GetgameInfo.gameid) end end })
+        supportedgamesTab:Button({ Title = GetgameInfo.name .. "(点击进入)", Callback = function() if game.GameId == GetgameInfo.gameid then WindUI:Notify({ Title = "提示", Content = "你已经在这个游戏里了。", Icon = "triangle-alert", Duration = 5 }) else GameTeleport.teleportByGameId(GetgameInfo.gameid) end end })
     end
 end
 
 -- ===== 执行器查询 Tab =====
-weaoapiTab = mainWindow:CreateTab({ Name = "执行器查询", HasIcon = true, IconName = "section" })
-weaoapiTab:AddTitle("Roblox版本")
+weaoapiTab = SecInfo:Tab({ Title = "执行器查询", Icon = "cpu" })
+weaoapiTab:Section({ Title = "Roblox版本", Opened = true })
 local robloxLabels = {
-    win = weaoapiTab:AddLabel("Windows: 加载中..."),
-    winDate = weaoapiTab:AddLabel("Windows更新日期: 加载中..."),
-    mac = weaoapiTab:AddLabel("Mac: 加载中..."),
-    macDate = weaoapiTab:AddLabel("Mac更新日期: 加载中..."),
-    android = weaoapiTab:AddLabel("Android: 加载中..."),
-    androidDate = weaoapiTab:AddLabel("Android更新日期: 加载中..."),
-    ios = weaoapiTab:AddLabel("iOS: 加载中..."),
-    iosDate = weaoapiTab:AddLabel("iOS更新日期: 加载中..."),
+    win = weaoapiTab:Paragraph({ Title = "Windows: 加载中..." }),
+    winDate = weaoapiTab:Paragraph({ Title = "Windows更新日期: 加载中..." }),
+    mac = weaoapiTab:Paragraph({ Title = "Mac: 加载中..." }),
+    macDate = weaoapiTab:Paragraph({ Title = "Mac更新日期: 加载中..." }),
+    android = weaoapiTab:Paragraph({ Title = "Android: 加载中..." }),
+    androidDate = weaoapiTab:Paragraph({ Title = "Android更新日期: 加载中..." }),
+    ios = weaoapiTab:Paragraph({ Title = "iOS: 加载中..." }),
+    iosDate = weaoapiTab:Paragraph({ Title = "iOS更新日期: 加载中..." }),
 }
-weaoapiTab:AddDivider()
-weaoapiTab:AddTitle("执行器状态")
-local executorsTitle = weaoapiTab:AddTitle("加载中...")
+weaoapiTab:Divider()
+weaoapiTab:Section({ Title = "执行器状态", Opened = true })
+local executorsTitle = weaoapiTab:Section({ Title = "加载中...", Opened = true })
 local function rebuildExploiters()
     local ok, executors = pcall(parseExecutors, data["basicdata"]["otherdata"]["executordetecter"]["exploits"])
     if not ok or #executors == 0 then return end
     executorsTitle:Destroy()
     for _, exec in ipairs(executors) do
-        weaoapiTab:AddTitle(string.format("[%s] %s (%s) | %s", exec.platform, exec.title, exec.version, exec.updateStatus and "已更新(有效)" or "未更新(失效)"))
-        weaoapiTab:AddLabel("类型:" .. exec.extType .. " | " .. (exec.free and "免费" or ("付费(" .. exec.cost:gsub("Lifetime", "永久"):gsub("Weekly", "每周"):gsub("Monthly", "每月"):gsub("Private", "私人") .. ")")) .. " | " .. (exec.detected and "已被检测" or "未被检测"))
-        weaoapiTab:AddLabel((exec.uncStatus and ("UNC: " .. (exec.uncPercent or 0) .. "%") or "") .. ", sUNC: " .. (exec.suncPercent or 0) .. "%")
-        weaoapiTab:AddLabel("更新时间:" .. exec.updatedDate)
-        weaoapiTab:AddLabel("密钥系统: " .. (exec.keysystem and "有" or "无") .. " 测试版:" .. (exec.beta and "是" or "否") .. " 反编译器: " .. (exec.decompiler and "有" or "无") .. " 多开支持: " .. (exec.multiInject and "支持" or "不支持"))
-        weaoapiTab:AddButton({
-            Text = "官网: " .. exec.website,
-            Callback = function() setclipboard(exec.website); ChronixUI:Notify({ Title = "提示", Content = "已复制到剪切板", Type = "info", Duration = 5 }) end
+        weaoapiTab:Section({ Title = string.format("[%s] %s (%s) | %s", exec.platform, exec.title, exec.version, exec.updateStatus and "已更新(有效)" or "未更新(失效)"), Opened = false })
+        weaoapiTab:Paragraph({ Title = "类型:" .. exec.extType .. " | " .. (exec.free and "免费" or ("付费(" .. exec.cost:gsub("Lifetime", "永久"):gsub("Weekly", "每周"):gsub("Monthly", "每月"):gsub("Private", "私人") .. ")")) .. " | " .. (exec.detected and "已被检测" or "未被检测") })
+        weaoapiTab:Paragraph({ Title = (exec.uncStatus and ("UNC: " .. (exec.uncPercent or 0) .. "%") or "") .. ", sUNC: " .. (exec.suncPercent or 0) .. "%" })
+        weaoapiTab:Paragraph({ Title = "更新时间:" .. exec.updatedDate })
+        weaoapiTab:Paragraph({ Title = "密钥系统: " .. (exec.keysystem and "有" or "无") .. " 测试版:" .. (exec.beta and "是" or "否") .. " 反编译器: " .. (exec.decompiler and "有" or "无") .. " 多开支持: " .. (exec.multiInject and "支持" or "不支持") })
+        weaoapiTab:Button({
+            Title = "官网: " .. exec.website,
+            Callback = function() setclipboard(exec.website); WindUI:Notify({ Title = "提示", Content = "已复制到剪切板", Icon = "info", Duration = 5 }) end
         })
-        weaoapiTab:AddButton({
-            Text = "Discord: " .. exec.discord,
-            Callback = function() setclipboard(exec.discord); ChronixUI:Notify({ Title = "提示", Content = "已复制到剪切板", Type = "info", Duration = 5 }) end
+        weaoapiTab:Button({
+            Title = "Discord: " .. exec.discord,
+            Callback = function() setclipboard(exec.discord); WindUI:Notify({ Title = "提示", Content = "已复制到剪切板", Icon = "info", Duration = 5 }) end
         })
-        weaoapiTab:AddDivider()
+        weaoapiTab:Divider()
     end
 end
 task.spawn(function()
     while true do
         local rd = data["basicdata"]["otherdata"]["executordetecter"]["robloxinfo"]
         if rd.Windows then
-            robloxLabels.win.Text = "Windows: " .. rd.Windows
-            robloxLabels.winDate.Text = "Windows更新日期: " .. toChineseDate(rd.WindowsDate, true)
-            robloxLabels.mac.Text = "Mac: " .. rd.Mac
-            robloxLabels.macDate.Text = "Mac更新日期: " .. toChineseDate(rd.MacDate, true)
-            robloxLabels.android.Text = "Android: " .. rd.Android
-            robloxLabels.androidDate.Text = "Android更新日期: " .. toChineseDate(rd.AndroidDate, true)
-            robloxLabels.ios.Text = "iOS: " .. rd.iOS
-            robloxLabels.iosDate.Text = "iOS更新日期: " .. toChineseDate(rd.iOSDate, true)
+            robloxLabels.win:SetTitle("Windows: " .. rd.Windows)
+            robloxLabels.winDate:SetTitle("Windows更新日期: " .. toChineseDate(rd.WindowsDate, true))
+            robloxLabels.mac:SetTitle("Mac: " .. rd.Mac)
+            robloxLabels.macDate:SetTitle("Mac更新日期: " .. toChineseDate(rd.MacDate, true))
+            robloxLabels.android:SetTitle("Android: " .. rd.Android)
+            robloxLabels.androidDate:SetTitle("Android更新日期: " .. toChineseDate(rd.AndroidDate, true))
+            robloxLabels.ios:SetTitle("iOS: " .. rd.iOS)
+            robloxLabels.iosDate:SetTitle("iOS更新日期: " .. toChineseDate(rd.iOSDate, true))
             break
         end
         task.wait(1)
@@ -1797,51 +1887,57 @@ task.spawn(function()
 end)
 
 -- ===== 游戏专属标签页 =====
+local SecGame = nil
 for _, GetgameInfo in ipairs(data["Supported_Games"]) do
     if GetgameInfo.gameid == game.GameId then
-        local OtherGameTab = mainWindow:CreateTab({ Name = GetgameInfo.name, HasIcon = true, IconName = "gamepad-2" })
-        OtherGameTab:AddTitle(GetgameInfo.name)
+        if not SecGame then
+            SecGame = mainWindow:Section({ Title = "游戏专属" })
+        end
+        local OtherGameTab = SecGame:Tab({ Title = GetgameInfo.name, Icon = "gamepad-2" })
+        OtherGameTab:Section({ Title = GetgameInfo.name, Opened = true })
         if GetgameInfo.name == "死亡球" then
-            OtherGameTab:AddToggle({
-                Label = "主功能和界面",
-                Default = false,
+            OtherGameTab:Toggle({
+                Title = "主功能和界面",
+                Flag = "THub_Game_DeathBall",
+                Value = false,
                 Callback = function(v) if v then _G.DeathBallScript:enable() else _G.DeathBallScript:disable() end end
             })
         elseif GetgameInfo.name == "小屋角色扮演" then
-            OtherGameTab:AddButton({ Text = "变正常", Callback = function() ChatControl:chat("/re") end })
-            OtherGameTab:AddButton({ Text = "变小孩", Callback = function() ChatControl:chat("/kid") end })
-            OtherGameTab:AddButton({ Text = "鲨鱼服装", Callback = function() ChatControl:chat("/shark") end })
-            OtherGameTab:AddButton({ Text = "修狗服装", Callback = function() ChatControl:chat("/dog") end })
-            OtherGameTab:AddButton({ Text = "修猫服装", Callback = function() ChatControl:chat("/cat") end })
+            OtherGameTab:Button({ Title = "变正常", Callback = function() ChatControl:chat("/re") end })
+            OtherGameTab:Button({ Title = "变小孩", Callback = function() ChatControl:chat("/kid") end })
+            OtherGameTab:Button({ Title = "鲨鱼服装", Callback = function() ChatControl:chat("/shark") end })
+            OtherGameTab:Button({ Title = "修狗服装", Callback = function() ChatControl:chat("/dog") end })
+            OtherGameTab:Button({ Title = "修猫服装", Callback = function() ChatControl:chat("/cat") end })
         elseif GetgameInfo.name == "南极探险队" then
-            OtherGameTab:AddLabel("基础操作")
-            OtherGameTab:AddButton({ Text = "传送到 大本营", Callback = function() TeleportTo(-6015, -158, -35) end })
-            OtherGameTab:AddButton({ Text = "传送到 营地1", Callback = function() TeleportTo(-3719, 226, 235) end })
-            OtherGameTab:AddButton({ Text = "传送到 营地2", Callback = function() TeleportTo(1790, 106, -138) end })
-            OtherGameTab:AddButton({ Text = "传送到 营地3", Callback = function() TeleportTo(5892, 321, -18) end })
-            OtherGameTab:AddButton({ Text = "传送到 营地4", Callback = function() TeleportTo(8992, 596, 102) end })
-            OtherGameTab:AddButton({ Text = "传送到 营地5", Callback = function() TeleportTo(10990, 550, 104) end })
-            OtherGameTab:AddLabel("圣诞活动")
-            OtherGameTab:AddButton({ Text = "获取所有礼物", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/games/SouthExpedition_Christmas_getallgifts.lua"))() end })
-            OtherGameTab:AddInput({
-                Label = "礼物号",
+            OtherGameTab:Paragraph({ Title = "基础操作" })
+            OtherGameTab:Button({ Title = "传送到 大本营", Callback = function() TeleportTo(-6015, -158, -35) end })
+            OtherGameTab:Button({ Title = "传送到 营地1", Callback = function() TeleportTo(-3719, 226, 235) end })
+            OtherGameTab:Button({ Title = "传送到 营地2", Callback = function() TeleportTo(1790, 106, -138) end })
+            OtherGameTab:Button({ Title = "传送到 营地3", Callback = function() TeleportTo(5892, 321, -18) end })
+            OtherGameTab:Button({ Title = "传送到 营地4", Callback = function() TeleportTo(8992, 596, 102) end })
+            OtherGameTab:Button({ Title = "传送到 营地5", Callback = function() TeleportTo(10990, 550, 104) end })
+            OtherGameTab:Paragraph({ Title = "圣诞活动" })
+            OtherGameTab:Button({ Title = "获取所有礼物", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/games/SouthExpedition_Christmas_getallgifts.lua"))() end })
+            OtherGameTab:Input({
+                Title = "礼物号",
                 Placeholder = "",
+                Value = "",
                 Callback = function(text)
                     data["othergamedata"]["AntarcticExpedition"]["giftnumber"] = text
                 end
             })
-            OtherGameTab:AddButton({ Text = "传送到礼物", Callback = function() TeleportToPresent(tonumber(data["othergamedata"]["AntarcticExpedition"]["giftnumber"])) end })
+            OtherGameTab:Button({ Title = "传送到礼物", Callback = function() TeleportToPresent(tonumber(data["othergamedata"]["AntarcticExpedition"]["giftnumber"])) end })
         elseif GetgameInfo.name == "西部森林" then
-            enableToggle(OtherGameTab, "怪物标签", function() data["othergamedata"]["west_wood"]["monster"]:enable() end, function() data["othergamedata"]["west_wood"]["monster"]:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_WestWood_Monster", "怪物标签", function() data["othergamedata"]["west_wood"]["monster"]:enable() end, function() data["othergamedata"]["west_wood"]["monster"]:disable() end)
         elseif GetgameInfo.name == "警笛头:遗产" then
             local sl = data["othergamedata"]["sirenhead_legacy"]
-            enableToggle(OtherGameTab, "透视盒子", function() sl.cratemodule.apply(); sl.cratenametagmodule:enable() end, function() sl.cratemodule.destroy(); sl.cratenametagmodule:disable() end)
-            enableToggle(OtherGameTab, "透视浆果", function() sl.berrymodule.apply(); sl.berynametagmodule:enable() end, function() sl.berrymodule.destroy(); sl.berynametagmodule:disable() end)
-            OtherGameTab:AddButton({ Text = "传送到树顶", Callback = function() TeleportTo(69, 206, -72) end })
+            enableToggle(OtherGameTab, "THub_Game_Siren_Crate", "透视盒子", function() sl.cratemodule.apply(); sl.cratenametagmodule:enable() end, function() sl.cratemodule.destroy(); sl.cratenametagmodule:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_Siren_Berry", "透视浆果", function() sl.berrymodule.apply(); sl.berynametagmodule:enable() end, function() sl.berrymodule.destroy(); sl.berynametagmodule:disable() end)
+            OtherGameTab:Button({ Title = "传送到树顶", Callback = function() TeleportTo(69, 206, -72) end })
         elseif GetgameInfo.name == "噩梦之行" then
-            enableToggle(OtherGameTab, "高亮怪物", function() data["othergamedata"]["nightmare_run"]["monster"]:enable() end, function() data["othergamedata"]["nightmare_run"]["monster"]:disable() end)
-            OtherGameTab:AddButton({ Text = "高亮芝士", Callback = function() data["othergamedata"]["nightmare_run"]["HLCheese"].apply() end })
-            OtherGameTab:AddButton({ Text = "无敌(怪物不追不杀)", Callback = function()
+            enableToggle(OtherGameTab, "THub_Game_Nightmare_Monster", "高亮怪物", function() data["othergamedata"]["nightmare_run"]["monster"]:enable() end, function() data["othergamedata"]["nightmare_run"]["monster"]:disable() end)
+            OtherGameTab:Button({ Title = "高亮芝士", Callback = function() data["othergamedata"]["nightmare_run"]["HLCheese"].apply() end })
+            OtherGameTab:Button({ Title = "无敌(怪物不追不杀)", Callback = function()
                 local ClientScripts = PlayerGui.ClientScripts
                 local Events = ReplicatedStorage.Events
                 if ClientScripts:FindFirstChild("SafeSpaceHandler") then
@@ -1849,10 +1945,10 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
                 end
                 LocalPlayer:SetAttribute("Safe", true)
                 Events.SetAttributeEvent:FireServer("Safe", true)
-                ChronixUI:Notify({ Title = "提示", Content = "已设置玩家安全状态\n死亡前生效", Type = "info", Duration = 5 })
+                WindUI:Notify({ Title = "提示", Content = "已设置玩家安全状态\n死亡前生效", Icon = "info", Duration = 5 })
             end })
         elseif GetgameInfo.name == "兽化项目" then
-            OtherGameTab:AddLabel("基础操作")
+            OtherGameTab:Paragraph({ Title = "基础操作" })
             local function deleteModelsByName(modelName, displayName)
                 local deletedCount = 0
                 for _, model in ipairs(Workspace:GetDescendants()) do
@@ -1861,82 +1957,87 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
                         deletedCount = deletedCount + 1
                     end
                 end
-                ChronixUI:Notify({ Title = "提示", Content = "已删除" .. deletedCount .. "个" .. displayName, Type = "info", Duration = 10 })
+                WindUI:Notify({ Title = "提示", Content = "已删除" .. deletedCount .. "个" .. displayName, Icon = "info", Duration = 10 })
             end
-            OtherGameTab:AddButton({ Text = "删除捕兽夹", Callback = function() deleteModelsByName("__SnarePhysical", "捕兽夹") end })
-            OtherGameTab:AddButton({ Text = "删除地雷", Callback = function() deleteModelsByName("Landmine", "地雷") end })
-            OtherGameTab:AddButton({ Text = "删除阔剑地雷", Callback = function() deleteModelsByName("__ClaymorePhysical", "阔剑地雷") end })
-            OtherGameTab:AddLabel("透视功能")
+            OtherGameTab:Button({ Title = "删除捕兽夹", Callback = function() deleteModelsByName("__SnarePhysical", "捕兽夹") end })
+            OtherGameTab:Button({ Title = "删除地雷", Callback = function() deleteModelsByName("Landmine", "地雷") end })
+            OtherGameTab:Button({ Title = "删除阔剑地雷", Callback = function() deleteModelsByName("__ClaymorePhysical", "阔剑地雷") end })
+            OtherGameTab:Paragraph({ Title = "透视功能" })
             local pt = data["othergamedata"]["project_transfur"]
-            enableToggle(OtherGameTab, "Bot兽", function() pt.bot.apply(); pt.botnt:enable() end, function() pt.bot.destroy(); pt.botnt:disable() end)
-            enableToggle(OtherGameTab, "小保险箱", function() pt.smallsafe.apply(); pt.smallsafent:enable() end, function() pt.smallsafe.destroy(); pt.smallsafent:disable() end)
-            enableToggle(OtherGameTab, "大保险箱", function() pt.largesafe.apply(); pt.largesafent:enable() end, function() pt.largesafe.destroy(); pt.largesafent:disable() end)
-            enableToggle(OtherGameTab, "金保险箱", function() pt.goldensafe.apply(); pt.goldensafent:enable() end, function() pt.goldensafe.destroy(); pt.goldensafent:disable() end)
-            enableToggle(OtherGameTab, "武器盒", function() pt.crate.apply(); pt.cratent:enable() end, function() pt.crate.destroy(); pt.cratent:disable() end)
-            enableToggle(OtherGameTab, "空投", function() pt.sd.apply(); pt.sdnt:enable() end, function() pt.sd.destroy(); pt.sdnt:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_PT_Bot", "Bot兽", function() pt.bot.apply(); pt.botnt:enable() end, function() pt.bot.destroy(); pt.botnt:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_PT_SmallSafe", "小保险箱", function() pt.smallsafe.apply(); pt.smallsafent:enable() end, function() pt.smallsafe.destroy(); pt.smallsafent:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_PT_LargeSafe", "大保险箱", function() pt.largesafe.apply(); pt.largesafent:enable() end, function() pt.largesafe.destroy(); pt.largesafent:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_PT_GoldenSafe", "金保险箱", function() pt.goldensafe.apply(); pt.goldensafent:enable() end, function() pt.goldensafe.destroy(); pt.goldensafent:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_PT_Crate", "武器盒", function() pt.crate.apply(); pt.cratent:enable() end, function() pt.crate.destroy(); pt.cratent:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_PT_SupplyDrop", "空投", function() pt.sd.apply(); pt.sdnt:enable() end, function() pt.sd.destroy(); pt.sdnt:disable() end)
         elseif GetgameInfo.name == "妄想办公室" then
-            OtherGameTab:AddToggle({
-                Label = "实体警告",
-                Default = false,
+            OtherGameTab:Toggle({
+                Title = "实体警告",
+                Flag = "THub_Game_Office_EntityWarn",
+                Value = false,
                 Callback = function(v) if v then enableEntityWarning() else disableEntityWarning() end end
             })
-            OtherGameTab:AddToggle({
-                Label = "提醒他人",
-                Default = false,
+            OtherGameTab:Toggle({
+                Title = "提醒他人",
+                Flag = "THub_Game_Office_TipOthers",
+                Value = false,
                 Callback = function(v) data["othergamedata"]["delesions_office"]["tipotherplayer"] = v end
             })
-            OtherGameTab:AddToggle({
-                Label = "自动EN-013",
-                Default = false,
+            OtherGameTab:Toggle({
+                Title = "自动EN-013",
+                Flag = "THub_Game_Office_Auto013",
+                Value = false,
                 Callback = function(v) if v then enableAuto013() else disableAuto013() end end
             })
         elseif GetgameInfo.name == "格蕾丝" then
-            OtherGameTab:AddToggle({
-                Label = "自动拉杆",
-                Default = false,
+            OtherGameTab:Toggle({
+                Title = "自动拉杆",
+                Flag = "THub_Game_Grace_AutoLever",
+                Value = false,
                 Callback = function(v) if v then enableAutoLever() else disableAutoLever() end end
             })
-            OtherGameTab:AddButton({ Text = "删除全部实体(无法关闭)", Callback = function() enableDeleteEntity() end })
+            OtherGameTab:Button({ Title = "删除全部实体(无法关闭)", Callback = function() enableDeleteEntity() end })
         elseif GetgameInfo.name == "深渊" then
-            OtherGameTab:AddButton({ Text = "一键获取全地图深渊能量和回音", Callback = function()
+            OtherGameTab:Button({ Title = "一键获取全地图深渊能量和回音", Callback = function()
                 OBOTeleportModule.TeleportToParts({"AbyssalEnergy", "BigAbyssalEnergy", "Echo"}, 0.01)
             end })
-            OtherGameTab:AddButton({ Text = "一键解锁全地图路径点", Callback = function()
+            OtherGameTab:Button({ Title = "一键解锁全地图路径点", Callback = function()
                 OBOTeleportModule.TeleportToParts("SpawnLocation", 0.1)
             end })
-            OtherGameTab:AddButton({ Text = "传送到 灯笼商店", Callback = function() TeleportTo(-375, -11932, -504) end })
+            OtherGameTab:Button({ Title = "传送到 灯笼商店", Callback = function() TeleportTo(-375, -11932, -504) end })
         elseif GetgameInfo.name == "后院生存" then
-            OtherGameTab:AddLabel("透视功能")
+            OtherGameTab:Paragraph({ Title = "透视功能" })
             local bs = data["othergamedata"]["backroomsurvival"]
-            enableToggle(OtherGameTab, "窃皮者", function() bs.SkinStealer.apply(); bs.SkinStealernt:enable() end, function() bs.SkinStealer.destroy(); bs.SkinStealernt:disable() end)
-            enableToggle(OtherGameTab, "瞎子", function() bs.Shrieker.apply(); bs.Shriekernt:enable() end, function() bs.Shrieker.destroy(); bs.Shriekernt:disable() end)
-            enableToggle(OtherGameTab, "悲尸", function() bs.Wretch.apply(); bs.Wretchnt:enable() end, function() bs.Wretch.destroy(); bs.Wretchnt:disable() end)
-            enableToggle(OtherGameTab, "梦魇", function() bs.Phantom.apply(); bs.Phantomnt:enable() end, function() bs.Phantom.destroy(); bs.Phantomnt:disable() end)
-            enableToggle(OtherGameTab, "细菌", function() bs.Bacteria.apply(); bs.Bacteriant:enable() end, function() bs.Bacteria.destroy(); bs.Bacteriant:disable() end)
-            enableToggle(OtherGameTab, "侦察兵", function() bs.Recon.apply(); bs.Reconnt:enable() end, function() bs.Recon.destroy(); bs.Reconnt:disable() end)
-            enableToggle(OtherGameTab, "修理工", function() bs.Mechanic.apply(); bs.Mechanicnt:enable() end, function() bs.Mechanic.destroy(); bs.Mechanicnt:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_BS_SkinStealer", "窃皮者", function() bs.SkinStealer.apply(); bs.SkinStealernt:enable() end, function() bs.SkinStealer.destroy(); bs.SkinStealernt:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_BS_Shrieker", "瞎子", function() bs.Shrieker.apply(); bs.Shriekernt:enable() end, function() bs.Shrieker.destroy(); bs.Shriekernt:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_BS_Wretch", "悲尸", function() bs.Wretch.apply(); bs.Wretchnt:enable() end, function() bs.Wretch.destroy(); bs.Wretchnt:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_BS_Phantom", "梦魇", function() bs.Phantom.apply(); bs.Phantomnt:enable() end, function() bs.Phantom.destroy(); bs.Phantomnt:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_BS_Bacteria", "细菌", function() bs.Bacteria.apply(); bs.Bacteriant:enable() end, function() bs.Bacteria.destroy(); bs.Bacteriant:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_BS_Recon", "侦察兵", function() bs.Recon.apply(); bs.Reconnt:enable() end, function() bs.Recon.destroy(); bs.Reconnt:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_BS_Mechanic", "修理工", function() bs.Mechanic.apply(); bs.Mechanicnt:enable() end, function() bs.Mechanic.destroy(); bs.Mechanicnt:disable() end)
         elseif GetgameInfo.name == "最黑暗的时刻" then
-            OtherGameTab:AddLabel("透视功能")
+            OtherGameTab:Paragraph({ Title = "透视功能" })
             local dh = data["othergamedata"]["DarkestHours"]
-            enableToggle(OtherGameTab, "收集物", function() dh.Collectible.apply(); dh.Collectiblent:enable() end, function() dh.Collectible.destroy(); dh.Collectiblent:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_DH_Scrap", "收集物", function() dh.Collectible.apply(); dh.Collectiblent:enable() end, function() dh.Collectible.destroy(); dh.Collectiblent:disable() end)
         elseif GetgameInfo.name == "画我" then
-            OtherGameTab:AddTitle("画我 - 图片绘制工具")
-            OtherGameTab:AddLabel("将本地图片或网络图片绘制到 EditableImage 画布上")
-            local drawmeStatusLabel = OtherGameTab:AddLabel("就绪")
-            local drawmeFileDropdown = OtherGameTab:AddDropdown({
-                Label = "本地图片文件",
-                Options = {},
-                Default = "",
+            OtherGameTab:Section({ Title = "画我 - 图片绘制工具", Opened = true })
+            OtherGameTab:Paragraph({ Title = "将本地图片或网络图片绘制到 EditableImage 画布上" })
+            local drawmeStatusLabel = OtherGameTab:Paragraph({ Title = "就绪" })
+            local drawmeFileDropdown = OtherGameTab:Dropdown({
+                Title = "本地图片文件",
+                Values = {},
+                Value = nil,
+                AllowNone = true,
                 Callback = function(selected)
                     if selected and selected ~= "" then
                         data["basicdata"]["otherdata"]["drawme"]["linkorpath"] = "ChronixHubConfig/image/" .. selected
                     end
                 end
             })
-            local drawmeLinkInput = OtherGameTab:AddInput({
-                Label = "图片直链/路径",
+            local drawmeLinkInput = OtherGameTab:Input({
+                Title = "图片直链/路径",
                 Placeholder = "输入图片URL或文件路径",
-                Default = data["basicdata"]["otherdata"]["drawme"]["linkorpath"] or "",
+                Value = data["basicdata"]["otherdata"]["drawme"]["linkorpath"] or "",
                 Callback = function(text)
                     data["basicdata"]["otherdata"]["drawme"]["linkorpath"] = text
                 end
@@ -1953,120 +2054,97 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
                     end
                 end
                 data["othergamedata"]["drawme"]["files"] = files
-                if drawmeFileDropdown and drawmeFileDropdown.UpdateOptions then
-                    drawmeFileDropdown:UpdateOptions(files)
+                if drawmeFileDropdown and drawmeFileDropdown.Refresh then
+                    drawmeFileDropdown:Refresh(files)
                 end
             end
             refreshDrawmeFileList()
-            OtherGameTab:AddButton({
-                Text = "刷新文件列表",
+            OtherGameTab:Button({
+                Title = "刷新文件列表",
                 Callback = function()
                     refreshDrawmeFileList()
-                    drawmeStatusLabel.Text = "已刷新文件列表"
+                    drawmeStatusLabel:SetTitle("已刷新文件列表")
                 end
             })
-            OtherGameTab:AddButton({
-                Text = "放置图片",
+            OtherGameTab:Button({
+                Title = "放置图片",
                 Callback = function()
                     local source = data["basicdata"]["otherdata"]["drawme"]["linkorpath"]
                     if not source or source == "" then
-                        drawmeStatusLabel.Text = "错误: 未指定图片路径"
+                        drawmeStatusLabel:SetTitle("错误: 未指定图片路径")
                         return
                     end
-                    drawmeStatusLabel.Text = "正在加载图片..."
+                    drawmeStatusLabel:SetTitle("正在加载图片...")
                     local ok, err = pcall(function()
                         local result = DrawmeModule.loadAndDraw(source)
                         if result == 0 then
-                            drawmeStatusLabel.Text = "成功: 图片已绘制"
+                            drawmeStatusLabel:SetTitle("成功: 图片已绘制")
                         elseif result == 1 then
-                            drawmeStatusLabel.Text = "错误: 未找到 EditableImage 画布"
+                            drawmeStatusLabel:SetTitle("错误: 未找到 EditableImage 画布")
                         elseif result == 2 then
-                            drawmeStatusLabel.Text = "错误: 文件不存在"
+                            drawmeStatusLabel:SetTitle("错误: 文件不存在")
                         elseif result == 3 then
-                            drawmeStatusLabel.Text = "错误: 网络请求失败"
+                            drawmeStatusLabel:SetTitle("错误: 网络请求失败")
                         elseif result == 4 then
-                            drawmeStatusLabel.Text = "错误: 图片解码失败"
+                            drawmeStatusLabel:SetTitle("错误: 图片解码失败")
                         elseif result == 5 then
-                            drawmeStatusLabel.Text = "错误: 写入画布失败"
+                            drawmeStatusLabel:SetTitle("错误: 写入画布失败")
                         else
-                            drawmeStatusLabel.Text = "错误: 未知错误 (" .. tostring(result) .. ")"
+                            drawmeStatusLabel:SetTitle("错误: 未知错误 (" .. tostring(result) .. ")")
                         end
                     end)
                     if not ok then
-                        drawmeStatusLabel.Text = "错误: " .. tostring(err)
+                        drawmeStatusLabel:SetTitle("错误: " .. tostring(err))
                     end
                 end
             })
         elseif GetgameInfo.name == "后悔电梯" then
-            OtherGameTab:AddLabel("通用")
-            enableToggle(OtherGameTab, "自动舔冰淇凌（确保快捷栏中有冰淇凌）", function() Regretevator_AutoIceCream:enable() end, function() Regretevator_AutoIceCream:disable() end)
+            OtherGameTab:Paragraph({ Title = "通用" })
+            enableToggle(OtherGameTab, "THub_Game_Reg_IceCream", "自动舔冰淇凌（确保快捷栏中有冰淇凌）", function() Regretevator_AutoIceCream:enable() end, function() Regretevator_AutoIceCream:disable() end)
             local rg = data["othergamedata"]["Regretevator"]
-            enableToggle(OtherGameTab, "透视硬币", function() rg.coins.apply(); rg.coinsnt:enable() end, function() rg.coins.destroy(); rg.coinsnt:disable() end)
-            OtherGameTab:AddLabel("Bugbo楼层")
-            enableToggle(OtherGameTab, "透视石头", function() rg.bugbo_rocks.apply(); rg.bugbo_rocksnt:enable() end, function() rg.bugbo_rocks.destroy(); rg.bugbo_rocksnt:disable() end)
-            OtherGameTab:AddLabel("森林营地楼层")
-            enableToggle(OtherGameTab, "透视木头", function() rg.firewood.apply(); rg.firewoodnt:enable() end, function() rg.firewood.destroy(); rg.firewoodnt:disable() end)
+            enableToggle(OtherGameTab, "THub_Game_Reg_Coins", "透视硬币", function() rg.coins.apply(); rg.coinsnt:enable() end, function() rg.coins.destroy(); rg.coinsnt:disable() end)
+            OtherGameTab:Paragraph({ Title = "Bugbo楼层" })
+            enableToggle(OtherGameTab, "THub_Game_Reg_Rocks", "透视石头", function() rg.bugbo_rocks.apply(); rg.bugbo_rocksnt:enable() end, function() rg.bugbo_rocks.destroy(); rg.bugbo_rocksnt:disable() end)
+            OtherGameTab:Paragraph({ Title = "森林营地楼层" })
+            enableToggle(OtherGameTab, "THub_Game_Reg_Wood", "透视木头", function() rg.firewood.apply(); rg.firewoodnt:enable() end, function() rg.firewood.destroy(); rg.firewoodnt:disable() end)
         end
     end
 end
 
 -- ===== 关于 Tab =====
-infoTab = mainWindow:CreateTab({ Name = "关于", HasIcon = true, IconName = "info" })
-infoTab:AddParagraph({
+infoTab = SecInfo:Tab({ Title = "关于", Icon = "info" })
+infoTab:Paragraph({
     Title = "关于 THub V3",
-    Content = "THub V3 是一个功能强大的 Roblox 多功能工具集\n\n"
+    Desc = "THub V3 是一个功能强大的 Roblox 多功能工具集\n\n"
     .. "开发者: Furrycalin和0988\n"
     .. "版本: V3\n"
-    .. "框架: 基于ChronixUI fork 库构建\n\n"
+    .. "框架: 基于 WindUI 库构建\n\n"
     .. "注意事项:\n"
     .. "• 请合理使用各项功能\n"
     .. "• 部分功能可能在游戏中被检测\n"
     .. "• 使用前请了解游戏规则"
 })
-infoTab:AddDivider()
+infoTab:Divider()
 local hwidlabel
-if gethwid then hwidlabel = infoTab:AddLabel(string.format("设备唯一标识码(HWID): %s", maskStringMiddle(gethwid()))) end
+if gethwid then hwidlabel = infoTab:Paragraph({ Title = string.format("设备唯一标识码(HWID): %s", maskStringMiddle(gethwid())) }) end
 rbxactivelabel = nil
-if isrbxactive then rbxactivelabel = infoTab:AddLabel(string.format("焦点检测: %s", (isrbxactive() and "True" or "False"))) end
-pingLabel = infoTab:AddLabel(string.format("网络延迟: %s", math.round(LocalPlayer:GetNetworkPing() * 1000) .. "ms"))
-memLabel = infoTab:AddLabel(string.format("客户端脚本占用内存: %.2f MB", getMemoryUsage("MB")))
-infoTab:AddButton({ Text = "强制内存垃圾回收", Callback = function()
+if isrbxactive then rbxactivelabel = infoTab:Paragraph({ Title = string.format("焦点检测: %s", (isrbxactive() and "True" or "False")) }) end
+pingLabel = infoTab:Paragraph({ Title = string.format("网络延迟: %s", math.round(LocalPlayer:GetNetworkPing() * 1000) .. "ms") })
+memLabel = infoTab:Paragraph({ Title = string.format("客户端脚本占用内存: %.2f MB", getMemoryUsage("MB")) })
+infoTab:Button({ Title = "强制内存垃圾回收", Callback = function()
     collectgarbage("collect")
-    ChronixUI:Notify({ Title = "提示", Content = "已进行垃圾回收\n请不要频繁使用，可能会影响性能。", Type = "info", Duration = 5 })
+    WindUI:Notify({ Title = "提示", Content = "已进行垃圾回收\n请不要频繁使用，可能会影响性能。", Icon = "info", Duration = 5 })
 end })
-infoTab:AddLabel(data["basicdata"]["otherdata"]["yiyan"]["data"]["hitokoto"])
+infoTab:Paragraph({ Title = data["basicdata"]["otherdata"]["yiyan"]["data"]["hitokoto"] })
 
--- ===== 设置内容 =====
-settingsContent = mainWindow.SettingsElements
-if isMobile then
-    local hiddenKeybindLabels = {
-        ["灵魂出窍"] = true, ["望远镜"] = true, ["锁定视角"] = true,
-        ["滚轮切换按键"] = true, ["GUI删除工具"] = true, ["瞬间回头"] = true,
-        ["自动瞄准-绑定按键"] = true,
-    }
-    local hiddenSettingLabels = {
-        ["自动瞄准-使用鼠标控制"] = true, ["自动瞄准-鼠标模式"] = true,
-    }
-    local origAddKeybind = settingsContent.AddKeybind
-    function settingsContent:AddKeybind(config)
-        if config and config.Label and hiddenKeybindLabels[config.Label] then return end
-        return origAddKeybind(self, config)
-    end
-    local origAddToggle = settingsContent.AddToggle
-    function settingsContent:AddToggle(config)
-        if config and config.Label and hiddenSettingLabels[config.Label] then return end
-        return origAddToggle(self, config)
-    end
-    local origAddDropdown = settingsContent.AddDropdown
-    function settingsContent:AddDropdown(config)
-        if config and config.Label and hiddenSettingLabels[config.Label] then return end
-        return origAddDropdown(self, config)
-    end
-end
-settingsContent:AddInput({
-    Label = "Roblox - 缩放倍率",
+-- ===== 设置 Tab（原 ChronixUI 内置 SettingsElements，现为独立 WindUI Tab） =====
+settingsTab = SecInfo:Tab({ Title = "设置", Icon = "settings" })
+settingsTab:Section({ Title = "Roblox 设置", Opened = true })
+settingsTab:Input({
+    Title = "Roblox - 缩放倍率",
+    Flag = "THub_Set_Zoom",
     Placeholder = "这里输入你的视角倍率",
-    Default = LocalPlayer.CameraMaxZoomDistance,
+    Value = tostring(LocalPlayer.CameraMaxZoomDistance),
     Callback = function(text)
         local num = tonumber(text)
         if num then
@@ -2075,10 +2153,11 @@ settingsContent:AddInput({
     end
 })
 if getfpscap and setfpscap then
-    settingsContent:AddInput({
-        Label = "Roblox - 帧率上限",
+    settingsTab:Input({
+        Title = "Roblox - 帧率上限",
+        Flag = "THub_Set_FpsCap",
         Placeholder = "这里输入你的最大帧率",
-        Default = getfpscap(),
+        Value = tostring(getfpscap()),
         Callback = function(text)
             local num = tonumber(text)
             if num then
@@ -2090,9 +2169,10 @@ end
 local mouseLockController = LocalPlayer:FindFirstChild("PlayerScripts") and LocalPlayer.PlayerScripts:FindFirstChild("PlayerModule") and LocalPlayer.PlayerScripts.PlayerModule:FindFirstChild("CameraModule") and LocalPlayer.PlayerScripts.PlayerModule.CameraModule:FindFirstChild("MouseLockController")
 local boundKeys = mouseLockController and mouseLockController:FindFirstChild("BoundKeys")
 if mouseLockController then
-    settingsContent:AddKeybind({
-        Label = "Roblox - 鼠标锁定键",
-        Default = boundKeys and boundKeys.Value,
+    settingsTab:Keybind({
+        Title = "Roblox - 鼠标锁定键",
+        Flag = "THub_Set_MouseLock",
+        Value = keyName(boundKeys and boundKeys.Value),
         Callback = function(key)
             if boundKeys then
                 boundKeys.Value = key
@@ -2105,78 +2185,124 @@ if mouseLockController then
         end
     })
 end
-settingsContent:AddDivider()
+settingsTab:Divider()
 
-settingsContent:AddKeybind({
-    Label = "灵魂出窍",
-    Default = FreecamModule.getKeybind().Name,
+settingsTab:Section({ Title = "UI 设置", Opened = true })
+settingsTab:Keybind({
+    Title = "UI 开关按键",
+    Flag = "THub_Set_ToggleKey",
+    Value = "RightShift",
     Callback = function(key)
-        local newKey = safeGetKeyCode(key)
-        if newKey then
-            FreecamModule.setKeybind(newKey)
+        local nk = safeGetKeyCode(key)
+        if nk then
+            mainWindow:SetToggleKey(nk)
         end
     end
 })
-settingsContent:AddKeybind({
-    Label = "望远镜",
-    Default = data["basicdata"]["releasetools"]["zoom"]:GetBindKey().Name,
-    Callback = function(key)
-        local newKey = safeGetKeyCode(key)
-        if newKey then
-            data["basicdata"]["releasetools"]["zoom"]:SetBindKey(newKey)
-        end
-    end
-})
-settingsContent:AddKeybind({
-    Label = "锁定视角",
-    Default = LockCameraModule.getBindKey().Name,
-    Callback = function(key)
-        if key then
-            LockCameraModule.setBindKey(key)
-        end
-    end
-})
-settingsContent:AddKeybind({
-    Label = "滚轮切换按键",
-    Default = ScrollSwitch:getbind().Name,
-    Callback = function(key)
-        if key then
-            local newKey = safeGetKeyCode(key)
-            ScrollSwitch:setbind(newKey)
-        end
-    end
-})
-settingsContent:AddKeybind({
-    Label = "GUI删除工具",
-    Default = GuiDeleter.getBindKey().Name,
-    Callback = function(key)
-        local newKey = safeGetKeyCode(key)
-            if newKey then
-            GuiDeleter.setBindKey(newKey)
-        end
-    end
-})
-settingsContent:AddKeybind({
-    Label = "瞬间回头",
-    Default = SnapReverse.GetKeyBind().Name,
-    Callback = function(key)
-        if key then
+settingsTab:Divider()
+
+settingsTab:Section({ Title = "功能按键绑定", Opened = true })
+if not (isMobile and true) then
+    -- 桌面端全量按键绑定（移动端隐藏部分触屏无意义的绑定）
+end
+local function settingKeybindVisible(label)
+    if not isMobile then return true end
+    local hiddenKeybindLabels = {
+        ["灵魂出窍"] = true, ["望远镜"] = true, ["锁定视角"] = true,
+        ["滚轮切换按键"] = true, ["GUI删除工具"] = true, ["瞬间回头"] = true,
+        ["自动瞄准-绑定按键"] = true,
+    }
+    return not hiddenKeybindLabels[label]
+end
+if settingKeybindVisible("灵魂出窍") then
+    settingsTab:Keybind({
+        Title = "灵魂出窍",
+        Flag = "THub_Set_Freecam",
+        Value = keyName(FreecamModule.getKeybind()),
+        Callback = function(key)
             local newKey = safeGetKeyCode(key)
             if newKey then
-                SnapReverse.SetKeyBind(newKey)
+                FreecamModule.setKeybind(newKey)
             end
         end
-    end
-})
-settingsContent:AddDivider()
-settingsKeybindInput(settingsContent, "飞行 (Ctrl+)", FlyModule.getbindkey().Name, function(k) FlyModule.setbindkey(k) end, "飞行速度", FlyModule.getflyspeed(), function(v) FlyModule.setflyspeed(v) end)
-settingsKeybindInput(settingsContent, "帧飞行 (Ctrl+)", CframeFly.getbindkey().Name, function(k) CframeFly.setbindkey(k) end, "帧飞行速度", CframeFly.getspeed(), function(v) CframeFly.setspeed(v) end)
-settingsKeybindInput(settingsContent, "载具飞行 (Ctrl+)", VehicleFly.getbindkey().Name, function(k) VehicleFly.setbindkey(k) end, "载具飞行速度", VehicleFly.getspeed(), function(v) VehicleFly.setspeed(v) end)
-settingsContent:AddDivider()
-settingsContent:AddInput({
-    Label = "TPWalk距离",
+    })
+end
+if settingKeybindVisible("望远镜") then
+    settingsTab:Keybind({
+        Title = "望远镜",
+        Flag = "THub_Set_ZoomKey",
+        Value = keyName(data["basicdata"]["releasetools"]["zoom"]:GetBindKey()),
+        Callback = function(key)
+            local newKey = safeGetKeyCode(key)
+            if newKey then
+                data["basicdata"]["releasetools"]["zoom"]:SetBindKey(newKey)
+            end
+        end
+    })
+end
+if settingKeybindVisible("锁定视角") then
+    settingsTab:Keybind({
+        Title = "锁定视角",
+        Flag = "THub_Set_LockCam",
+        Value = keyName(LockCameraModule.getBindKey()),
+        Callback = function(key)
+            if key then
+                LockCameraModule.setBindKey(key)
+            end
+        end
+    })
+end
+if settingKeybindVisible("滚轮切换按键") then
+    settingsTab:Keybind({
+        Title = "滚轮切换按键",
+        Flag = "THub_Set_ScrollSwitch",
+        Value = keyName(ScrollSwitch:getbind()),
+        Callback = function(key)
+            if key then
+                local newKey = safeGetKeyCode(key)
+                ScrollSwitch:setbind(newKey)
+            end
+        end
+    })
+end
+if settingKeybindVisible("GUI删除工具") then
+    settingsTab:Keybind({
+        Title = "GUI删除工具",
+        Flag = "THub_Set_GuiDeleter",
+        Value = keyName(GuiDeleter.getBindKey()),
+        Callback = function(key)
+            local newKey = safeGetKeyCode(key)
+            if newKey then
+                GuiDeleter.setBindKey(newKey)
+            end
+        end
+    })
+end
+if settingKeybindVisible("瞬间回头") then
+    settingsTab:Keybind({
+        Title = "瞬间回头",
+        Flag = "THub_Set_SnapReverse",
+        Value = keyName(SnapReverse.GetKeyBind()),
+        Callback = function(key)
+            if key then
+                local newKey = safeGetKeyCode(key)
+                if newKey then
+                    SnapReverse.SetKeyBind(newKey)
+                end
+            end
+        end
+    })
+end
+settingsTab:Divider()
+settingsKeybindInput(settingsTab, "THub_Set_Fly", "飞行 (Ctrl+)", FlyModule.getbindkey().Name, function(k) FlyModule.setbindkey(k) end, "飞行速度", FlyModule.getflyspeed(), function(v) FlyModule.setflyspeed(v) end)
+settingsKeybindInput(settingsTab, "THub_Set_CframeFly", "帧飞行 (Ctrl+)", CframeFly.getbindkey().Name, function(k) CframeFly.setbindkey(k) end, "帧飞行速度", CframeFly.getspeed(), function(v) CframeFly.setspeed(v) end)
+settingsKeybindInput(settingsTab, "THub_Set_VehicleFly", "载具飞行 (Ctrl+)", VehicleFly.getbindkey().Name, function(k) VehicleFly.setbindkey(k) end, "载具飞行速度", VehicleFly.getspeed(), function(v) VehicleFly.setspeed(v) end)
+settingsTab:Divider()
+settingsTab:Input({
+    Title = "TPWalk距离",
+    Flag = "THub_Set_TPWalk",
     Placeholder = "",
-    Default = tpWalk:GetSpeed(),
+    Value = tostring(tpWalk:GetSpeed()),
     Callback = function(text)
         local num = tonumber(text)
         if num then
@@ -2184,10 +2310,11 @@ settingsContent:AddInput({
         end
     end
 })
-settingsContent:AddInput({
-    Label = "平移距离",
+settingsTab:Input({
+    Title = "平移距离",
+    Flag = "THub_Set_MoveDist",
     Placeholder = "",
-    Default = movementModule.GetDistance(),
+    Value = tostring(movementModule.GetDistance()),
     Callback = function(text)
         local num = tonumber(text)
         if num then
@@ -2195,63 +2322,114 @@ settingsContent:AddInput({
         end
     end
 })
-settingsContent:AddKeybind({
-    Label = "自动瞄准-绑定按键",
-    Default = AimBotModule.GetKey().Name,
-    Callback = function(key)
-        if key then
-            local newKey = safeGetKeyCode(key)
-            AimBotModule.SetKey(newKey)
+local function aimbotVisible(label)
+    if not isMobile then return true end
+    local hidden = {
+        ["自动瞄准-使用鼠标控制"] = true, ["自动瞄准-鼠标模式"] = true,
+    }
+    return not hidden[label]
+end
+if settingKeybindVisible("自动瞄准-绑定按键") then
+    settingsTab:Keybind({
+        Title = "自动瞄准-绑定按键",
+        Flag = "THub_Set_AimKey",
+        Value = keyName(AimBotModule.GetKey()),
+        Callback = function(key)
+            if key then
+                local newKey = safeGetKeyCode(key)
+                AimBotModule.SetKey(newKey)
+            end
+        end
+    })
+end
+settingsTab:Toggle({
+    Title = "自动瞄准-队伍检查",
+    Flag = "THub_Set_AimTeam",
+    Value = false,
+    Callback = function(v) AimBotModule.SetTeamCheck(v) end
+})
+settingsTab:Toggle({
+    Title = "自动瞄准-墙壁检查",
+    Flag = "THub_Set_AimWall",
+    Value = false,
+    Callback = function(v) AimBotModule.SetWallCheck(v) end
+})
+settingsTab:Dropdown({
+    Title = "自动瞄准-命中部位",
+    Flag = "THub_Set_AimPart",
+    Values = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
+    Value = AimBotModule.GetHitScan(),
+    Callback = function(selected) AimBotModule.SetHitScan(selected) end
+})
+if aimbotVisible("自动瞄准-使用鼠标控制") then
+    settingsTab:Toggle({
+        Title = "自动瞄准-使用鼠标控制",
+        Flag = "THub_Set_AimMouse",
+        Value = AimBotModule.GetUseMouse(),
+        Callback = function(v) AimBotModule.SetUseMouse(v) end
+    })
+end
+if aimbotVisible("自动瞄准-鼠标模式") then
+    settingsTab:Dropdown({
+        Title = "自动瞄准-鼠标模式",
+        Flag = "THub_Set_AimMouseBtn",
+        Values = {"MouseButton2", "MouseButton1"},
+        Value = "MouseButton2",
+        Callback = function(selected) AimBotModule.SetMouseBind(selected) end
+    })
+end
+settingsTab:Toggle({
+    Title = "自动瞄准-粘性瞄准",
+    Flag = "THub_Set_AimSticky",
+    Value = false,
+    Callback = function(v) AimBotModule.SetStickyAim(v) end
+})
+settingsTab:Slider({
+    Title = "自动瞄准-平滑度",
+    Flag = "THub_Set_AimSmooth",
+    Step = 1,
+    Value = { Min = 3, Max = 50, Default = 30 },
+    Callback = function(v) AimBotModule.SetSmoothing(v) end
+})
+settingsTab:Toggle({
+    Title = "自动瞄准-移动预测",
+    Flag = "THub_Set_AimPredict",
+    Value = false,
+    Callback = function(v) AimBotModule.SetPrediction(v) end
+})
+settingsTab:Slider({
+    Title = "自动瞄准-预测值",
+    Flag = "THub_Set_AimPredictAmt",
+    Step = 1,
+    Value = { Min = 0, Max = 1000, Default = 100 },
+    Callback = function(v) AimBotModule.SetPredictionAmount(v) end
+})
+settingsTab:Divider()
+
+-- ===== WindUI 配置持久化（接管旧 ConfigModule 的 UI 设置部分） =====
+settingsTab:Section({ Title = "界面配置存档", Opened = true })
+THubConfig = mainWindow.ConfigManager:CreateConfig("THubConfig")
+settingsTab:Button({
+    Title = "💾 保存当前界面配置",
+    Callback = function()
+        if THubConfig:Save() then
+            WindUI:Notify({ Title = "配置已保存", Content = "界面配置 'THubConfig' 已保存", Icon = "check", Duration = 3 })
         end
     end
 })
-settingsContent:AddToggle({
-    Label = "自动瞄准-队伍检查",
-    Default = false,
-    Callback = function(v) AimBotModule.SetTeamCheck(v) end
+settingsTab:Button({
+    Title = "📂 读取界面配置",
+    Callback = function()
+        if THubConfig:Load() then
+            WindUI:Notify({ Title = "配置已读取", Content = "界面配置 'THubConfig' 已读取", Icon = "check", Duration = 3 })
+        end
+    end
 })
-settingsContent:AddToggle({
-    Label = "自动瞄准-墙壁检查",
-    Default = false,
-    Callback = function(v) AimBotModule.SetWallCheck(v) end
-})
-settingsContent:AddDropdown({
-    Label = "自动瞄准-命中部位",
-    Options = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
-    Default = AimBotModule.GetHitScan(),
-    Callback = function(selected) AimBotModule.SetHitScan(selected) end
-})
-settingsContent:AddToggle({
-    Label = "自动瞄准-使用鼠标控制",
-    Default = AimBotModule.GetUseMouse(),
-    Callback = function(v) AimBotModule.SetUseMouse(v) end
-})
-settingsContent:AddDropdown({
-    Label = "自动瞄准-鼠标模式",
-    Options = {"MouseButton2", "MouseButton1"},
-    Default = "MouseButton2",
-    Callback = function(selected) AimBotModule.SetMouseBind(selected) end
-})
-settingsContent:AddToggle({
-    Label = "自动瞄准-粘性瞄准",
-    Default = false,
-    Callback = function(v) AimBotModule.SetStickyAim(v) end
-})
-settingsContent:AddSlider({
-    Label = "自动瞄准-平滑度",
-    Min = 3, Max = 50, Default = 30,
-    Callback = function(v) AimBotModule.SetSmoothing(v) end
-})
-settingsContent:AddToggle({
-    Label = "自动瞄准-移动预测",
-    Default = false,
-    Callback = function(v) AimBotModule.SetPrediction(v) end
-})
-settingsContent:AddSlider({
-    Label = "自动瞄准-预测值",
-    Min = 0, Max = 1000, Default = 100,
-    Callback = function(v) AimBotModule.SetPredictionAmount(v) end
-})
-settingsContent:AddDivider()
+-- 启动时自动恢复上次保存的开关状态
+pcall(function() THubConfig:Load() end)
 
-mainWindow:RefreshContent()
+-- 关闭 / 销毁窗口时卸载 THub（替代原 ChronixUI CloseCallback）
+mainWindow:OnDestroy(function()
+    unloadTHub()
+end)
+

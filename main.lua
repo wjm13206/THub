@@ -24,10 +24,13 @@ local baseUrl = "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main
 -- 1. Services
 loadstring(game:HttpGet(baseUrl .. "/src/services.lua"))()
 
+-- 1.5 WindUI
+WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+THubWindUI = WindUI
+
 -- 2. Load functional modules
 AsyncFileFetcher = loadstring(cloneref(game):HttpGet(baseUrl .. "/modules/core/AsyncFileFetcher.lua"))()
 modulesToFetch = {
-    ["ChronixUI"] = baseUrl .. "/modules/ui/ChronixUI%20Lib.lua",
     ["tpWalk"] = baseUrl .. "/modules/movement/SafeTPWalk.lua",
     ["StandRecovery"] = baseUrl .. "/modules/movement/StandRecovery.lua",
     ["HighlightModule"] = baseUrl .. "/modules/visual/HighlightModule.lua",
@@ -127,7 +130,7 @@ loadstring(game:HttpGet(baseUrl .. "/src/unload.lua"))()
 
 -- 8. Final notification
 local loadTime = string.format("%.2f", tick() - startTime)
-ChronixUI:Notify({ Title = "提示", Content = "THub 启动成功。用时: " .. loadTime .. "s\n防挂机已自动开启。", Type = "info", Duration = 10 })
+WindUI:Notify({ Title = "提示", Content = "THub 启动成功。用时: " .. loadTime .. "s\n防挂机已自动开启。", Icon = "check", Duration = 10 })
 LogService:Info("[THub] 已成功加载。用时: " .. loadTime .. "s")
 pcall(function() SystemNotification.Rainbow("THub V3 已成功加载！\n欢迎 " .. data["basicdata"]["player"]["displayname"]) end)
 _G.THubisLoaded = true; _G.THubLoading = false; loadingTimedOut = true

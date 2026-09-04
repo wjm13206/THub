@@ -107,13 +107,13 @@ function enableStaffCheck()
     for _, player in pairs(Players:GetPlayers()) do
         local result = getStaffRole(player)
         if result.Staff then
-            ChronixUI:Notify({ Title = "警告", Content = formatUsername(player) .. " 是 " .. result.Role, Duration = 10 })
+            WindUI:Notify({ Title = "警告", Content = formatUsername(player) .. " 是 " .. result.Role, Icon = "triangle-alert", Duration = 10 })
         end
     end
     staffWatchConn = Players.PlayerAdded:Connect(function(player)
         local result = getStaffRole(player)
         if result.Staff then
-            ChronixUI:Notify({ Title = "警告", Content = formatUsername(player) .. " 是 " .. result.Role, Type = "warning", Duration = 10 })
+            WindUI:Notify({ Title = "警告", Content = formatUsername(player) .. " 是 " .. result.Role, Icon = "triangle-alert", Duration = 10 })
         end
     end)
 end
@@ -316,7 +316,7 @@ function enableAutoLever()
                 descendant.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
                 GGcount = GGcount + 1
                 if GGcount >= 3 then
-                    ChronixUI:Notify({ Title = "提示", Content = "全部拉杆已被激活\n门已打开", Type = "info", Duration = 5 })
+                    WindUI:Notify({ Title = "提示", Content = "全部拉杆已被激活\n门已打开", Icon = "info", Duration = 5 })
                     GGcount = 0
                 end
                 task.wait(1)
@@ -477,7 +477,7 @@ function attachAntiFall(hum)
         if data["basicdata"]["releasetools"]["antifall"] then
             if newState == Enum.HumanoidStateType.FallingDown or newState == Enum.HumanoidStateType.Ragdoll or newState == Enum.HumanoidStateType.Freefall then
                 hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-                ChronixUI:Notify({ Title = "提示", Content = "检测到被击倒，已恢复站立状态", Type = "info", Duration = 5 })
+                WindUI:Notify({ Title = "提示", Content = "检测到被击倒，已恢复站立状态", Icon = "info", Duration = 5 })
             end
         end
     end)

@@ -10,7 +10,7 @@
 
 ## 🎮 简介
 
-**THub V3** 是一个为 Roblox 平台设计的现代化多功能工具集，包含完整的 UI 框架（ChronixUI）和丰富的游戏专用功能。fork 自 [ChronixHub V3](https://atomgit.com/Furrycalin/ChronixHub)
+**THub V3** 是一个为 Roblox 平台设计的现代化多功能工具集，包含完整的 UI 框架（WindUI）和丰富的游戏专用功能。fork 自 [ChronixHub V3](https://atomgit.com/Furrycalin/ChronixHub)
 
 
 ## 🚀 快速开始
