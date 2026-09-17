@@ -138,6 +138,27 @@ function toggleInteraction(componentType, disable)
     if onDisabledTypeChanged then onDisabledTypeChanged() end
 end
 
+-- 击杀贴身者：带自己瞬移到虚空下25码停1秒（贴身的人掉落摔死），再传回原位
+function fakeout()
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local oldpos = root.CFrame
+    local needRestore = false
+    if Workspace.FallenPartsDestroyHeight == Workspace.FallenPartsDestroyHeight then
+        Workspace.FallenPartsDestroyHeight = 0 / 0
+        needRestore = true
+    end
+    root.CFrame = CFrame.new(Vector3.new(0, data["basicdata"]["otherdata"]["FallenPartsDestroyHeight"] - 25, 0))
+    task.wait(1)
+    if root.Parent then
+        root.CFrame = oldpos
+    end
+    if needRestore then
+        Workspace.FallenPartsDestroyHeight = data["basicdata"]["otherdata"]["FallenPartsDestroyHeight"]
+    end
+end
+
 function getjerktool()
     local humanoid = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid")
 	local backpack = LocalPlayer:FindFirstChildWhichIsA("Backpack")
@@ -428,6 +449,30 @@ function respawn()
     char:Destroy()
 end
 
+-- 强制自杀2（秒重生）：相机切脚本模式防黑屏，传到虚空摔死后恢复
+function respawn2()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hum = char:FindFirstChildWhichIsA("Humanoid")
+    if not hum or not hum.RootPart then return end
+    local camType = Workspace.CurrentCamera.CameraType
+    Workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+    local needRestore = false
+    if Workspace.FallenPartsDestroyHeight == Workspace.FallenPartsDestroyHeight then
+        Workspace.FallenPartsDestroyHeight = 0 / 0
+        needRestore = true
+    end
+    hum.RootPart.Position = Vector3.yAxis * data["basicdata"]["otherdata"]["FallenPartsDestroyHeight"]
+    task.wait(LocalPlayer:GetNetworkPing())
+    if needRestore then
+        Workspace.FallenPartsDestroyHeight = data["basicdata"]["otherdata"]["FallenPartsDestroyHeight"]
+    end
+    repeat task.wait() until not char.Parent or not hum.Parent or hum.Health <= 0
+    if hum.Parent then
+        hum:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+    end
+end
+
 function refresh()
     local char = LocalPlayer.Character
     if not char then
@@ -585,11 +630,14 @@ function noclipenable(state)
 end
 
 local JR = nil
-
+local infJumpDebounce = false
 function infjumpenable(state)
     if state then
         if JR then return end
+        infJumpDebounce = false
         JR = UserInputService.JumpRequest:Connect(function()
+            if not data["basicdata"]["releasetools"]["infjump"] or infJumpDebounce then return end
+            infJumpDebounce = true
             local c = LocalPlayer.Character
             if c and c.Parent then
                 local hum = c:FindFirstChildOfClass("Humanoid")
@@ -597,11 +645,179 @@ function infjumpenable(state)
                     hum:ChangeState("Jumping")
                 end
             end
+            task.wait(0.25)
+            infJumpDebounce = false
         end)
         data["basicdata"]["releasetools"]["infjump"] = true
     else
         if JR then JR:Disconnect(); JR = nil end
         data["basicdata"]["releasetools"]["infjump"] = false
+    end
+end
+
+-- 边缘跳跃：离开平台边缘进入 Freefall 时拉回上一帧位置并给向上速度，实现 coyote-time 式补跳
+local edgeJumpConn = nil
+local edgejump_state = nil
+local edgejump_laststate = nil
+local edgejump_lastcf = nil
+local function edgejumpStep()
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if not (char and hum) then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    edgejump_laststate = edgejump_state
+    edgejump_state = hum:GetState()
+    if edgejump_laststate ~= edgejump_state and edgejump_state == Enum.HumanoidStateType.Freefall and edgejump_laststate ~= Enum.HumanoidStateType.Jumping then
+        if edgejump_lastcf then
+            root.CFrame = edgejump_lastcf
+            local vel = root.AssemblyLinearVelocity
+            root.AssemblyLinearVelocity = Vector3.new(vel.X, hum.JumpPower or hum.JumpHeight or 50, vel.Z)
+        end
+    end
+    edgejump_lastcf = root.CFrame
+end
+
+function edgeJumpEnable(state)
+    if state then
+        if edgeJumpConn then return end
+        edgejump_state = nil
+        edgejump_laststate = nil
+        edgejump_lastcf = nil
+        edgeJumpConn = game:GetService("RunService").Heartbeat:Connect(edgejumpStep)
+        data["basicdata"]["releasetools"]["edgejump"] = true
+    else
+        if edgeJumpConn then edgeJumpConn:Disconnect(); edgeJumpConn = nil end
+        data["basicdata"]["releasetools"]["edgejump"] = false
+    end
+end
+
+-- 角色密度：质量/体积
+function getLocalPlayerDensity()
+    local character = LocalPlayer.Character
+    if not character then return 0.7 end
+    local totalMass = 0
+    local totalVolume = 0
+    for _, part in ipairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            totalMass = totalMass + part:GetMass()
+            totalVolume = totalVolume + (part.Size.X * part.Size.Y * part.Size.Z)
+        end
+    end
+    if totalVolume > 0 then return totalMass / totalVolume end
+    return 0.7
+end
+
+local Densitysaved = {}
+function setDensity(density)
+    local char = LocalPlayer.Character
+    if not char then return end
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") and not Densitysaved[part] then
+            Densitysaved[part] = part.CustomPhysicalProperties
+        end
+    end
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            local old = part.CustomPhysicalProperties or PhysicalProperties.new(0.7, 0.3, 0.5, 1, 1)
+            part.CustomPhysicalProperties = PhysicalProperties.new(density, old.Friction, old.Elasticity, old.FrictionWeight, old.ElasticityWeight)
+        end
+    end
+end
+
+function restoreDensity()
+    for part, props in pairs(Densitysaved) do
+        if part and part.Parent then
+            part.CustomPhysicalProperties = props
+        end
+    end
+    table.clear(Densitysaved)
+end
+
+function setCharacterTypeStatus(character, propName, value)
+    local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
+    if humanoid then
+        pcall(function() humanoid[propName] = value end)
+    end
+end
+
+function pdhdset()
+    local modify = data["basicdata"]["modify"]
+    if modify["PlayerDisplayNameDistance"] then
+        for _, conn in ipairs(modify["PDND_Connect"]) do conn:Disconnect() end
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character then
+                setCharacterTypeStatus(player.Character, "NameDisplayDistance", modify["AllPlayerDisplayNameDistance"])
+            end
+            modify["PDND_Connect"][player.UserId .. "_Conn"] = player.CharacterAdded:Connect(function(character)
+                if modify["PlayerDisplayNameDistance"] then
+                    setCharacterTypeStatus(character, "NameDisplayDistance", modify["AllPlayerDisplayNameDistance"])
+                end
+            end)
+        end
+    else
+        for _, conn in ipairs(modify["PDND_Connect"]) do conn:Disconnect() end
+    end
+end
+
+function phdset()
+    local modify = data["basicdata"]["modify"]
+    if modify["PlayerHealthDistance"] then
+        for _, conn in ipairs(modify["PHD_Connect"]) do conn:Disconnect() end
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character then
+                setCharacterTypeStatus(player.Character, "HealthDisplayDistance", modify["AllPlayerHealthDistance"])
+            end
+            modify["PHD_Connect"][player.UserId .. "_Conn"] = player.CharacterAdded:Connect(function(character)
+                if modify["PlayerHealthDistance"] then
+                    setCharacterTypeStatus(character, "HealthDisplayDistance", modify["AllPlayerHealthDistance"])
+                end
+            end)
+        end
+    else
+        for _, conn in ipairs(modify["PHD_Connect"]) do conn:Disconnect() end
+    end
+end
+
+function asphset()
+    local modify = data["basicdata"]["modify"]
+    if modify["AlwayShowPlayerHealth"] then
+        for _, conn in ipairs(modify["ASPH_Connect"]) do conn:Disconnect() end
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character then
+                setCharacterTypeStatus(player.Character, "HealthDisplayType", Enum.HumanoidHealthDisplayType.AlwaysOn)
+            end
+            modify["ASPH_Connect"][player.UserId .. "_Conn"] = player.CharacterAdded:Connect(function(character)
+                if modify["AlwayShowPlayerHealth"] then
+                    setCharacterTypeStatus(character, "HealthDisplayType", Enum.HumanoidHealthDisplayType.AlwaysOn)
+                end
+            end)
+        end
+    else
+        for _, conn in ipairs(modify["ASPH_Connect"]) do conn:Disconnect() end
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character then
+                setCharacterTypeStatus(player.Character, "HealthDisplayType", Enum.HumanoidHealthDisplayType.DisplayWhenDamaged)
+            end
+        end
+    end
+end
+
+-- 深渊：无限二段跳能量（每帧补能量事件）
+local abyssDoubleJumpConn = nil
+function abyssDoubleJumpEnable(state)
+    if state then
+        if abyssDoubleJumpConn then return end
+        abyssDoubleJumpConn = game:GetService("RunService").Heartbeat:Connect(function()
+            local evt = ReplicatedStorage:FindFirstChild("JumpSuperHighwayEvent")
+            if evt then
+                pcall(firesignal, evt.OnClientEvent)
+            end
+        end)
+        data["othergamedata"]["abyss"]["enableinfdoublejump"] = true
+    else
+        if abyssDoubleJumpConn then abyssDoubleJumpConn:Disconnect(); abyssDoubleJumpConn = nil end
+        data["othergamedata"]["abyss"]["enableinfdoublejump"] = false
     end
 end
 

@@ -714,6 +714,175 @@ FlingModule.invisfling = {
     isEnabled = function() return invisflingActive end
 }
 
+-- ============= 指定甩飞 =============
+local isUnloaded = false
+local function getPlayer(PlayerName)
+    PlayerName = PlayerName:lower()
+    if PlayerName == "random" then
+        local players = Players:GetPlayers()
+        pcall(function() table.remove(players, table.find(players, LocalPlayer)) end)
+        return players[math.random(#players)]
+    else
+        for _, player in next, Players:GetPlayers() do
+            if player ~= LocalPlayer then
+                if player.Name:lower():match("^" .. PlayerName) or player.DisplayName:lower():match("^" .. PlayerName) then
+                    return player
+                end
+            end
+        end
+    end
+end
+
+local function Fling(TargetPlayer)
+    local OldPos = nil
+    local FallenPartsDestroyHeight = nil
+    local Character = LocalPlayer.Character
+    local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+    local HumanoidRootPart = Humanoid and Humanoid.RootPart
+    local TargetCharacter = TargetPlayer.Character
+    local TargetHumanoid = TargetCharacter and TargetCharacter:FindFirstChildOfClass("Humanoid")
+    local TargetRootPart = TargetHumanoid and TargetHumanoid.RootPart
+    local TargetHead = TargetCharacter and TargetCharacter:FindFirstChild("Head")
+    local Accessory = TargetCharacter and TargetCharacter:FindFirstChildOfClass("Accessory")
+    local Handle = Accessory and Accessory:FindFirstChild("Handle")
+
+    if Character and Humanoid and HumanoidRootPart then
+        if HumanoidRootPart.Velocity.Magnitude < 50 then OldPos = HumanoidRootPart.CFrame end
+        if TargetHumanoid and TargetHumanoid.Sit then return end
+        if not TargetCharacter:FindFirstChildWhichIsA("BasePart") then return end
+        if TargetHead then
+            Workspace.CurrentCamera.CameraSubject = TargetHead
+        elseif not TargetHead and Handle then
+            Workspace.CurrentCamera.CameraSubject = Handle
+        elseif TargetHumanoid and TargetRootPart then
+            Workspace.CurrentCamera.CameraSubject = TargetHumanoid
+        end
+
+        local function FPos(BasePart, Pos, Ang)
+            local newCFrame = CFrame.new(BasePart.Position) * Pos * Ang
+            HumanoidRootPart.CFrame = newCFrame
+            Character:SetPrimaryPartCFrame(newCFrame)
+            HumanoidRootPart.Velocity = Vector3.new(9e7, 9e7 * 10, 9e7)
+            HumanoidRootPart.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
+        end
+
+        local function SFBasePart(BasePart)
+            local Now = tick()
+            local Angle = 0
+            repeat
+                if isUnloaded then break end
+                if HumanoidRootPart and TargetHumanoid then
+                    if BasePart.Velocity.Magnitude < 50 then
+                        Angle = Angle + 100
+                        FPos(BasePart, CFrame.new(0, 1.5, 0) + TargetHumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle),0 ,0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, 0) + TargetHumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(2.25, 1.5, -2.25) + TargetHumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(-2.25, -1.5, 2.25) + TargetHumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, 1.5, 0) + TargetHumanoid.MoveDirection,CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, 0) + TargetHumanoid.MoveDirection,CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                    else
+                        FPos(BasePart, CFrame.new(0, 1.5, TargetHumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, -TargetHumanoid.WalkSpeed), CFrame.Angles(0, 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, 1.5, TargetHumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, 1.5, TargetRootPart.Velocity.Magnitude / 1.25), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, -TargetRootPart.Velocity.Magnitude / 1.25), CFrame.Angles(0, 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, 1.5, TargetRootPart.Velocity.Magnitude / 1.25), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5 ,0), CFrame.Angles(math.rad(-90), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
+                        task.wait()
+                    end
+                else
+                    break
+                end
+            until BasePart.Velocity.Magnitude > 500 or BasePart.Parent ~= TargetPlayer.Character or TargetPlayer.Parent ~= Players or not TargetPlayer.Character == TargetCharacter or TargetHumanoid.Sit or Humanoid.Health <= 0 or tick() > Now + 2
+        end
+
+        FallenPartsDestroyHeight = Workspace.FallenPartsDestroyHeight
+        Workspace.FallenPartsDestroyHeight = 0/0
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+
+        local BV = Instance.new("BodyVelocity")
+        BV.Parent = HumanoidRootPart
+        BV.Velocity = Vector3.new(9e8, 9e8, 9e8)
+        BV.MaxForce = Vector3.new(1/0, 1/0, 1/0)
+
+        if TargetRootPart and TargetHead then
+            if (TargetRootPart.CFrame.Position - TargetHead.CFrame.Position).Magnitude > 5 then SFBasePart(TargetHead) else SFBasePart(TargetRootPart) end
+        elseif TargetRootPart then
+            SFBasePart(TargetRootPart)
+        elseif TargetHead then
+            SFBasePart(TargetHead)
+        elseif Accessory and Handle then
+            SFBasePart(Handle)
+        else
+            return
+        end
+
+        BV:Destroy()
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+        Workspace.CurrentCamera.CameraSubject = Humanoid
+
+        if OldPos then
+            repeat
+                HumanoidRootPart.CFrame = OldPos * CFrame.new(0, .5, 0)
+                Character:SetPrimaryPartCFrame(OldPos * CFrame.new(0, .5, 0))
+                Humanoid:ChangeState("GettingUp")
+                for _, x in next, Character:GetChildren() do
+                    if x:IsA("BasePart") then
+                        x.Velocity = Vector3.new()
+                        x.RotVelocity = Vector3.new()
+                    end
+                end
+                task.wait()
+            until (HumanoidRootPart.Position - OldPos.Position).Magnitude < 25
+        end
+
+        Workspace.FallenPartsDestroyHeight = FallenPartsDestroyHeight
+    else
+        return
+    end
+end
+
+FlingModule.tofling = function(targetName)
+    local name = tostring(targetName or "")
+    if name == "" then return end
+
+    if name:lower() == "all" then
+        for _, pl in next, Players:GetPlayers() do
+            if pl ~= LocalPlayer then
+                pcall(function()
+                    Fling(pl)
+                end)
+            end
+        end
+        return
+    end
+
+    local target = getPlayer(name)
+    if target and target ~= LocalPlayer then
+        pcall(function()
+            Fling(target)
+        end)
+    end
+end
+
 -- ============= UNLOAD FUNCTION =============
 FlingModule.unload = function()
     if FlingModule.fling.isEnabled() then
@@ -728,6 +897,7 @@ FlingModule.unload = function()
     if FlingModule.invisfling.isEnabled() then
         FlingModule.invisfling.disable()
     end
+    isUnloaded = true
 end
 
 return FlingModule

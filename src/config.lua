@@ -28,6 +28,16 @@ data = {
             health = ((LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")) or {JumpPower = 100}).Health, islockhealth = false,
             gravity = Workspace.Gravity, islockgravity = false,
         },
+        modify = {
+            PlayerDisplayNameDistance = false,
+            AllPlayerDisplayNameDistance = ((LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")) or {NameDisplayDistance = 100}).NameDisplayDistance,
+            PDND_Connect = {},
+            PlayerHealthDistance = false,
+            AllPlayerHealthDistance = ((LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")) or {HealthDisplayDistance = 100}).HealthDisplayDistance,
+            PHD_Connect = {},
+            AlwayShowPlayerHealth = false,
+            ASPH_Connect = {},
+        },
         releasetools = {
             antiafk = true,
             zoom = ZoomModule.new(),
@@ -37,6 +47,7 @@ data = {
             noclipParts = {},
             infjump = false,
             autojump = false,
+            edgejump = false,
             antifall = false,
             antidead = false,
             nightvision = false,
@@ -54,6 +65,7 @@ data = {
             lastDeath,
         },
         otherdata = {
+            FallenPartsDestroyHeight = Workspace.FallenPartsDestroyHeight,
             yiyan = { data = { target = "加载中..." } },
             executordetecter = {
                 robloxinfo = {},
@@ -93,6 +105,7 @@ data = {
                 currentId = "142376088",
                 othermusicname = "",
                 currentlink = "",
+                playMode = "normal",
                 musicIds = {
                     "142376088", "1844108188", "1846368080", "5409360995", "1848354536", "1841647093",
                     "1837879082", "1837768517", "9041745502", "9048375035", "1840684208",
@@ -136,12 +149,22 @@ data = {
     },
     scriptlist = {
         { name = "飞行V4", link = "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/movement/FlyV4.lua" },
-        { name = "IY5.5.9(指令挂)(汉化版)", link = "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/scripts/IY.lua" },
+        { name = "IY6.4.2(指令挂)(汉化版)", link = "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/scripts/IY.lua" },
         { name = "Dex", link = "https://raw.githubusercontent.com/infyiff/backup/main/dex.lua" },
         { name = "Dex++", link = "https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua" },
+        { name = "BetterDex", link = "https://raw.atomgit.com/Furrycalin/ScriptStorage/raw/main/betterdex.lua" },
+        { name = "SolaraDex", link = "https://raw.atomgit.com/Furrycalin/ScriptStorage/raw/main/solaradex.lua" },
+        { name = "SecureDex", link = "https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/BypassedDarkDexV3.lua" },
         { name = "DexDark", link = "https://raw.githubusercontent.com/wjm13206/THub/refs/heads/main/modules/scripts/DexDark.lua" },
         { name = "Cobalt", link = "https://github.com/notpoiu/cobalt/releases/latest/download/Cobalt.luau" },
         { name = "SimpleSpy", link = "https://raw.githubusercontent.com/infyiff/backup/main/SimpleSpyV3/main.lua" },
+        { name = "UNC测试", link = "https://raw.atomgit.com/Furrycalin/ScriptStorage/raw/main/UNCCheckEnv.lua" },
+        { name = "SUNC测试", link = "https://raw.atomgit.com/Furrycalin/ScriptStorage/raw/main/sUNCm0m3n7.lua" },
+        { name = "CUNC测试", link = "https://raw.atomgit.com/Furrycalin/ScriptStorage/raw/main/cunc.lua" },
+        { name = "身份测试", link = "https://raw.atomgit.com/Furrycalin/ScriptStorage/raw/main/identitytest.lua" },
+        { name = "更多UNCV1", link = "https://raw.atomgit.com/Furrycalin/ScriptStorage/raw/main/moreuncv1.lua" },
+        { name = "更多UNCV2", link = "https://raw.atomgit.com/Furrycalin/ScriptStorage/raw/main/moreuncv2.lua" },
+        { name = "更多UNCV3", link = "https://raw.atomgit.com/Furrycalin/ScriptStorage/raw/main/moreuncv3.lua" },
         { name = "NPC自瞄", link = "https://rawscripts.net/raw/Universal-Script-Npc-Aimbot-64954" },
         { name = "SolaraHub", link = "https://raw.githubusercontent.com/samuraa1/Solara-Hub/refs/heads/main/SH.lua" },
         { name = "XAHub", link = "https://raw.githubusercontent.com/XiaoLuau/Script/main/Loader.lua" },
@@ -165,6 +188,7 @@ data = {
         { gameid = 972475338,  name = "南极探险队" },
         { gameid = 6996099240, name = "噩梦之行" },
         { gameid = 5265348926, name = "西部森林" },
+        { gameid = 10598641427, name = "西部森林:重制版" },
         { gameid = 5429450445, name = "警笛头:遗产" },
         { gameid = 4981761600, name = "深渊" },
         { gameid = 8111911783, name = "后院生存" },
@@ -174,7 +198,9 @@ data = {
     },
     othergamedata = {
         west_wood = {
-            monster = NameTagModule.new("WendigoAI", "fuzzy", 20, true, "怪物")
+            monster = NameTagModule.new("WendigoAI", "fuzzy", 20, true, "怪物"),
+            remake_monster = NameTagModule.new("Wendigo", "fuzzy", 20, true, "怪物"),
+            remake_monsterhighlight = HighlightModule.new("Wendigo", "fuzzy", "hostileNpc"),
         },
         sirenhead_legacy = {
             cratemodule = HighlightModule.new("crate", "fuzzy", "item"),
@@ -225,6 +251,9 @@ data = {
         grace = {
             autolever = false,
             deleteentity = false,
+        },
+        abyss = {
+            enableinfdoublejump = false,
         },
         backroomsurvival = {
             Shrieker = HighlightModule.new("Shrieker", "fuzzy", "hostileNpc"),

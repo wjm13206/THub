@@ -1,5 +1,10 @@
 -- https://github.com/EdgeIY/infiniteyield/commits/master/source
--- Update Last Commits on Jul 22, 2026 - Fix unfling - rockythef0x authored yesterday - [537da54]790c7756ae61bc67fb901a7572fb8e23d
+--[[
+	Time:	Commits on Aug 6, 2026
+	Title:	fix bang breaking on 2 players
+	User:	Toon-arch authored last week
+	SHA:	[7c2d12a]4a3a6a59f2b891bd31dcb37648940a01a
+]]
 -- I18N by Chronix
 
 if IY_LOADED and not _G.IY_DEBUG then
@@ -44,7 +49,7 @@ hookfunction = missing("function", hookfunction)
 hookmetamethod = missing("function", hookmetamethod)
 getnamecallmethod = missing("function", getnamecallmethod or get_namecall_method)
 checkcaller = missing("function", checkcaller, function() return false end)
-newcclosure = missing("function", newcclosure)
+newcclosure = missing("function", newcclosure, function(f, ...) return f(...) end)
 getgc = missing("function", getgc or get_gc_objects)
 setthreadidentity = missing("function", setthreadidentity or (syn and syn.set_thread_identity) or syn_context_set or setthreadcontext)
 replicatesignal = missing("function", replicatesignal)
@@ -68,6 +73,7 @@ Players = Services.Players
 UserInputService = Services.UserInputService
 TweenService = Services.TweenService
 HttpService = Services.HttpService
+ExperienceService = Services.ExperienceService
 MarketplaceService = Services.MarketplaceService
 RunService = Services.RunService
 TeleportService = Services.TeleportService
@@ -4328,6 +4334,16 @@ end
 
 local canvasPos = Vector2.new(0,0)
 local topCommand = nil
+local function updateCommandCanvasSize(frame)
+	local scale = (Scale and Scale.Scale) or 1
+	if scale <= 0 then scale = 1 end
+	local contentY = cmdListLayout.AbsoluteContentSize.Y
+	local unscaledY = math.ceil(contentY / scale)
+	frame.CanvasSize = UDim2.new(0, 0, 0, math.max(0, unscaledY))
+end
+cmdListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	updateCommandCanvasSize(CMDsF)
+end)
 IndexContents = function(str,bool,cmdbar,Ianim)
 	CMDsF.CanvasPosition = Vector2.new(0,0)
 	local SizeY = 0
@@ -4361,7 +4377,7 @@ IndexContents = function(str,bool,cmdbar,Ianim)
 			end
 		end
 	end
-	frame.CanvasSize = UDim2.new(0,0,0,cmdListLayout.AbsoluteContentSize.Y)
+	updateCommandCanvasSize(frame)
 	if not Ianim then
 		if indexnum == 0 or string.find(str, " ") then
 			if not cmdbar then
@@ -4469,7 +4485,8 @@ CMDs[#CMDs + 1] = {NAME = 'audiologger / alogger', DESC = '打开 Edge 的音频
 CMDs[#CMDs + 1] = {NAME = 'serverinfo / info', DESC = '提供有关服务器的信息'}
 CMDs[#CMDs + 1] = {NAME = 'jobid', DESC = '将游戏的 JobId 复制到剪贴板'}
 CMDs[#CMDs + 1] = {NAME = 'notifyjobid', DESC = '通知你游戏的 JobId'}
-CMDs[#CMDs + 1] = {NAME = 'rejoin / rj', DESC = '让你重新加入游戏'}
+CMDs[#CMDs + 1] = {NAME = 'rejoin / rj [重新定位]', DESC = '让你重新加入游戏'}
+CMDs[#CMDs + 1] = {NAME = 'inviteprompt', DESC = '提示您所选用户已邀请您加入。需重新加入才能生效'}
 CMDs[#CMDs + 1] = {NAME = 'autorejoin / autorj', DESC = '如果你被踢出/断开连接，自动重新加入服务器'}
 CMDs[#CMDs + 1] = {NAME = 'serverhop / shop', DESC = '将你传送到不同的服务器'}
 CMDs[#CMDs + 1] = {NAME = 'gameteleport / gametp [地点ID]', DESC = '通过 ID 加入游戏'}
@@ -4502,6 +4519,7 @@ CMDs[#CMDs + 1] = {NAME = 'unantigameplaypaused', DESC = '禁用 antigameplaypau
 CMDs[#CMDs + 1] = {NAME = 'clientantikick / antikick (客户端)', DESC = '防止本地脚本踢出你'}
 CMDs[#CMDs + 1] = {NAME = 'clientantiteleport / antiteleport (客户端)', DESC = '防止本地脚本传送你'}
 CMDs[#CMDs + 1] = {NAME = 'allowrejoin / allowrj [true/false] (客户端)', DESC = '更改 antiteleport 是否允许你重新加入'}
+CMDs[#CMDs + 1] = {NAME = 'allowrejoin / allowrj (CLIENT)', DESC = '如果反远程传输允许或不允许您重新加入，则切换'}
 CMDs[#CMDs + 1] = {NAME = 'cancelteleport / canceltp', DESC = '取消正在进行的传送'}
 CMDs[#CMDs + 1] = {NAME = 'volume / vol [0-10]', DESC = '按 0 到 10 的刻度调整游戏音量'}
 CMDs[#CMDs + 1] = {NAME = 'antilag / boostfps / lowgraphics', DESC = '降低游戏质量以提高 FPS'}
@@ -4519,7 +4537,7 @@ CMDs[#CMDs + 1] = {NAME = 'alignmentkeys', DESC = '启用左右对齐键（逗�
 CMDs[#CMDs + 1] = {NAME = 'unalignmentkeys / noalignmentkeys', DESC = '禁用对齐键'}
 CMDs[#CMDs + 1] = {NAME = 'ctrllock', DESC = '将 Shiftlock 绑定到左 Ctrl'}
 CMDs[#CMDs + 1] = {NAME = 'unctrllock', DESC = '将 Shiftlock 重新绑定到左 Shift'}
-CMDs[#CMDs + 1] = {NAME = 'exit', DESC = '杀死 Roblox 进程'}
+CMDs[#CMDs + 1] = {NAME = 'exit / shutdown / leave', DESC = '杀死 Roblox 进程'}
 CMDs[#CMDs + 1] = {NAME = 'removecmd / deletecmd', DESC = '在脚本重新加载之前移除一个命令'}
 CMDs[#CMDs + 1] = {NAME = 'breakloops / break (命令循环)', DESC = '停止任何命令循环 (;100^1^命令)'}
 CMDs[#CMDs + 1] = {NAME = '', DESC = ''}
@@ -4555,7 +4573,7 @@ CMDs[#CMDs + 1] = {NAME = 'deletewaypoint / dwp [名称]', DESC = '删除一个�
 CMDs[#CMDs + 1] = {NAME = 'clearwaypoints / cwp', DESC = '清除所有路径点'}
 CMDs[#CMDs + 1] = {NAME = 'cleargamewaypoints / cgamewp', DESC = '清除你所在游戏的所有路径点'}
 CMDs[#CMDs + 1] = {NAME = '', DESC = ''}
-CMDs[#CMDs + 1] = {NAME = 'goto [玩家]', DESC = '前往一个玩家'}
+CMDs[#CMDs + 1] = {NAME = 'goto [玩家] [请求流]', DESC = '前往一个玩家'}
 CMDs[#CMDs + 1] = {NAME = 'tweengoto / tgoto [玩家]', DESC = '缓动到一个玩家（绕过一些反作弊）'}
 CMDs[#CMDs + 1] = {NAME = 'tweenspeed / tspeed [数字]', DESC = '设置所有缓动命令的速度（默认为 1）'}
 CMDs[#CMDs + 1] = {NAME = 'vehiclegoto / vgoto [玩家]', DESC = '在载具中前往一个玩家'}
@@ -4973,14 +4991,17 @@ function respawn(plr)
 	if invisRunning then TurnVisible() end
     local char = plr.Character
     local hum = char:FindFirstChildWhichIsA("Humanoid")
-    if hum then hum:ChangeState(Enum.HumanoidStateType.Dead) end
-    char:ClearAllChildren()
-    local newChar = Instance.new("Model")
-    newChar.Parent = workspace
-    plr.Character = newChar
-    task.wait()
-    plr.Character = char
-    newChar:Destroy()
+	local archive = workspace.FallenPartsDestroyHeight
+	local camType = workspace.CurrentCamera.CameraType
+	workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+	workspace.FallenPartsDestroyHeight = 0/0
+    getRoot(char).Position = Vector3.yAxis * archive
+	task.wait(plr:GetNetworkPing())
+	workspace.FallenPartsDestroyHeight = archive
+	repeat task.wait() until not char.Parent or not hum.Parent or (hum and hum.Health <= 0)
+	if hum then
+		hum:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+	end
 end
 
 local refreshCmd = false
@@ -5044,12 +5065,12 @@ end)
 onDied()
 
 local booly = {
-    truthy = { ["true"] = true, ["t"] = true, ["1"] = true, yes = true, y = true, on = true, enable = true, enabled = true },
-    falsy = { ["false"] = true, ["f"] = true, ["0"] = true, no = true, n = true, off = true, disable = true, disabled = true }
+    truthy = { ["true"] = true, ["t"] = true, ["1"] = true, ["yes"] = true, ["y"] = true, ["on"] = true, ["enable"] = true, ["enabled"] = true },
+    falsy = { ["false"] = true, ["f"] = true, ["0"] = true, ["no"] = true, ["n"] = true, ["off"] = true, ["disable"] = true, ["disabled"] = true },
 }
 
 function parseBoolean(raw, default)
-    raw = tostring(raw)
+    raw = tostring(raw):lower()
     if booly.truthy[raw] then return true end
     if booly.falsy[raw] then return false end
     return default or false
@@ -6924,13 +6945,56 @@ addcmd('gametp',{'gameteleport'},function(args, speaker)
 	TeleportService:Teleport(args[1])
 end)
 
+teleportRespawnHandler = [[
+local ok, data = pcall(function() return game:GetService("TeleportService"):GetLocalPlayerTeleportData() end)
+if ok and typeof(data) == "CFrame" then
+    local Players = game:GetService("Players")
+    local ME = Players.LocalPlayer
+    while not ME do
+        Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+        ME = Players.LocalPlayer
+    end
+
+    local Character = ME.Character or ME.CharacterAdded:Wait()
+    Character:WaitForChild("HumanoidRootPart")
+
+    local t = tick()
+    while (tick() - t) <= 0.3 do
+        Character:PivotTo(data)
+        task.wait()
+    end
+end
+]]
 addcmd("rejoin", {"rj"}, function(args, speaker)
-	if #Players:GetPlayers() <= 1 then
-		Players.LocalPlayer:Kick("\n重新加入中...")
-		wait()
-		TeleportService:Teleport(PlaceId, Players.LocalPlayer)
-	else
-		TeleportService:TeleportToPlaceInstance(PlaceId, JobId, Players.LocalPlayer)
+    local data = nil
+    if parseBoolean(args[1], false) == true then
+        if queueteleport then
+            if speaker.Character then
+                data = speaker.Character:GetPivot()
+                queueteleport(teleportRespawnHandler)
+            end
+        else
+            notify("不兼容的漏洞", "你的执行器不支持这个功能 (缺失 queue_on_teleport)")
+        end
+    end
+	
+    if #Players:GetPlayers() <= 1 then
+        Players.LocalPlayer:Kick("\n重新加入中...")
+        task.wait(0.3)
+        TeleportService:Teleport(PlaceId, Players.LocalPlayer, data)
+    else
+        TeleportService:TeleportToPlaceInstance(PlaceId, JobId, Players.LocalPlayer, nil, data)
+    end
+end)
+
+addcmd("inviteprompt", {}, function(args, speaker)
+	local plrs = getPlayer(args[1], speaker)
+	if #plrs > 0 then
+		ExperienceService:LaunchExperience({
+			placeId = PlaceId,
+			gameInstanceId = JobId,
+			referredByPlayerId = plr[1].UserId
+		})
 	end
 end)
 
@@ -6961,7 +7025,7 @@ addcmd("serverhop", {"shop"}, function(args, speaker)
 	end
 end)
 
-addcmd("exit", {}, function(args, speaker)
+addcmd("exit", {"shutdown", "leave"}, function(args, speaker)
 	game:Shutdown()
 end)
 
@@ -7850,24 +7914,19 @@ addcmd('clientantikick',{'antikick'},function(args, speaker)
 		return notify('不兼容的注入器','你的注入器不支持此命令（缺少 hookmetamethod）')
 	end
 	local LocalPlayer = Players.LocalPlayer
-	local oldhmmi
-	local oldhmmnc
-	local oldKickFunction
-	if hookfunction then
-		oldKickFunction = hookfunction(LocalPlayer.Kick, function() end)
-	end
-	oldhmmi = hookmetamethod(game, "__index", function(self, method)
-		if self == LocalPlayer and method:lower() == "kick" then
-			return error("Expected ':' not '.' calling member function Kick", 2)
-		end
-		return oldhmmi(self, method)
-	end)
-	oldhmmnc = hookmetamethod(game, "__namecall", function(self, ...)
-		if self == LocalPlayer and getnamecallmethod():lower() == "kick" then
-			return
-		end
-		return oldhmmnc(self, ...)
-	end)
+	local oldNamecall; oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(...)
+    	local method = getnamecallmethod and getnamecallmethod() or ""
+    	if select(1, ...) == LocalPlayer and method == "Kick" or method == "kick" then
+        	return nil
+    	end
+    	return oldNamecall(...)
+	end))
+	hookfunction(LocalPlayer.Kick, newcclosure(function(self, _)
+    	if self ~= lp then
+        	error("Expected ':' not '.' calling member function Teleport", 2)
+    	end
+    	return nil
+	end))
 
 	notify('客户端防踢','客户端防踢现已激活（仅对本地脚本踢出有效）')
 end)
@@ -7877,37 +7936,56 @@ addcmd('clientantiteleport',{'antiteleport'},function(args, speaker)
 	if not hookmetamethod then 
 		return notify('不兼容的注入器','你的注入器不支持此命令（缺少 hookmetamethod）')
 	end
-	local TeleportService = TeleportService
-	local oldhmmi
-	local oldhmmnc
-	oldhmmi = hookmetamethod(game, "__index", function(self, method)
-		if self == TeleportService then
-			if method:lower() == "teleport" then
-				return error("Expected ':' not '.' calling member function Kick", 2)
-			elseif method == "TeleportToPlaceInstance" then
-				return error("Expected ':' not '.' calling member function TeleportToPlaceInstance", 2)
-			end
+	local oldTp; oldTp = hookfunction(TeleportService.Teleport, newcclosure(function(self, placeId, player, _teleportData, customLoadingScreen)
+		if checkcaller() or (allow_rj and placeId == game.PlaceId) then
+			return oldTp(self, placeId, player, _teleportData, customLoadingScreen)
 		end
-		return oldhmmi(self, method)
-	end)
-	oldhmmnc = hookmetamethod(game, "__namecall", function(self, ...)
-		if self == TeleportService and getnamecallmethod():lower() == "teleport" or getnamecallmethod() == "TeleportToPlaceInstance" then
+		if self ~= TeleportService then
+			error("Expected ':' not '.' calling member function Teleport", 2)
+		end
+		if placeId == nil then
+			error("Argument 1 missing or nil", 2)
+		end
+		if typeof(placeId) ~= "number" and placeId ~= true then
+			error(`Unable to cast {typeof(placeId)} to int64`, 2)
+		elseif placeId == true then
+			-- somehow raise raiseTeleportInitFailedEvent
 			return
 		end
-		return oldhmmnc(self, ...)
-	end)
+		if typeof(customLoadingScreen) ~= "Instance" and customLoadingScreen ~= nil then
+			error("Unable to cast value to Object", 2)
+		end
+		return nil
+	end))
+	hookfunction(TeleportService.TeleportAsync, newcclosure(function(self, placeId, players, teleportOptions)
+		if self ~= TeleportService then
+			error("Expected ':' not '.' calling member function TeleportAsync", 2)
+		end
+		if players == nil then
+			error("Argument 2 missing or nil", 2)
+		end
+		if typeof(players) ~= "table" then
+			error("Unable to cast value to Objects", 2)
+		end
+		error("TeleportUnknown must be called from a Server", 2)
+	end))
+	local oldNamecall; oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(...)
+		local nmc = getnamecallmethod()
+		if select(1, ...) == TeleportService and nmc == "teleport" or nmc == "Teleport" or nmc == "TeleportToPlaceInstance" or nmc == "TeleportAsync" then
+			if checkcaller() or (allow_rj and select(2, ...) == game.PlaceId) then
+				return oldNamecall(...)
+			end
+			return
+		end
+		return oldNamecall(...)
+	end))
 
 	notify('客户端防传送','客户端防传送现已激活（仅对本地脚本传送有效）')
 end)
 
 addcmd('allowrejoin',{'allowrj'},function(args, speaker)
-	if args[1] and args[1] == 'false' then
-		allow_rj = false
-		notify('客户端防传送','允许重新加入设置为 false')
-	else
-		allow_rj = true
-		notify('客户端防传送','允许重新加入设置为 true')
-	end
+	allow_rj = not allow_rj
+	notify("客户端防传送", `脚本现在可能｛allow_rj和“”或“not”｝使您重新加入服务器`)
 end)
 
 addcmd("cancelteleport", {"canceltp"}, function(args, speaker)
@@ -8750,21 +8828,24 @@ addcmd("partpath", {"partname"}, function(args, speaker)
 	selectPart()
 end)
 
+local antiAfkCon = nil
 addcmd("antiafk", {"antiidle"}, function(args, speaker)
-	if getconnections then
-		for _, connection in pairs(getconnections(speaker.Idled)) do
-			if connection["Disable"] then
-				connection["Disable"](connection)
-			elseif connection["Disconnect"] then
-				connection["Disconnect"](connection)
-			end
-		end
-	else
-		speaker.Idled:Connect(function()
-			Services.VirtualUser:CaptureController()
-			Services.VirtualUser:ClickButton2(Vector2.new())
-		end)
-	end
+    if getconnections then
+        for _, c in getconnections(speaker.Idled) do
+            pcall(function() c:Disable() end) -- supposed to "pause" it
+            pcall(function() c:Disconnect() end) -- supposed to disconnect it
+        end
+    end
+
+    if antiAfkCon then
+        antiAfkCon:Disconnect()
+        antiAfkCon = nil
+    end
+    antiAfkCon = speaker.Idled:Connect(function()
+        Services.VirtualUser:CaptureController()
+        Services.VirtualUser:ClickButton2(Vector2.zero)
+    end)
+
 	if not (args[1] and tostring(args[1]) == "nonotify") then notify("防挂机", "防挂机已启用") end
 end)
 
@@ -8969,19 +9050,32 @@ addcmd('un2022materials',{'unuse2022materials'},function(args, speaker)
 end)
 
 addcmd("goto", {"to"}, function(args, speaker)
-    local character = speaker and speaker.Character
-    local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
-    local players = getPlayer(args[1], speaker)
-    for _, v in pairs(players) do
-        if Players[v].Character ~= nil then
-            if humanoid and humanoid.SeatPart then
-                humanoid.Sit = false
-                task.wait(0.1)
-            end
-            getRoot(speaker.Character).CFrame = getRoot(Players[v].Character):GetPivot() + Vector3.new(3, 1, 0)
-        end
-    end
-    execCmd("breakvelocity")
+	local character = speaker and speaker.Character
+	local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
+	if humanoid == nil then return end
+
+	if humanoid and humanoid.SeatPart then
+		humanoid.Sit = false
+		task.wait(0.1)
+	end
+
+	local waitForStream = parseBoolean(args[2], false)
+	for _, name in getPlayer(args[1], speaker) do
+		local targetCharacter = Players[name].Character
+		if targetCharacter ~= nil then
+			local targetPivot = targetCharacter:GetPivot()
+			local targetPosition = targetPivot.Position
+
+			if waitForStream and workspace.StreamingEnabled then
+				task.spawn(speaker.RequestStreamAroundAsync, speaker, targetPosition, 5)
+				targetCharacter:WaitForChild("HumanoidRootPart", 5)
+			end
+
+			speaker.Character:PivotTo(CFrame.new(targetPosition + (targetPivot.LookVector * 3), targetPosition))
+			breakVelocity()
+			break
+		end
+	end
 end)
 
 addcmd("tweengoto", {"tgoto", "tto", "tweento"}, function(args, speaker)
@@ -9010,14 +9104,26 @@ addcmd("tweengoto", {"tgoto", "tto", "tweento"}, function(args, speaker)
     end
 end)
 
-addcmd('vehiclegoto',{'vgoto','vtp','vehicletp'},function(args, speaker)
-	local players = getPlayer(args[1], speaker)
-	for i,v in pairs(players)do
-		if Players[v].Character ~= nil then
-			local seat = speaker.Character:FindFirstChildOfClass('Humanoid').SeatPart
-			local vehicleModel = seat:FindFirstAncestorWhichIsA("Model")
-			vehicleModel:MoveTo(getRoot(Players[v].Character).Position)
-		end
+addcmd('vehiclegoto', {'vgoto', 'vtp', 'vehicletp' }, function(args, speaker)
+	local character = speaker.Character
+	local humanoid = if character then character:FindFirstChildOfClass('Humanoid') else nil
+	if not humanoid then return end
+
+	local seat = humanoid.SeatPart
+	local vehicleModel = if seat then seat:FindFirstAncestorWhichIsA('Model') else nil
+	if vehicleModel == nil then
+		notify('载具传送', '确认你已经坐在载具中.')
+		return
+	end
+
+    for _, v in getPlayer(args[1], speaker) do
+        if Players[v].Character == nil then continue end
+
+		local root = getRoot(Players[v].Character)
+		if root == nil then continue end
+
+		vehicleModel:PivotTo(root:GetPivot())
+		-- break -- uncomment this if you want to teleport to the first valid player instead of last
 	end
 end)
 
@@ -10448,7 +10554,7 @@ end)
 addcmd("remotespy", {"rspy", "cobalt", "cspy"}, function(args, speaker)
     notify("加载中",'请稍等片刻')
     -- Full credit to notpoiu, creator of Cobalt
-    loadstring(game:HttpGet("https://github.com/notpoiu/cobalt/releases/latest/download/Cobalt.luau"))()
+    loadstring(game:HttpGet("https://gitlab.com/upio/cobalt/-/releases/permalink/latest/downloads/Cobalt.luau"))()
 end)
 
 addcmd("simplespy", {"sspy"}, function(args, speaker)
@@ -10710,6 +10816,7 @@ addcmd("bang", {"rape"}, function(args, speaker)
 					getRoot(speaker.Character).CFrame = otherRoot.CFrame * bangOffet
 				end)
 			end)
+			break
 		end
 	end
 end)

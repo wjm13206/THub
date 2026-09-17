@@ -1,150 +1,155 @@
+--!native
+--!optimize 2
+
 local cloneref = cloneref or clonereference or function(obj) return obj end
-local Players = cloneref(game:GetService("Players"))
-local UserInputService = cloneref(game:GetService("UserInputService"))
-local VirtualInputManager = cloneref(game:GetService("VirtualInputManager"))
+local Services = setmetatable({}, {
+    __index = function(self, name)
+        local success, cache = pcall(function()
+            return cloneref(game:GetService(name))
+        end)
+        if success then
+            rawset(self, name, cache)
+            return cache
+        else
+            error("无效服务: " .. tostring(name))
+        end
+    end
+})
+
+local Players = Services.Players
+local RunService = Services.RunService
 
 local AutoIceCream = {}
 local player = Players.LocalPlayer
-local character = nil
-local humanoid = nil
 
+-- 配置项
 local enabled = false
 local isUsing = false
 local lastUseTime = 0
-local useCooldown = 3
-local healthThreshold = 1
-local lastPressedSlot = 1
-local healthConn = nil
+local useCooldown = 3         -- 使用冷却时间(秒)
+local healthThreshold = 0.95  -- 血量阈值(0-1)，低于此比例触发使用
+local itemName = "IceCreamCone"
+
+local humanoid = nil
+local heartbeatConn = nil
 local charConn = nil
-local inputConn = nil
 
-local numberToKeyCode = {
-	[0] = Enum.KeyCode.Zero,
-	[1] = Enum.KeyCode.One,
-	[2] = Enum.KeyCode.Two,
-	[3] = Enum.KeyCode.Three,
-	[4] = Enum.KeyCode.Four,
-	[5] = Enum.KeyCode.Five,
-	[6] = Enum.KeyCode.Six,
-	[7] = Enum.KeyCode.Seven,
-	[8] = Enum.KeyCode.Eight,
-	[9] = Enum.KeyCode.Nine,
-}
+-- 核心使用逻辑：叠加持有 -> Activate -> 放回背包
+local function useItemOnTopOfCurrent()
+    local character = player.Character
+    if not character then return end
 
-local function pressKey(num)
-	local keyCode = numberToKeyCode[num]
-	if keyCode then
-		VirtualInputManager:SendKeyEvent(true, keyCode, false, game)
-		VirtualInputManager:SendKeyEvent(false, keyCode, false, game)
-	end
+    local backpack = player:FindFirstChild("Backpack")
+    if not backpack then return end
+
+    local targetItem = backpack:FindFirstChild(itemName)
+    if not targetItem then return end
+
+    -- 叠加持有
+    targetItem.Parent = character
+
+    task.wait(0.1)
+    if targetItem:IsA("Tool") then
+        targetItem:Activate()
+    end
+
+    -- 使用后放回背包
+    task.wait(0.5)
+    if targetItem and targetItem.Parent == character then
+        targetItem.Parent = backpack
+    end
 end
 
-local function clickMouse()
-	VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-	task.wait(0.05)
-	VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+-- 自动使用判断
+local function tryUseIceCream()
+    if isUsing then return end
+    if not humanoid or not humanoid.Parent then return end
+
+    local now = tick()
+    if now - lastUseTime < useCooldown then return end
+
+    local hp = humanoid.Health
+    local maxHp = humanoid.MaxHealth
+    if maxHp <= 0 then return end
+    if hp >= maxHp * healthThreshold then return end
+
+    -- 检查背包里是否有冰淇淋
+    local backpack = player:FindFirstChild("Backpack")
+    if not backpack or not backpack:FindFirstChild(itemName) then return end
+
+    isUsing = true
+    lastUseTime = now
+
+    task.spawn(function()
+        pcall(useItemOnTopOfCurrent)
+        isUsing = false
+    end)
 end
 
-local function getIceCream()
-	local backpack = player:FindFirstChild("Backpack")
-	if not backpack then return nil end
-	return backpack:FindFirstChild("IceCreamCone")
-end
+-- Heartbeat 轮询检测血量
+local function onHeartbeat()
+    if not enabled then return end
+    if not humanoid or not humanoid.Parent then return end
 
-local function useIceCream()
-	if isUsing then return end
-	if not character or not humanoid then return end
-	
-	local iceCream = getIceCream()
-	if not iceCream then return end
-	
-	local now = tick()
-	if now - lastUseTime < useCooldown then return end
-	
-	local hp = humanoid.Health
-	local maxHp = humanoid.MaxHealth
-	if hp >= maxHp * healthThreshold then return end
-	
-	isUsing = true
-	lastUseTime = now
-	
-	humanoid:EquipTool(iceCream)
-	task.wait(0.1)
-	clickMouse()
-	task.wait(0.3)
-	pressKey(lastPressedSlot)
-	
-	isUsing = false
-end
+    local maxHp = humanoid.MaxHealth
+    if maxHp <= 0 then return end
 
-local function onHealthChanged(newHealth)
-	if not enabled then return end
-	local maxHp = humanoid and humanoid.MaxHealth or 100
-	if newHealth < maxHp * healthThreshold then
-		useIceCream()
-	end
+    if humanoid.Health < maxHp * healthThreshold then
+        tryUseIceCream()
+    end
 end
 
 local function unbindEvents()
-	if healthConn then healthConn:Disconnect(); healthConn = nil end
-	if charConn then charConn:Disconnect(); charConn = nil end
-	if inputConn then inputConn:Disconnect(); inputConn = nil end
+    if heartbeatConn then
+        heartbeatConn:Disconnect()
+        heartbeatConn = nil
+    end
+    if charConn then
+        charConn:Disconnect()
+        charConn = nil
+    end
 end
 
 local function bindEvents()
-	unbindEvents()
-	
-	inputConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-		if gameProcessed then return end
-		for i = 0, 9 do
-			if input.KeyCode == numberToKeyCode[i] then
-				lastPressedSlot = i
-				return
-			end
-		end
-	end)
-	
-	if humanoid then
-		healthConn = humanoid.HealthChanged:Connect(onHealthChanged)
-	end
-	
-	charConn = player.CharacterAdded:Connect(function(newChar)
-		character = newChar
-		humanoid = newChar:WaitForChild("Humanoid", 5)
-		if humanoid and enabled then
-			if healthConn then healthConn:Disconnect() end
-			healthConn = humanoid.HealthChanged:Connect(onHealthChanged)
-		end
-	end)
+    unbindEvents()
+
+    -- 使用 Heartbeat 代替 HealthChanged，每帧主动检测血量
+    heartbeatConn = RunService.Heartbeat:Connect(onHeartbeat)
+
+    charConn = player.CharacterAdded:Connect(function(newChar)
+        humanoid = newChar:WaitForChild("Humanoid", 5)
+        -- Heartbeat 已在运行，无需重新绑定，只需更新 humanoid 引用
+    end)
 end
 
 function AutoIceCream:enable()
-	if enabled then return end
-	enabled = true
-	character = player.Character
-	if character then
-		humanoid = character:FindFirstChildOfClass("Humanoid")
-	end
-	bindEvents()
+    if enabled then return end
+    enabled = true
+    local character = player.Character
+    if character then
+        humanoid = character:FindFirstChildOfClass("Humanoid")
+    end
+    bindEvents()
 end
 
 function AutoIceCream:disable()
-	if not enabled then return end
-	enabled = false
-	isUsing = false
-	unbindEvents()
+    if not enabled then return end
+    enabled = false
+    isUsing = false
+    unbindEvents()
+    humanoid = nil
 end
 
 function AutoIceCream:unload()
-	self:disable()
+    self:disable()
 end
 
 function AutoIceCream:setCooldown(seconds: number)
-	useCooldown = seconds
+    useCooldown = seconds
 end
 
 function AutoIceCream:setHealthThreshold(ratio: number)
-	healthThreshold = math.clamp(ratio, 0, 1)
+    healthThreshold = math.clamp(ratio, 0, 1)
 end
 
 return AutoIceCream

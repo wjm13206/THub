@@ -81,6 +81,82 @@ sliderLock(basicTab, "当前血量", 0, 1000, data["basicdata"]["player"]["healt
 sliderLock(basicTab, "世界重力", 0, 1000, data["basicdata"]["player"]["gravity"],
     function(v) Workspace.Gravity = v; data["basicdata"]["player"]["gravity"] = v end,
     "锁定世界重力", function(v) if v then enableLockGravity() else disableLockGravity() end end)
+basicTab:AddDivider()
+local densitySlider = basicTab:AddSlider({
+    Label = "角色密度",
+    Min = 0.0001, Max = 100, Default = getLocalPlayerDensity(), AllowInput = true, Decimals = 4,
+    Callback = function(v) setDensity(tonumber(v)) end
+})
+basicTab:AddButton({
+    Text = "恢复默认密度",
+    Callback = function()
+        restoreDensity()
+        densitySlider:SetValue(getLocalPlayerDensity(), false)
+    end
+})
+basicTab:AddSlider({
+    Label = "臀部高度",
+    Min = 0, Max = 100, Default = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid").HipHeight,
+    Callback = function(v) LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid").HipHeight = tonumber(v) end
+})
+basicTab:AddSlider({
+    Label = "最大攀爬角度",
+    Min = 0, Max = 90, Default = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid").MaxSlopeAngle,
+    Callback = function(v) LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid").MaxSlopeAngle = tonumber(v) end
+})
+basicTab:AddToggle({
+    Label = "死亡时断开关节",
+    Default = LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid").BreakJointsOnDeath,
+    Callback = function(v) LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid").BreakJointsOnDeath = v end
+})
+basicTab:AddToggle({
+    Label = "控制玩家名称显示距离",
+    Default = false,
+    Callback = function(v)
+        data["basicdata"]["modify"]["PlayerDisplayNameDistance"] = v
+        pdhdset()
+    end
+})
+basicTab:AddInput({
+    Label = "名称显示距离",
+    Placeholder = "输入数字",
+    Default = data["basicdata"]["modify"]["AllPlayerDisplayNameDistance"],
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then
+            data["basicdata"]["modify"]["AllPlayerDisplayNameDistance"] = num
+            pdhdset()
+        end
+    end
+})
+basicTab:AddToggle({
+    Label = "控制玩家生命值显示距离",
+    Default = false,
+    Callback = function(v)
+        data["basicdata"]["modify"]["PlayerHealthDistance"] = v
+        phdset()
+    end
+})
+basicTab:AddInput({
+    Label = "生命值显示距离",
+    Placeholder = "输入数字",
+    Default = data["basicdata"]["modify"]["AllPlayerHealthDistance"],
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then
+            data["basicdata"]["modify"]["AllPlayerHealthDistance"] = num
+            phdset()
+        end
+    end
+})
+basicTab:AddToggle({
+    Label = "始终显示玩家生命值",
+    Default = false,
+    Callback = function(v)
+        data["basicdata"]["modify"]["AlwayShowPlayerHealth"] = v
+        asphset()
+    end
+})
 
 -- ===== 工具 Tab =====
 local ToolsTab = mainWindow:CreateTab({ Name = "工具", HasIcon = true, IconName = "wrench" })
@@ -94,6 +170,8 @@ if isMobile then
     end
 end
 ToolsTab:AddTitle("各种实用工具")
+ToolsTab:AddDivider()
+ToolsTab:AddLabel("📌 其他")
 ToolsTab:AddToggle({
     Label = "防挂机",
     Default = true,
@@ -104,6 +182,8 @@ ToolsTab:AddToggle({
     Default = false,
     Callback = function(v) if v then enableKeepTHub() else disableKeepTHub() end end
 })
+ToolsTab:AddDivider()
+ToolsTab:AddLabel("🏃 移动类")
 enableToggle(ToolsTab, "飞行", function()
     FlyModule.enable()
     ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl+" .. FlyModule.getbindkey().Name .. "开关飞行状态", Type = "info", Duration = 5 })
@@ -120,9 +200,17 @@ enableToggle(ToolsTab, "点击传送", function()
     TeleportModule.enable()
     ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl并点击来传送", Type = "info", Duration = 5 })
 end, function() TeleportModule.disable() end)
+ToolsTab:AddDivider()
+ToolsTab:AddLabel("👁 显示类")
 enableToggle(ToolsTab, "玩家透视", function() PlayerESP.enable() end, function() PlayerESP.disable() end)
 enableToggle(ToolsTab, "NPC透视", function() data["basicdata"]["releasetools"]["npc"]:enable() end, function() data["basicdata"]["releasetools"]["npc"]:disable() end)
 enableToggle(ToolsTab, "TPWalk", function() tpWalk:Enabled(true) end, function() tpWalk:Enabled(false) end)
+enableToggle(ToolsTab, "TPJump", function()
+    TPJump:Enabled(true)
+    ChronixUI:Notify({ Title = "提示", Content = "在设置中可更改跳跃高度", Type = "info" })
+end, function() TPJump:Enabled(false) end)
+ToolsTab:AddDivider()
+ToolsTab:AddLabel("🎮 控制类")
 enableToggle(ToolsTab, "鼠标解锁", function()
     MouseUnlockModule.enable()
     ChronixUI:Notify({ Title = "提示", Content = "按下K+L组合键开关解锁鼠标", Type = "info", Duration = 5 })
@@ -145,6 +233,8 @@ enableToggle(ToolsTab, "望远镜", function()
     data["basicdata"]["releasetools"]["zoom"]:enable()
     ChronixUI:Notify({ Title = "提示", Content = "按住" .. tostring(data["basicdata"]["releasetools"]["zoom"]:GetBindKey()):gsub("^Enum%.%w+%.", "") .. "键放大", Type = "info", Duration = 5 })
 end, function() data["basicdata"]["releasetools"]["zoom"]:disable() end)
+ToolsTab:AddDivider()
+ToolsTab:AddLabel("🧰 辅助类")
 enableToggle(ToolsTab, "隐身", function() PlayerVisibleModule.enable() end, function() PlayerVisibleModule.disable() end)
 enableToggle(ToolsTab, "查看落脚点", function() FootstepHighlighter.enable() end, function() FootstepHighlighter.disable() end)
 enableToggle(ToolsTab, "落地特效", function() LandingEffect.enable() end, function() LandingEffect.disable() end)
@@ -197,6 +287,43 @@ ToolsTab:AddToggle({
 enableToggle(ToolsTab, "空中移动", function() AirWalk.enable() end, function() AirWalk.disable() end)
 enableToggle(ToolsTab, "无摔落伤害", function() NoFall.enable() end, function() NoFall.disable() end)
 enableToggle(ToolsTab, "瞬间交互", function() InstantInteraction.enable() end, function() InstantInteraction.disable() end)
+ToolsTab:AddToggle({
+    Label = "自动触发触点实例",
+    Default = false,
+    Callback = function(v)
+        if v then TCPTrigger.enable("Touch") else TCPTrigger.disable("Touch") end
+    end
+})
+ToolsTab:AddToggle({
+    Label = "自动触发点击触发实例",
+    Default = false,
+    Callback = function(v)
+        if v then TCPTrigger.enable("Click") else TCPTrigger.disable("Click") end
+    end
+})
+ToolsTab:AddToggle({
+    Label = "自动触发可交互实例",
+    Default = false,
+    Callback = function(v)
+        if v then TCPTrigger.enable("Prompt") else TCPTrigger.disable("Prompt") end
+    end
+})
+ToolsTab:AddInput({
+    Label = "自动触发距离",
+    Placeholder = "",
+    Default = TCPTrigger.getDistance(),
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then TCPTrigger.setDistance(num) end
+    end
+})
+ToolsTab:AddToggle({
+    Label = "循环触发（100/秒）",
+    Default = false,
+    Callback = function(v)
+        if v then TCPTrigger.enableLoop() else TCPTrigger.disableLoop() end
+    end
+})
 enableToggle(ToolsTab, "平移", function()
     movementModule.enable()
     ChronixUI:Notify({ Title = "提示", Content = "按下↑↓←→键进行平移", Type = "info", Duration = 5 })
@@ -221,6 +348,13 @@ ToolsTab:AddToggle({
         else
             infjumpenable(false)
         end
+    end
+})
+ToolsTab:AddToggle({
+    Label = "边缘跳跃",
+    Default = false,
+    Callback = function(v)
+        edgeJumpEnable(v)
     end
 })
 -- 自动跳跃：0.2 秒定时的后台循环代替 Heartbeat 每帧回调；
@@ -257,19 +391,36 @@ ToolsTab:AddToggle({
         end
     end
 })
-enableToggle(ToolsTab, "固定到世界", function()
+enableToggle(ToolsTab, "锚定到世界", function()
     LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.Anchored = true
 end, function()
     LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.Anchored = false
 end)
 enableToggle(ToolsTab, "旁观模式", function() SpectatorModule.start() end, function() SpectatorModule.close() end)
 enableToggle(ToolsTab, "摄像头穿墙", function() NoclipCam.enable(LocalPlayer) end, function() NoclipCam.disable() end)
+ToolsTab:AddDivider()
+ToolsTab:AddLabel("🛡 防御类")
 ToolsTab:AddToggle({ Label = "防击倒", Default = false, Callback = function(v) if v then enableAntiFall() else disableAntiFall() end end })
-enableToggle(ToolsTab, "晕厥康复", function() StandRecovery:enableDetection() end, function() StandRecovery:disableDetection() end)
 enableToggle(ToolsTab, "防甩飞", function() FlingDetector.enable(LocalPlayer) end, function() FlingDetector.disable() end)
 enableToggle(ToolsTab, "反物理劫持", function() AntiVoidModule.enable() end, function() AntiVoidModule.disable() end)
 enableToggle(ToolsTab, "移除移动部件", function() MovingPartCleaner.enable() end, function() MovingPartCleaner.disable() end)
 enableToggle(ToolsTab, "防御立场", function() DefenseField.enable() end, function() DefenseField.disable() end)
+ToolsTab:AddToggle({
+    Label = "防虚空伤害",
+    Default = false,
+    Callback = function(v)
+        if v then
+            if Workspace.FallenPartsDestroyHeight == Workspace.FallenPartsDestroyHeight then
+                data["basicdata"]["otherdata"]["FallenPartsDestroyHeight"] = Workspace.FallenPartsDestroyHeight
+            end
+            Workspace.FallenPartsDestroyHeight = 0 / 0
+        else
+            Workspace.FallenPartsDestroyHeight = data["basicdata"]["otherdata"]["FallenPartsDestroyHeight"]
+        end
+    end
+})
+ToolsTab:AddDivider()
+ToolsTab:AddLabel("🔍 检测类")
 ToolsTab:AddToggle({
     Label = "管理员检测",
     Default = false,
@@ -311,6 +462,8 @@ ToolsTab:AddToggle({
         end
     end
 })
+ToolsTab:AddDivider()
+ToolsTab:AddLabel("🛠 开发工具类")
 enableToggle(ToolsTab, "模型删除工具", function()
     DeleteTool.enable()
     ChronixUI:Notify({ Title = "提示", Content = "按住Ctrl键点击来删除指向的模型", Type = "info", Duration = 5 })
@@ -392,9 +545,12 @@ ToolsTab:AddButton({ Text = "触发所有可交互实例", Callback = function()
 		ChronixUI:Notify({ Title = "错误", Content = "你的执行器不支持此功能。", Type = "error", Duration = 5 })
 	end
 end })
+ToolsTab:AddDivider()
+ToolsTab:AddLabel("💾 数据修改类")
 ToolsTab:AddButton({ Text = "回满血", Callback = function() LocalPlayer.Character.Humanoid.Health = LocalPlayer.Character.Humanoid.MaxHealth end })
 ToolsTab:AddButton({ Text = "自杀", Callback = function() LocalPlayer.Character.Humanoid.Health = 0 end })
 ToolsTab:AddButton({ Text = "强制自杀", Callback = function() respawn() end })
+ToolsTab:AddButton({ Text = "强制自杀2", Callback = function() respawn2() end })
 ToolsTab:AddButton({ Text = "原地重生", Callback = function() refresh() end })
 ToolsTab:AddButton({ Text = "设置当前位置为重生点", Callback = function() data["basicdata"]["releasetools"]["spawnpos"] = LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RootPart.CFrame end })
 ToolsTab:AddButton({ Text = "恢复默认重生点", Callback = function() data["basicdata"]["releasetools"]["spawnpos"] = nil end })
@@ -914,6 +1070,7 @@ playStopButton = musicTab:AddButton({
                 end
             end)
             if success and productInfo then
+                data["basicdata"]["otherdata"]["musicbox"]["Looped"] = false
                 data["basicdata"]["otherdata"]["musicbox"]:Play()
                 data["basicdata"]["otherdata"]["musicData"]["isPlay"] = true
                 data["basicdata"]["otherdata"]["musicData"]["isPause"] = false
@@ -952,14 +1109,84 @@ pauseResumeButton = musicTab:AddButton({
         end
     end
 })
+-- 播放模式：正常 / 单曲循环 / 顺序播放 / 随机播放（顺序与随机基于预设 musicIds 列表）
+local PLAY_MODE_ORDER = { "normal", "single", "sequence", "random" }
+local PLAY_MODE_TEXT = {
+    normal = "▶ 播放模式：正常播放",
+    single = "🔂 播放模式：单曲循环",
+    sequence = "🔁 播放模式：顺序播放",
+    random = "🔀 播放模式：随机播放",
+}
+local PLAY_MODE_TIPS = {
+    normal = "播完停止",
+    single = "单曲循环",
+    sequence = "按预设列表顺序播放",
+    random = "预设列表随机播放",
+}
+local function playNextSong()
+    local md = data["basicdata"]["otherdata"]["musicData"]
+    local mb = data["basicdata"]["otherdata"]["musicbox"]
+    local mode = md.playMode or "normal"
+    if mode == "single" then
+        mb:Stop()
+        task.wait(0.1)
+        mb.TimePosition = 0
+        mb:Play()
+        return true
+    elseif mode == "sequence" or mode == "random" then
+        local list = md.musicIds
+        if not list or #list == 0 then return false end
+        local nextId
+        if mode == "sequence" then
+            local idx = table.find(list, md.currentId)
+            if not idx or idx >= #list then return false end
+            nextId = list[idx + 1]
+        else
+            nextId = list[1]
+            if #list > 1 then
+                for _ = 1, 20 do
+                    nextId = list[math.random(#list)]
+                    if nextId ~= md.currentId then break end
+                end
+            end
+        end
+        md.currentId = nextId
+        mb.SoundId = "rbxassetid://" .. nextId
+        local waited = 0
+        while not mb.IsLoaded and waited < 5 do task.wait(0.1); waited = waited + 0.1 end
+        mb.TimePosition = 0
+        mb:Play()
+        md.isPlay = true
+        md.isPause = false
+        if playStopButton then playStopButton.Text = "⏹️ 停止" end
+        if pauseResumeButton then pauseResumeButton.Text = "⏸️ 暂停" end
+        return true
+    end
+    return false
+end
 loopButton = musicTab:AddButton({
-    Text = "🔄 循环播放",
+    Text = PLAY_MODE_TEXT[data["basicdata"]["otherdata"]["musicData"]["playMode"] or "normal"],
     Callback = function()
-        data["basicdata"]["otherdata"]["musicbox"]["Looped"] = not data["basicdata"]["otherdata"]["musicbox"]["Looped"]
-        loopButton.Text = data["basicdata"]["otherdata"]["musicbox"]["Looped"] and "🔁 不循环播放" or "🔄 循环播放"
-        ChronixUI:Notify({ Title = "设置已更改", Content = data["basicdata"]["otherdata"]["musicbox"]["Looped"] and "已开启循环播放" or "已关闭循环播放", Type = "info", Duration = 1 })
+        local md = data["basicdata"]["otherdata"]["musicData"]
+        local idx = table.find(PLAY_MODE_ORDER, md.playMode) or 1
+        idx = idx % #PLAY_MODE_ORDER + 1
+        md.playMode = PLAY_MODE_ORDER[idx]
+        data["basicdata"]["otherdata"]["musicbox"]["Looped"] = false
+        loopButton.Text = PLAY_MODE_TEXT[md.playMode]
+        ChronixUI:Notify({ Title = "播放模式", Content = PLAY_MODE_TIPS[md.playMode], Type = "info", Duration = 2 })
     end
 })
+if musicEndedConn then pcall(function() musicEndedConn:Disconnect() end) end
+musicEndedConn = data["basicdata"]["otherdata"]["musicbox"].Ended:Connect(function()
+    local md = data["basicdata"]["otherdata"]["musicData"]
+    if not md.isPlay then return end
+    local ok = playNextSong()
+    if not ok then
+        md.isPlay = false
+        md.isPause = false
+        if playStopButton then playStopButton.Text = "▶️ 播放" end
+    end
+end)
 musicTab:AddDivider()
 musicTab:AddLabel("音量控制")
 volumeLabel = musicTab:AddLabel(string.format("当前音量: %.0f%%", data["basicdata"]["otherdata"]["musicbox"]["Volume"] * 100))
@@ -1559,6 +1786,32 @@ serverTab:AddButton({
     end
 })
 serverTab:AddDivider()
+serverTab:AddLabel("👥 进入好友所在服务器")
+serverTab:AddInput({
+    Label = "好友名字",
+    Placeholder = "输入好友的用户名",
+    Default = "",
+    Callback = function(text)
+        local ok, userId = pcall(function()
+            return Players:GetUserIdFromNameAsync(text)
+        end)
+        if not ok or not userId then
+            ChronixUI:Notify({ Title = "错误", Content = "找不到该玩家", Type = "error", Duration = 3 })
+            return
+        end
+        local ok2, err = pcall(function()
+            Services.ExperienceService:LaunchExperience({
+                placeId = game.PlaceId,
+                gameInstanceId = nil,
+                referredByPlayerId = userId,
+            })
+        end)
+        if not ok2 then
+            ChronixUI:Notify({ Title = "进入失败", Content = tostring(err), Type = "error", Duration = 3 })
+        end
+    end
+})
+serverTab:AddDivider()
 serverTab:AddLabel("💡 点击刷新按钮获取当前游戏的公共服务器")
 serverTab:AddLabel("⚠️ 服务器数据来自 Roblox 官方 API，可能会有延迟")
 refreshServerList()
@@ -1570,6 +1823,41 @@ hankerTab:AddDivider()
 hankerTab:AddLabel("普通功能")
 enableToggle(hankerTab, "循环OOF", function() LoopOofModule.enable() end, function() LoopOofModule.disable() end)
 hankerTab:AddButton({ Text = "获得打飞机工具", Callback = function() getjerktool() end })
+hankerTab:AddButton({ Text = "击杀贴在你身上的人", Callback = function() fakeout() end })
+hankerTab:AddDivider()
+hankerTab:AddLabel("控制工具")
+enableToggle(hankerTab, "环绕工具", function() OrbitTools:Enable() end, function() OrbitTools:Disable() end)
+hankerTab:AddInput({
+    Label = "环绕范围",
+    Placeholder = "",
+    Default = 8,
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then OrbitTools:SetOffset(num) end
+    end
+})
+hankerTab:AddInput({
+    Label = "环绕速度",
+    Placeholder = "",
+    Default = 1,
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then OrbitTools:SetSpeed(num) end
+    end
+})
+hankerTab:AddSlider({
+    Label = "环绕模式",
+    Min = 1, Max = 30, Default = 1,
+    Callback = function(v) OrbitTools:SetMode(v) end
+})
+hankerTab:AddInput({
+    Label = "把工具附着在其他玩家身上",
+    Placeholder = "请输入玩家名(留空以默认)",
+    Default = "",
+    Callback = function(text)
+        OrbitTools:SetTarget(text)
+    end
+})
 hankerTab:AddDivider()
 hankerTab:AddLabel("背起了行囊")
 hankerTab:AddInput({
@@ -1588,6 +1876,62 @@ enableToggle(hankerTab, "旋转击飞(Ctrl+G)", function() FlingModule.fling.set
 enableToggle(hankerTab, "飞行击飞", function() FlingModule.flyfling.enable(2) end, function() FlingModule.flyfling.disable() end)
 enableToggle(hankerTab, "走路击飞", function() FlingModule.walkfling.enable() end, function() FlingModule.walkfling.disable() end)
 enableToggle(hankerTab, "隐身击飞", function() FlingModule.invisfling.enable() end, function() FlingModule.invisfling.disable() end)
+hankerTab:AddDivider()
+hankerTab:AddLabel("指定甩飞")
+local flingTargetName = ""
+hankerTab:AddInput({
+    Label = "要甩飞的玩家名",
+    Placeholder = "支持名字/显示名前缀，random随机",
+    Default = "",
+    Callback = function(text)
+        flingTargetName = text
+    end
+})
+hankerTab:AddButton({ Text = "甩飞这个玩家", Callback = function()
+    FlingModule.tofling(flingTargetName)
+end })
+hankerTab:AddButton({ Text = "甩飞全部玩家", Callback = function()
+    FlingModule.tofling("All")
+end })
+hankerTab:AddDivider()
+hankerTab:AddLabel("黑洞")
+enableToggle(hankerTab, "黑洞", function() TornadoModule:enable() end, function() TornadoModule:disable() end)
+hankerTab:AddInput({
+    Label = "黑洞范围",
+    Placeholder = "",
+    Default = TornadoModule:getRadius(),
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then TornadoModule:setRadius(num) end
+    end
+})
+hankerTab:AddInput({
+    Label = "黑洞高度",
+    Placeholder = "",
+    Default = TornadoModule:getHeight(),
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then TornadoModule:setHeight(num) end
+    end
+})
+hankerTab:AddInput({
+    Label = "黑洞旋转速度",
+    Placeholder = "",
+    Default = TornadoModule:getRotationSpeed(),
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then TornadoModule:setRotationSpeed(num) end
+    end
+})
+hankerTab:AddInput({
+    Label = "黑洞吸引力",
+    Placeholder = "",
+    Default = TornadoModule:getAttractionStrength(),
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then TornadoModule:setAttractionStrength(num) end
+    end
+})
 hankerTab:AddDivider()
 hankerTab:AddLabel("击杀玩家")
 hankerTab:AddInput({
@@ -1830,6 +2174,26 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
             OtherGameTab:AddButton({ Text = "传送到礼物", Callback = function() TeleportToPresent(tonumber(data["othergamedata"]["AntarcticExpedition"]["giftnumber"])) end })
         elseif GetgameInfo.name == "西部森林" then
             enableToggle(OtherGameTab, "怪物标签", function() data["othergamedata"]["west_wood"]["monster"]:enable() end, function() data["othergamedata"]["west_wood"]["monster"]:disable() end)
+        elseif GetgameInfo.name == "西部森林:重制版" then
+            local ww = data["othergamedata"]["west_wood"]
+            enableToggle(OtherGameTab, "怪物透视", function() ww.remake_monster:enable(); ww.remake_monsterhighlight.apply() end, function() ww.remake_monster:disable(); ww.remake_monsterhighlight.destroy() end)
+            local voiceMuted = false
+            local voiceEvent = ReplicatedStorage:FindFirstChild("RemoteEvents") and ReplicatedStorage.RemoteEvents:FindFirstChild("Player") and ReplicatedStorage.RemoteEvents.Player:FindFirstChild("VoiceLevel")
+            if voiceEvent then
+                local originalFireServer = voiceEvent.FireServer
+                hookfunction(voiceEvent.FireServer, function(self, ...)
+                    if voiceMuted then
+                        return originalFireServer(self, 0)
+                    else
+                        return originalFireServer(self, ...)
+                    end
+                end)
+                OtherGameTab:AddToggle({
+                    Label = "开麦不漏声",
+                    Default = false,
+                    Callback = function(v) voiceMuted = v end
+                })
+            end
         elseif GetgameInfo.name == "警笛头:遗产" then
             local sl = data["othergamedata"]["sirenhead_legacy"]
             enableToggle(OtherGameTab, "透视盒子", function() sl.cratemodule.apply(); sl.cratenametagmodule:enable() end, function() sl.cratemodule.destroy(); sl.cratenametagmodule:disable() end)
@@ -1895,8 +2259,41 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
             })
             OtherGameTab:AddButton({ Text = "删除全部实体(无法关闭)", Callback = function() enableDeleteEntity() end })
         elseif GetgameInfo.name == "深渊" then
+            OtherGameTab:AddToggle({
+                Label = "无限二段跳能量",
+                Default = false,
+                Callback = function(v) abyssDoubleJumpEnable(v) end
+            })
             OtherGameTab:AddButton({ Text = "一键获取全地图深渊能量和回音", Callback = function()
-                OBOTeleportModule.TeleportToParts({"AbyssalEnergy", "BigAbyssalEnergy", "Echo"}, 0.01)
+                local Event = ReplicatedStorage:FindFirstChild("CoinQuestCollectedEvent")
+                if not Event then
+                    ChronixUI:Notify({ Title = "错误", Content = "未找到深渊能量事件", Type = "error", Duration = 3 })
+                    return
+                end
+                local function fireWithConcurrency(totalItems, numThreads)
+                    local batchSize = math.ceil(totalItems / numThreads)
+                    for thread = 0, numThreads - 1 do
+                        task.spawn(function()
+                            local startNum = thread * batchSize
+                            local endNum = math.min((thread + 1) * batchSize - 1, totalItems - 1)
+                            for i = startNum, endNum do
+                                Event:FireServer(i, false)
+                            end
+                        end)
+                    end
+                end
+                fireWithConcurrency(20000, 100)
+                task.spawn(function()
+                    for i = 1000000, 1000500 do
+                        Event:FireServer(i, false)
+                    end
+                end)
+                ChronixUI:Notify({
+                    Title = "正在获取全部深渊能量和回音",
+                    Content = "请等待，会存在延迟，在结束期间不要退出游戏。\n获取完毕后重新加入游戏将会刷新所有实例。",
+                    Type = "info",
+                    Duration = 20
+                })
             end })
             OtherGameTab:AddButton({ Text = "一键解锁全地图路径点", Callback = function()
                 OBOTeleportModule.TeleportToParts("SpawnLocation", 0.1)
@@ -1996,7 +2393,7 @@ for _, GetgameInfo in ipairs(data["Supported_Games"]) do
             })
         elseif GetgameInfo.name == "后悔电梯" then
             OtherGameTab:AddLabel("通用")
-            enableToggle(OtherGameTab, "自动舔冰淇凌（确保快捷栏中有冰淇凌）", function() Regretevator_AutoIceCream:enable() end, function() Regretevator_AutoIceCream:disable() end)
+            enableToggle(OtherGameTab, "自动舔冰淇凌（确保背包中有冰淇淋）", function() Regretevator_AutoIceCream:enable() end, function() Regretevator_AutoIceCream:disable() end)
             local rg = data["othergamedata"]["Regretevator"]
             enableToggle(OtherGameTab, "透视硬币", function() rg.coins.apply(); rg.coinsnt:enable() end, function() rg.coins.destroy(); rg.coinsnt:disable() end)
             OtherGameTab:AddLabel("Bugbo楼层")
@@ -2189,6 +2586,17 @@ settingsContent:AddInput({
         local num = tonumber(text)
         if num then
             movementModule.SetDistance(num)
+        end
+    end
+})
+settingsContent:AddInput({
+    Label = "TPJump爆发强度",
+    Placeholder = "",
+    Default = TPJump:GetBoostPower(),
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then
+            TPJump:SetBoostPower(num)
         end
     end
 })

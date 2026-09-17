@@ -28,6 +28,7 @@ unloadTHub = function()
     if data["basicdata"]["releasetools"]["supernightvision"] then Lighting.Brightness = data["basicdata"]["releasetools"]["originalBrightness"]; data["basicdata"]["releasetools"]["supernightvision"] = false end
     if data["basicdata"]["releasetools"]["nightvision"] then Lighting.Ambient = Color3.new(0, 0, 0); data["basicdata"]["releasetools"]["nightvision"] = false end
     data["basicdata"]["otherdata"]["musicbox"]:Stop()
+    if musicEndedConn then pcall(function() musicEndedConn:Disconnect() end); musicEndedConn = nil end
     data["basicdata"]["otherdata"]["testSound"]:Stop()
     local colorCorrection = Lighting:FindFirstChild("THub_ColorCorrection")
     if colorCorrection then colorCorrection:Destroy() end
@@ -35,7 +36,14 @@ unloadTHub = function()
     if next(shownParts) ~= nil then showpartsfunction(false) end
 
     tpWalk:unload()
-    StandRecovery:unload()
+    for _, conn in ipairs(data["basicdata"]["modify"]["PDND_Connect"]) do conn:Disconnect() end
+    for _, conn in ipairs(data["basicdata"]["modify"]["PHD_Connect"]) do conn:Disconnect() end
+    for _, conn in ipairs(data["basicdata"]["modify"]["ASPH_Connect"]) do conn:Disconnect() end
+    if data["basicdata"]["releasetools"]["edgejump"] then edgeJumpEnable(false) end
+    if data["othergamedata"]["abyss"]["enableinfdoublejump"] then abyssDoubleJumpEnable(false) end
+    TPJump:unload()
+    TornadoModule:unload()
+    OrbitTools:Unload()
     HighlightModule.unload()
     PlayerLightModule:unloadAll()
     SpectatorModule.unload()
@@ -61,6 +69,7 @@ unloadTHub = function()
     ScrollSwitch:unload()
     Regretevator_AutoIceCream:unload()
     InstantInteraction.unload()
+    TCPTrigger.unload()
     DeleteTool.unload()
     GuiDeleter.unload()
     AntiKickModule.unload()
