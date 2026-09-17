@@ -38,42 +38,37 @@ local function sendMessage(msg)
     end)
 end
 
--- 主循环
+local loopThread = nil
 local function startLoop()
-    if currentLoop then
-        currentLoop:Disconnect()
-        currentLoop = nil
-    end
+    if loopThread then return end
 
-    currentLoop = RunService.Heartbeat:Connect(function()
-        if not isActive or #messages == 0 then
-            return
+    loopThread = task.spawn(function()
+        while isActive do
+            if #messages > 0 then
+                local msg
+                if isRandom then
+                    msg = messages[math.random(1, #messages)]
+                else
+                    msg = messages[currentIndex]
+                    currentIndex = currentIndex % #messages + 1
+                end
+                sendMessage(msg)
+            end
+            task.wait(interval)
         end
-
-        local msg
-        if isRandom then
-            msg = messages[math.random(1, #messages)]
-        else
-            msg = messages[currentIndex]
-            currentIndex = currentIndex % #messages + 1
-        end
-        sendMessage(msg)
-
-        currentLoop:Disconnect()
-        currentLoop = nil
-        task.wait(interval)
-        if isActive then
-            startLoop()
-        end
+        loopThread = nil
     end)
-    table.insert(connections, currentLoop)
 end
 
 -- 停止循环
 local function stopLoop()
     isActive = false
+    if loopThread then
+        pcall(task.cancel, loopThread)
+        loopThread = nil
+    end
     if currentLoop then
-        currentLoop:Disconnect()
+        pcall(function() currentLoop:Disconnect() end)
         currentLoop = nil
     end
 end

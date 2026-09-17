@@ -323,15 +323,15 @@ function showpartsfunction(enable)
     if enable then
         for i,v in pairs(Workspace:GetDescendants()) do
             if v:IsA("BasePart") and v.Transparency == 1 then
-                if not table.find(shownParts,v) then
-                    table.insert(shownParts,v)
-                end
+                shownParts[v] = true
                 v.Transparency = 0
             end
         end
     else
-        for i,v in pairs(shownParts) do
-            v.Transparency = 1
+        for part in pairs(shownParts) do
+            if part and part.Parent then
+                part.Transparency = 1
+            end
         end
         shownParts = {}
     end
@@ -344,12 +344,51 @@ function formatUsername(player)
 	return player.Name
 end
 
+
+
+local xrayApplied = {}
+local xrayAddedConn = nil
+local xrayRemovingConn = nil
+local function isXrayTarget(part)
+    if not part:IsA("BasePart") then return false end
+    local parent = part.Parent
+    if not parent then return false end
+    if parent:FindFirstChildWhichIsA("Humanoid") then return false end
+    local grand = parent.Parent
+    if grand and grand:FindFirstChildWhichIsA("Humanoid") then return false end
+    return true
+end
 function xray(enabled)
-	for _, v in pairs(Workspace:GetDescendants()) do
-		if v:IsA("BasePart") and not v.Parent:FindFirstChildWhichIsA("Humanoid") and not v.Parent.Parent:FindFirstChildWhichIsA("Humanoid") then
-			v.LocalTransparencyModifier = enabled and 0.5 or 0
-		end
-	end
+    if enabled then
+        for _, v in pairs(Workspace:GetDescendants()) do
+            if isXrayTarget(v) then
+                v.LocalTransparencyModifier = 0.5
+                xrayApplied[v] = true
+            end
+        end
+        if not xrayAddedConn then
+            xrayAddedConn = Workspace.DescendantAdded:Connect(function(d)
+                if xrayApplied[d] == nil and isXrayTarget(d) then
+                    d.LocalTransparencyModifier = 0.5
+                    xrayApplied[d] = true
+                end
+            end)
+        end
+        if not xrayRemovingConn then
+            xrayRemovingConn = Workspace.DescendantRemoving:Connect(function(d)
+                xrayApplied[d] = nil
+            end)
+        end
+    else
+        for part in pairs(xrayApplied) do
+            if part and part.Parent then
+                pcall(function() part.LocalTransparencyModifier = 0 end)
+            end
+        end
+        xrayApplied = {}
+        if xrayAddedConn then xrayAddedConn:Disconnect(); xrayAddedConn = nil end
+        if xrayRemovingConn then xrayRemovingConn:Disconnect(); xrayRemovingConn = nil end
+    end
 end
 
 function maskStringMiddle(str)
@@ -566,16 +605,18 @@ function infjumpenable(state)
     end
 end
 
+
+
+local SMALL_CAPS_MAP = {
+    a='ᴀ', b='ʙ', c='ᴄ', d='ᴅ', e='ᴇ', f='ғ', g='ɢ', h='ʜ', i='ɪ', j='ᴊ',
+    k='ᴋ', l='ʟ', m='ᴍ', n='ɴ', o='ᴏ', p='ᴘ', q='ǫ', r='ʀ', s='s', t='ᴛ',
+    u='ᴜ', v='ᴠ', w='ᴡ', x='x', y='ʏ', z='ᴢ',
+    A='ᴀ', B='ʙ', C='ᴄ', D='ᴅ', E='ᴇ', F='ғ', G='ɢ', H='ʜ', I='ɪ', J='ᴊ',
+    K='ᴋ', L='ʟ', M='ᴍ', N='ɴ', O='ᴏ', P='ᴘ', Q='ǫ', R='ʀ', S='s', T='ᴛ',
+    U='ᴜ', V='ᴠ', W='ᴡ', X='x', Y='ʏ', Z='ᴢ'
+}
 function convertToSmallCaps(text)
-    local map = {
-        a='ᴀ', b='ʙ', c='ᴄ', d='ᴅ', e='ᴇ', f='ғ', g='ɢ', h='ʜ', i='ɪ', j='ᴊ',
-        k='ᴋ', l='ʟ', m='ᴍ', n='ɴ', o='ᴏ', p='ᴘ', q='ǫ', r='ʀ', s='s', t='ᴛ',
-        u='ᴜ', v='ᴠ', w='ᴡ', x='x', y='ʏ', z='ᴢ',
-        A='ᴀ', B='ʙ', C='ᴄ', D='ᴅ', E='ᴇ', F='ғ', G='ɢ', H='ʜ', I='ɪ', J='ᴊ',
-        K='ᴋ', L='ʟ', M='ᴍ', N='ɴ', O='ᴏ', P='ᴘ', Q='ǫ', R='ʀ', S='s', T='ᴛ',
-        U='ᴜ', V='ᴠ', W='ᴡ', X='x', Y='ʏ', Z='ᴢ'
-    }
-    return (text:gsub('[a-zA-Z]', map))
+    return (text:gsub('[a-zA-Z]', SMALL_CAPS_MAP))
 end
 
 function hasNoSmallCapsAndHasLetters(text)

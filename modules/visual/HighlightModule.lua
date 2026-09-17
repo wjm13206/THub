@@ -157,6 +157,19 @@ local function isDescendantOfPathLevel(obj, targetPathLevel)
     return false, nil
 end
 
+
+local function pathFuzzyHit(pathStr, patterns)
+    if type(patterns) == "table" then
+        for _, term in ipairs(patterns) do
+            if not string.find(pathStr, term, 1, true) then
+                return false
+            end
+        end
+        return true
+    end
+    return string.find(pathStr, patterns, 1, true) ~= nil
+end
+
 -- 创建高亮器实例
 -- @param modelName     要匹配的名称/路径
 -- @param matchMode     "only" 完全匹配, "fuzzy" 模糊匹配, "path" 路径绝对匹配, "pathFuzzy" 路径模糊匹配
@@ -348,15 +361,9 @@ local function createHighlighterInstance(modelName, matchMode, colorPresetKey, b
                 local obj = allObjects[i]
                 
                 if self.matchMode == "pathFuzzy" then
-                    -- 路径模糊匹配：检查对象路径并处理
-                    local objPath = getFullPath(obj)
-                    local matchLevel = findDeepestMatchLevel(objPath, self.modelName)
-                    if matchLevel > 0 then
-                        -- 找到匹配层级，高亮对象（如果是 BasePart）
-                        -- 注意：如果 obj 是该层级对象的后代，也会被匹配到
-                        if obj:IsA("BasePart") then
-                            addHighlight(obj)
-                        end
+                    -- 路径模糊匹配：先过滤非部件（省去路径拼接），再快速命中判定
+                    if obj:IsA("BasePart") and pathFuzzyHit(getFullPath(obj), self.modelName) then
+                        addHighlight(obj)
                     end
                 else
                     -- 原有的 only/fuzzy 匹配逻辑

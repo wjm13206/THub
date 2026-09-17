@@ -98,6 +98,22 @@ local function findDeepestMatchLevel(pathStr, patterns)
 end
 
 -- -------------------------------------------------
+-- 内部工具函数：pathFuzzy 快速命中判定（与 findDeepestMatchLevel 的“>0”等价，
+-- 调用传入的匹配词均为不含 "." 的普通名称；扫描主循环只用此判定）
+-- -------------------------------------------------
+local function pathFuzzyHit(pathStr, patterns)
+	if type(patterns) == "table" then
+		for _, term in ipairs(patterns) do
+			if not string.find(pathStr, term, 1, true) then
+				return false
+			end
+		end
+		return true
+	end
+	return string.find(pathStr, patterns, 1, true) ~= nil
+end
+
+-- -------------------------------------------------
 -- 创建 NameTag 实例
 -- -------------------------------------------------
 local function createNameTagInstance(modelName, matchMode, fontSize, showDistance, customText)
@@ -268,7 +284,7 @@ local function createNameTagInstance(modelName, matchMode, fontSize, showDistanc
 						addTagToModel(obj)
 					end
 				elseif self.matchMode == "pathFuzzy" then
-					if findDeepestMatchLevel(getFullPath(obj), self.modelName) > 0 then
+					if pathFuzzyHit(getFullPath(obj), self.modelName) then
 						addTagToModel(obj)
 					end
 				else
@@ -365,9 +381,12 @@ local function createNameTagInstance(modelName, matchMode, fontSize, showDistanc
 			end
 		end)
 
-		-- 距离更新
 		if self.showDistance then
+			local lastDistUpdate = 0
 			local heartbeatConn = RunService.Heartbeat:Connect(function()
+				local now = tick()
+				if now - lastDistUpdate < 0.3 then return end
+				lastDistUpdate = now
 				self:_updateDistances()
 			end)
 			table.insert(self.connections, heartbeatConn)
@@ -436,8 +455,13 @@ local function createNameTagInstance(modelName, matchMode, fontSize, showDistanc
 			local adornee = tag.billboard.Adornee
 			if adornee and adornee.Parent then
 				local dist = (adornee.Position - rootPart.Position).Magnitude
-				local baseText = self.customText or model.Name
-				tag.label.Text = string.format("%s (%.1f)", baseText, dist)
+				-- 距离取整后变化才重设文本，避免每轮全量 UI 写入
+				local rounded = math.floor(dist * 10 + 0.5) / 10
+				if tag.lastDist ~= rounded then
+					tag.lastDist = rounded
+					local baseText = self.customText or model.Name
+					tag.label.Text = string.format("%s (%.1f)", baseText, rounded)
+				end
 			end
 		end
 	end

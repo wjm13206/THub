@@ -169,29 +169,14 @@ ToolsTab:AddToggle({
     Default = false,
     Callback = function(v) data["basicdata"]["releasetools"]["SuperLighter"]["enable"] = v end
 })
-local xrayLastUpdate = 0
-local xrayLoop = nil
-local function toggleXrayLoop(enable)
-    if enable then
-        if xrayLoop then return end
-        xrayLoop = RunService.Heartbeat:Connect(function()
-            local now = tick()
-            if now - xrayLastUpdate >= 1 then
-                xrayLastUpdate = now
-                xray(true)
-            end
-        end)
-    else
-        if xrayLoop then xrayLoop:Disconnect(); xrayLoop = nil end
-    end
-end
+
+
 ToolsTab:AddToggle({
     Label = "X光",
     Default = false,
     Callback = function(v)
         data["basicdata"]["releasetools"]["xray"] = v
-        toggleXrayLoop(v)
-        if v then xray(true) else xray(false) end
+        xray(v)
     end
 })
 ToolsTab:AddToggle({
@@ -238,32 +223,36 @@ ToolsTab:AddToggle({
         end
     end
 })
-local _autoJumpLast = 0
+-- 自动跳跃：0.2 秒定时的后台循环代替 Heartbeat 每帧回调；
+-- 用独立标志控制，循环体不触碰 data，保证 unload 置空 data 时安全
+autoJumpActive = false
+autoJumpThread = nil
 ToolsTab:AddToggle({
     Label = "自动跳跃",
     Default = false,
     Callback = function(v)
+        autoJumpActive = v
         data["basicdata"]["releasetools"]["autojump"] = v
         if v then
-            autoJumpConnection = RunService.Heartbeat:Connect(function()
-                if not data["basicdata"]["releasetools"]["autojump"] then
-                    autoJumpConnection:Disconnect()
-                    return
-                end
-                if tick() - _autoJumpLast < 0.2 then return end
-                _autoJumpLast = tick()
-                local c = LocalPlayer.Character
-                if c and c.Parent then
-                    local hum = c:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        hum:ChangeState("Jumping")
+            if autoJumpThread then return end
+            autoJumpThread = task.spawn(function()
+                while autoJumpActive do
+                    task.wait(0.2)
+                    if not autoJumpActive then break end
+                    local c = LocalPlayer.Character
+                    if c and c.Parent then
+                        local hum = c:FindFirstChildOfClass("Humanoid")
+                        if hum then
+                            hum:ChangeState("Jumping")
+                        end
                     end
                 end
+                autoJumpThread = nil
             end)
         else
-            if autoJumpConnection then
-                autoJumpConnection:Disconnect()
-                autoJumpConnection = nil
+            if autoJumpThread then
+                pcall(task.cancel, autoJumpThread)
+                autoJumpThread = nil
             end
         end
     end
@@ -548,10 +537,15 @@ waypointsData = waypointConfig.waypointsData and waypointConfig.waypointsData or
 waypointUIElements = {}
 waypointDisplayEnabled = false
 local waypointHeartbeatConnection = nil
+local waypointLastUpdate = 0
 function startWaypointHeartbeat()
     if waypointHeartbeatConnection then return end
+    waypointLastUpdate = 0
     waypointHeartbeatConnection = RunService.Heartbeat:Connect(function()
         if not waypointDisplayEnabled then return end
+        local now = tick()
+        if now - waypointLastUpdate < 0.25 then return end
+        waypointLastUpdate = now
         for _, beamData in pairs(waypointBeams) do
             if beamData.indicatorPart and beamData.indicatorPart.Parent then
                 local camera = Workspace.CurrentCamera
@@ -566,7 +560,10 @@ function startWaypointHeartbeat()
             if beamData.textLabel and beamData.textLabel.Parent then
                 local playerPosition = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position or Vector3.new(0, 0, 0)
                 local distance = (beamData.posVector - playerPosition).Magnitude
-                beamData.textLabel.Text = string.format("📍 #%d (%.1fm)\n%s", beamData.id, distance, beamData.note or "")
+                if not beamData.lastDist or math.abs(distance - beamData.lastDist) >= 1 then
+                    beamData.lastDist = distance
+                    beamData.textLabel.Text = string.format("📍 #%d (%.1fm)\n%s", beamData.id, distance, beamData.note or "")
+                end
             end
         end
     end)

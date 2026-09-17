@@ -32,7 +32,7 @@ unloadTHub = function()
     local colorCorrection = Lighting:FindFirstChild("THub_ColorCorrection")
     if colorCorrection then colorCorrection:Destroy() end
     if data["basicdata"]["releasetools"]["xray"] then xray(false) end
-    if #shownParts > 0 then showpartsfunction(false) end
+    if next(shownParts) ~= nil then showpartsfunction(false) end
 
     tpWalk:unload()
     StandRecovery:unload()
@@ -88,7 +88,9 @@ unloadTHub = function()
     if data["basicdata"]["otherdata"]["audioData"]["scanConnection"] then data["basicdata"]["otherdata"]["audioData"]["scanConnection"]:Disconnect() end
     if noclipConnection then noclipConnection:Disconnect() end
     if noclipRespawn then noclipRespawn:Disconnect() end
-    if autoJumpConnection then autoJumpConnection:Disconnect() end
+    if autoJumpActive ~= nil then autoJumpActive = false end
+    if autoJumpThread then pcall(task.cancel, autoJumpThread); autoJumpThread = nil end
+    if autoJumpConnection then pcall(function() autoJumpConnection:Disconnect() end); autoJumpConnection = nil end
     if JR then JR:Disconnect(); JR = nil end
     if testSoundEndedConn then testSoundEndedConn:Disconnect(); testSoundEndedConn = nil end
     if playerListAddedConn then playerListAddedConn:Disconnect() end

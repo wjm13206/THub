@@ -74,6 +74,10 @@ restoreSpoofHooks = uninstallSpoofHooks
 -- Track all dynamically created connections for cleanup
 local dynamicConnections = {}
 
+-- 标签更新循环控制（前向声明：clearAllConnections 需要用到）
+local labelUpdateActive = false
+local labelUpdateThread = nil
+
 local function trackConnection(name, conn)
     if dynamicConnections[name] then
         dynamicConnections[name]:Disconnect()
@@ -179,17 +183,21 @@ function disableKeepTHub()
 end
 
 --=== 5. Night Vision ===
+-- 性能：按帧比较后再写入，避免每帧无条件赋值触发渲染状态更新
 local nvConn = nil
+local NV_AMBIENT = Color3.new(1, 1, 1)
 function enableNightVision()
     if nvConn then return end
     data["basicdata"]["releasetools"]["nightvision"] = true
-    Lighting.Ambient = Color3.new(1, 1, 1)
+    Lighting.Ambient = NV_AMBIENT
     nvConn = RunService.Stepped:Connect(function()
         if not data["basicdata"]["releasetools"]["nightvision"] then
             disableNightVision()
             return
         end
-        Lighting.Ambient = Color3.new(1, 1, 1)
+        if Lighting.Ambient ~= NV_AMBIENT then
+            Lighting.Ambient = NV_AMBIENT
+        end
     end)
 end
 function disableNightVision()
@@ -212,8 +220,12 @@ function enableSuperNightVision()
             disableSuperNightVision()
             return
         end
-        Lighting.Brightness = 2
-        Lighting.ExposureCompensation = 2.5
+        if Lighting.Brightness ~= 2 then
+            Lighting.Brightness = 2
+        end
+        if Lighting.ExposureCompensation ~= 2.5 then
+            Lighting.ExposureCompensation = 2.5
+        end
     end)
 end
 function disableSuperNightVision()
@@ -234,7 +246,10 @@ function enableLockGravity()
             disableLockGravity()
             return
         end
-        Workspace.Gravity = data["basicdata"]["player"]["gravity"]
+        local target = data["basicdata"]["player"]["gravity"]
+        if Workspace.Gravity ~= target then
+            Workspace.Gravity = target
+        end
     end)
 end
 function disableLockGravity()
@@ -243,20 +258,31 @@ function disableLockGravity()
 end
 
 --=== 8. Anti Dead ===
+-- 性能：SetStateEnabled 为粘性标志，设置一次即持久有效；
+-- 循环仅做低频兜底（游戏侧改回时补设），避免每物理帧调用
 local adConn = nil
+local adLastCheck = 0
+local function applyAntiDead(hum)
+    if hum and hum.Parent and hum:GetStateEnabled(Enum.HumanoidStateType.Dead) then
+        hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+    end
+end
 function enableAntiDead()
     if adConn then return end
     data["basicdata"]["releasetools"]["antidead"] = true
+    local char = LocalPlayer.Character
+    if char then applyAntiDead(char:FindFirstChildOfClass("Humanoid")) end
+    adLastCheck = 0
     adConn = RunService.Stepped:Connect(function()
         if not data["basicdata"]["releasetools"]["antidead"] then
             disableAntiDead()
             return
         end
-        local char = LocalPlayer.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false) end
-        end
+        local now = tick()
+        if now - adLastCheck < 1 then return end
+        adLastCheck = now
+        local c = LocalPlayer.Character
+        if c then applyAntiDead(c:FindFirstChildOfClass("Humanoid")) end
     end)
 end
 function disableAntiDead()
@@ -433,11 +459,16 @@ function attachHealthLock(hum)
             hum.Health = data["basicdata"]["player"]["health"]
         end
     end)
+    -- 兜底轮询节流到 0.5 秒：属性信号负责即时响应，这里只防信号漏检
+    local lastCheck = 0
     healthHeartbeatConn = RunService.Heartbeat:Connect(function()
         if not data["basicdata"]["player"]["islockhealth"] then
             detachHealthLock()
             return
         end
+        local now = tick()
+        if now - lastCheck < 0.5 then return end
+        lastCheck = now
         if hum and hum.Parent and hum.Health ~= data["basicdata"]["player"]["health"] then
             hum.Health = data["basicdata"]["player"]["health"]
         end
@@ -456,11 +487,16 @@ function attachMaxHealthLock(hum)
             hum.MaxHealth = data["basicdata"]["player"]["maxhealth"]
         end
     end)
+    -- 兜底轮询节流到 0.5 秒：属性信号负责即时响应，这里只防信号漏检
+    local lastCheck = 0
     maxHealthHeartbeatConn = RunService.Heartbeat:Connect(function()
         if not data["basicdata"]["player"]["islockmaxhealth"] then
             detachMaxHealthLock()
             return
         end
+        local now = tick()
+        if now - lastCheck < 0.5 then return end
+        lastCheck = now
         if hum and hum.Parent and hum.MaxHealth ~= data["basicdata"]["player"]["maxhealth"] then
             hum.MaxHealth = data["basicdata"]["player"]["maxhealth"]
         end
@@ -626,7 +662,8 @@ function clearAllConnections()
     if autoLeverConn then autoLeverConn:Disconnect(); autoLeverConn = nil end
     if entityWarningConn then entityWarningConn:Disconnect(); entityWarningConn = nil end
     if disabledTypesConn then disabledTypesConn:Disconnect(); disabledTypesConn = nil end
-    if labelUpdateConn then labelUpdateConn:Disconnect(); labelUpdateConn = nil end
+    labelUpdateActive = false
+    if labelUpdateThread then pcall(task.cancel, labelUpdateThread); labelUpdateThread = nil end
     if pac then pac:Disconnect(); pac = nil end
     if prc then prc:Disconnect(); prc = nil end
 end
@@ -652,15 +689,16 @@ ChatControl:MessageReceiver(function(msgData)
 end)
 
 --======================================================================================
--- Memory/Ping/Rbxactive label updater (always on - lightweight, once per second)
-local lastTime = 0
+-- Memory/Ping/Rbxactive label updater (always on - once per second)
+-- 性能：用 1 秒定时的后台循环代替 Stepped 每物理帧回调，零每帧开销
 local memFormat = "客户端脚本占用内存: %.2f MB"
 local pingFormat = "网络延迟: %s"
 local rbxactiveFormat = "焦点检测: %s"
-local labelUpdateConn = RunService.Stepped:Connect(function()
-    local now = tick()
-    if now - lastTime >= 1 then
-        lastTime = now
+labelUpdateActive = true
+labelUpdateThread = task.spawn(function()
+    while labelUpdateActive do
+        task.wait(1)
+        if not labelUpdateActive then break end
         if memLabel then memLabel.Text = string.format(memFormat, getMemoryUsage("MB")) end
         local ping = LocalPlayer:GetNetworkPing()
         if pingLabel then pingLabel.Text = string.format(pingFormat, math.floor(ping * 1000 + 0.5) .. "ms") end

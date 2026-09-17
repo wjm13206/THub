@@ -307,7 +307,11 @@ function NPCHighlighter:updateDistances()
                     local adornee = data.billboard.Adornee
                     if adornee and adornee.Parent then
                         local distance = (adornee.Position - rootPart.Position).Magnitude
-                        data.label.Text = string.format("%s (%.1f)", data.baseName, distance)
+                        local rounded = math.floor(distance * 10 + 0.5) / 10
+                        if data.lastDist ~= rounded then
+                            data.lastDist = rounded
+                            data.label.Text = string.format("%s (%.1f)", data.baseName, rounded)
+                        end
                     end
                 end
             else
@@ -355,11 +359,16 @@ function NPCHighlighter:startListeners()
     if self.cleanupConnection then
         self.cleanupConnection:Disconnect()
     end
+    local lastCleanup = 0
     self.cleanupConnection = RunService.Heartbeat:Connect(function()
         if not self.enabled then
             return
         end
-        
+
+        local now = tick()
+        if now - lastCleanup < 2 then return end
+        lastCleanup = now
+
         local toRemove = {}
         for npcModel, data in pairs(self.npcData) do
             if data and not data.processing then
@@ -379,7 +388,11 @@ function NPCHighlighter:startListeners()
         if self.heartbeatConnection then
             self.heartbeatConnection:Disconnect()
         end
+        local lastDistUpdate = 0
         self.heartbeatConnection = RunService.Heartbeat:Connect(function()
+            local now = tick()
+            if now - lastDistUpdate < 0.3 then return end
+            lastDistUpdate = now
             self:updateDistances()
         end)
     end
