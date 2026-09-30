@@ -2063,6 +2063,97 @@ function updateFlingTeleportPlayerList()
     end
 end
 
+-- ===== 通行证绕过 Tab（仅无服务端验证服有效） =====
+local PAGbypassTab = mainWindow:CreateTab({ Name = "通行证绕过", HasIcon = true, IconName = "tickets" })
+PAGbypassTab:AddTitle("通行证绕过 - 数据验证")
+PAGbypassTab:AddLabel("原理：本地伪造购买成功回调，未付 Robux；有服务端校验的服无效")
+PAGbypassTab:AddDivider()
+local select_product = ""
+local select_gamepass = ""
+local productDropdown = PAGbypassTab:AddDropdown({
+    Label = "选择开发者产品",
+    Options = { "" },
+    Default = "",
+    Callback = function(selected) select_product = selected end
+})
+local gamepassDropdown = PAGbypassTab:AddDropdown({
+    Label = "选择游戏通行证",
+    Options = { "" },
+    Default = "",
+    Callback = function(selected) select_gamepass = selected end
+})
+local function refreshPAGlist(showNotify)
+    local ok, err = pcall(function()
+        PGpass.GetProducts()
+        PGpass.GetGamepasses()
+    end)
+    if not ok then
+        ChronixUI:Notify({ Title = "通行证绕过", Content = "枚举失败：" .. tostring(err), Type = "error", Duration = 3 })
+        return
+    end
+    local products = PGpass.GetProductNames()
+    local passes = PGpass.GetGamepassNames()
+    if #products == 0 then products = { "" } end
+    if #passes == 0 then passes = { "" } end
+    select_product = products[1] or ""
+    select_gamepass = passes[1] or ""
+    productDropdown:UpdateOptions(products)
+    gamepassDropdown:UpdateOptions(passes)
+    if mainWindow.RefreshContent then
+        mainWindow:RefreshContent()
+    end
+    if showNotify then
+        ChronixUI:Notify({ Title = "通行证绕过", Content = string.format("已刷新：%d 个产品 / %d 个通行证", #PGpass.GetProductNames(), #PGpass.GetGamepassNames()), Type = "success", Duration = 3 })
+    end
+end
+PAGbypassTab:AddButton({
+    Text = "刷新列表内容",
+    Callback = function() refreshPAGlist(true) end
+})
+PAGbypassTab:AddDivider()
+PAGbypassTab:AddButton({
+    Text = "获取选中的产品",
+    Callback = function()
+        ChronixUI:Notify({ Title = "通行证绕过", Content = "正在尝试获取产品：" .. tostring(select_product), Type = "info", Duration = 2 })
+        PGpass.BuyProduct(select_product)
+    end
+})
+PAGbypassTab:AddButton({
+    Text = "获取选中的通行证",
+    Callback = function()
+        ChronixUI:Notify({ Title = "通行证绕过", Content = "正在尝试获取通行证：" .. tostring(select_gamepass), Type = "info", Duration = 2 })
+        PGpass.BuyGamepass(select_gamepass)
+    end
+})
+PAGbypassTab:AddButton({
+    Text = "获取全部产品（逐个 0.5s，小心限频）",
+    Callback = function()
+        ChronixUI:Notify({ Title = "通行证绕过", Content = "正在尝试获取全部产品...", Type = "info", Duration = 2 })
+        task.spawn(function() PGpass.BuyAllProducts() end)
+    end
+})
+PAGbypassTab:AddButton({
+    Text = "获取全部通行证（逐个 0.5s，小心限频）",
+    Callback = function()
+        ChronixUI:Notify({ Title = "通行证绕过", Content = "正在尝试获取全部通行证...", Type = "info", Duration = 2 })
+        task.spawn(function() PGpass.BuyAllGamepasses() end)
+    end
+})
+PAGbypassTab:AddDivider()
+PAGbypassTab:AddInput({
+    Label = "手动通行证 ID",
+    Placeholder = "输入数字 ID",
+    Default = "",
+    Callback = function(text)
+        local id = tonumber(text)
+        if id then
+            PGpass.AddManualGamepass(id)
+            ChronixUI:Notify({ Title = "通行证绕过", Content = "已添加 ID：" .. tostring(id) .. "，请刷新列表", Type = "success", Duration = 2 })
+        end
+    end
+})
+task.spawn(function() pcall(refreshPAGlist, false) end)
+
 -- ===== 支持的游戏 Tab =====
 supportedgamesTab = mainWindow:CreateTab({ Name = "支持的游戏", HasIcon = true, IconName = "swords" })
 supportedgamesTab:AddTitle("支持的游戏")

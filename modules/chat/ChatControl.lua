@@ -31,7 +31,7 @@ local thumbnailSize = Enum.ThumbnailSize.Size100x100
 -- 接收消息的函数
 function chatControl:MessageReceiver(callback)
     local conn = TextChatService.MessageReceived:Connect(function(message)
-        -- 防止 TextSource 为 nil
+        -- 防止 TextSource 为 nil（系统消息直接丢弃）
         if not message.TextSource then
             return
         end
@@ -43,11 +43,18 @@ function chatControl:MessageReceiver(callback)
             return Players:GetUserThumbnailAsync(message.TextSource.UserId, thumbnailType, thumbnailSize)
         end)
         
+        local messagetext = message.Text
+        pcall(function()
+            if message.WasRewritten then
+                messagetext = "(已编辑) " .. message.RewrittenText
+            end
+        end)
+
         local msgData = {}
         msgData["sender"] = player.Name
         msgData["nickname"] = player.DisplayName
         msgData["head"] = thumbnailUrl
-        msgData["text"] = message.Text
+        msgData["text"] = messagetext
         callback(msgData)
     end)
     

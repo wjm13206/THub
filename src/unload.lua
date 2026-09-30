@@ -93,6 +93,7 @@ unloadTHub = function()
     AimBotModule.unload()
     ChatSpammer.unload()
     if DrawmeModule then DrawmeModule.unload() end
+    if PGpass then PGpass.unload() end
 
     if data["basicdata"]["otherdata"]["audioData"]["scanConnection"] then data["basicdata"]["otherdata"]["audioData"]["scanConnection"]:Disconnect() end
     if noclipConnection then noclipConnection:Disconnect() end

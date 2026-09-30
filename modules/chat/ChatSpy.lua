@@ -118,7 +118,13 @@ local function onMessageReceived(message, channel)
     if not spyOnSelf and player == LocalPlayer then return end
 
     -- 获取消息文本
-    local cleanedMessage = message.Text:gsub("[\n\r]", ""):gsub("\t", " "):gsub("[ ]+", " ")
+    local rawText = message.Text
+    pcall(function()
+        if message.WasRewritten then
+            rawText = "(已编辑) " .. message.RewrittenText
+        end
+    end)
+    local cleanedMessage = rawText:gsub("[\n\r]", ""):gsub("\t", " "):gsub("[ ]+", " ")
     if #cleanedMessage == 0 or isIgnored(cleanedMessage) then return end
 
     -- 检查频道类型 (用于队伍聊天判断)

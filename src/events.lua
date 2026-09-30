@@ -86,12 +86,38 @@ local function trackConnection(name, conn)
 end
 
 --=== 1. AntiAFK ===
+local disabledIdleConns = {}
 function enableAntiAFK()
     if dynamicConnections.antiafk then return end
     data["basicdata"]["releasetools"]["antiafk"] = true
+    local disabledAny = false
+    pcall(function()
+        local getconns = getconnections or get_signal_cons
+        if getconns then
+            for _, conn in ipairs(getconns(LocalPlayer.Idled)) do
+                pcall(function() conn:Disable() end)
+                table.insert(disabledIdleConns, conn)
+                disabledAny = true
+            end
+        end
+    end)
+    if disabledAny then
+        trackConnection("antiafk", LocalPlayer.Idled:Connect(function() end))
+        return
+    end
     trackConnection("antiafk", LocalPlayer.Idled:Connect(function()
-        Services.VirtualUser:CaptureController()
-        Services.VirtualUser:ClickButton2(Vector2.new())
+        local vimOK, vim = pcall(function() return Services.VirtualInputManager end)
+        if vimOK and vim then
+            pcall(function()
+                vim:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                vim:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+            end)
+        else
+            pcall(function()
+                Services.VirtualUser:CaptureController()
+                Services.VirtualUser:ClickButton2(Vector2.new())
+            end)
+        end
     end))
 end
 function disableAntiAFK()
@@ -99,6 +125,10 @@ function disableAntiAFK()
         dynamicConnections.antiafk:Disconnect()
         dynamicConnections.antiafk = nil
     end
+    for _, conn in ipairs(disabledIdleConns) do
+        pcall(function() conn:Enable() end)
+    end
+    disabledIdleConns = {}
     data["basicdata"]["releasetools"]["antiafk"] = false
 end
 
@@ -651,6 +681,10 @@ function clearAllConnections()
         if conn then conn:Disconnect() end
     end
     dynamicConnections = {}
+    for _, conn in ipairs(disabledIdleConns) do
+        pcall(function() conn:Enable() end)
+    end
+    disabledIdleConns = {}
     if staffWatchConn then staffWatchConn:Disconnect(); staffWatchConn = nil end
     if networkPauseConn then networkPauseConn:Disconnect(); networkPauseConn = nil end
     if keepthubConn then keepthubConn:Disconnect(); keepthubConn = nil end
