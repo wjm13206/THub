@@ -1,9 +1,9 @@
 -- https://github.com/EdgeIY/infiniteyield/commits/master/source
 --[[
-	Time:	Commits on Aug 6, 2026
-	Title:	fix bang breaking on 2 players
-	User:	Toon-arch authored last week
-	SHA:	[7c2d12a]4a3a6a59f2b891bd31dcb37648940a01a
+	Time:	Commits on Sep 25, 2026
+	Title:	Fixed changes
+	User:	7GrandDadPGN committed 3 days ago
+	SHA:	[d9d87eb]626ddb3f1be2951f2c9145e9127cda812
 ]]
 -- I18N by Chronix
 
@@ -21,6 +21,9 @@ function missing(t, f, fallback)
 end
 
 cloneref = missing("function", cloneref, function(...) return ... end)
+gethui = missing("function", gethui or get_hidden_gui)
+syn = missing("table", syn)
+syn_protect_gui = missing("function", syn and syn.protect_gui)
 sethidden =  missing("function", sethiddenproperty or set_hidden_property or set_hidden_prop)
 gethidden =  missing("function", gethiddenproperty or get_hidden_property or get_hidden_prop)
 queueteleport =  missing("function", queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport))
@@ -124,7 +127,8 @@ local iyassets = {
 	["infiniteyield/assets/minimize.png"] = "rbxassetid://2406617031",
 	["infiniteyield/assets/pin.png"] = "rbxassetid://6234691350",
 	["infiniteyield/assets/reference.png"] = "rbxassetid://3523243755",
-	["infiniteyield/assets/settings.png"] = "rbxassetid://1204397029"
+	["infiniteyield/assets/settings.png"] = "rbxassetid://1204397029",
+	["infiniteyield/assets/scrollbar.png"] = "rbxassetid://75024581433929"
 }
 
 local function getcustomasset(asset)
@@ -148,7 +152,7 @@ if makefolder and isfolder and writefile and isfile then
 			end
 		end
 		for path in iyassets do
-			if not isfile(path) then
+			if not isfile(path) and path ~= 'infiniteyield/assets/scrollbar.png' then
 				writefile(path, game:HttpGet((path:gsub("infiniteyield/", assets))))
 			end
 		end
@@ -304,20 +308,19 @@ end
 
 PARENT = nil
 MAX_DISPLAY_ORDER = 1.7976931348623157e308
-if get_hidden_gui or gethui then
-    local hiddenUI = get_hidden_gui or gethui
+if gethui then
     local Main = Instance.new("ScreenGui")
     Main.Name = randomString()
     Main.ResetOnSpawn = false
     Main.DisplayOrder = MAX_DISPLAY_ORDER
-    Main.Parent = hiddenUI()
+    Main.Parent = gethui()
     PARENT = Main
-elseif (not is_sirhurt_closure) and (syn and syn.protect_gui) then
+elseif (not is_sirhurt_closure) and syn_protect_gui then
     local Main = Instance.new("ScreenGui")
     Main.Name = randomString()
     Main.ResetOnSpawn = false
     Main.DisplayOrder = MAX_DISPLAY_ORDER
-    syn.protect_gui(Main)
+    syn_protect_gui(Main)
     Main.Parent = COREGUI
     PARENT = Main
 elseif COREGUI:FindFirstChild("RobloxGui") then
@@ -3332,60 +3335,57 @@ function CreateLabel(Name, Text)
 	end
 end
 
-function CreateJoinLabel(plr,ID)
-	if #scroll_3:GetChildren() >= 2546 then
-		scroll_3:ClearAllChildren()
-	end
-	local infoFrame = Instance.new("Frame")
-	local info1 = Instance.new("TextLabel")
-	local info2 = Instance.new("TextLabel")
-	local ImageLabel_3 = Instance.new("ImageLabel")
-	infoFrame.Name = randomString()
-	infoFrame.Parent = scroll_3
-	infoFrame.BackgroundColor3 = Color3.new(1, 1, 1)
-	infoFrame.BackgroundTransparency = 1
-	infoFrame.BorderColor3 = Color3.new(0.105882, 0.164706, 0.207843)
-	infoFrame.Size = UDim2.new(1, 0, 0, 50)
-	info1.Name = randomString()
-	info1.Parent = infoFrame
-	info1.BackgroundTransparency = 1
-	info1.BorderSizePixel = 0
-	info1.Position = UDim2.new(0, 45, 0, 0)
-	info1.Size = UDim2.new(0, 135, 1, 0)
-	info1.ZIndex = 10
-	info1.Font = Enum.Font.SourceSans
-	info1.FontSize = Enum.FontSize.Size14
-	info1.Text = "用户名: "..plr.Name.."\n加入服务器时间: "..Time()
-	info1.TextColor3 = Color3.new(1, 1, 1)
-	info1.TextWrapped = true
-	info1.TextXAlignment = Enum.TextXAlignment.Left
-	info2.Name = randomString()
-	info2.Parent = infoFrame
-	info2.BackgroundTransparency = 1
-	info2.BorderSizePixel = 0
-	info2.Position = UDim2.new(0, 185, 0, 0)
-	info2.Size = UDim2.new(0, 140, 1, -5)
-	info2.ZIndex = 10
-	info2.Font = Enum.Font.SourceSans
-	info2.FontSize = Enum.FontSize.Size14
-	info2.Text = "用户ID: "..ID.."\n账号年龄: "..plr.AccountAge.."\n加入Roblox: 加载中..."
-	info2.TextColor3 = Color3.new(1, 1, 1)
-	info2.TextWrapped = true
-	info2.TextXAlignment = Enum.TextXAlignment.Left
-	info2.TextYAlignment = Enum.TextYAlignment.Center
-	ImageLabel_3.Parent = infoFrame
-	ImageLabel_3.BackgroundTransparency = 1
-	ImageLabel_3.BorderSizePixel = 0
-	ImageLabel_3.Size = UDim2.new(0, 45, 1, 0)
-	ImageLabel_3.Image = Players:GetUserThumbnailAsync(ID, Enum.ThumbnailType.AvatarThumbnail, Enum.ThumbnailSize.Size420x420)
-	scroll_3.CanvasSize = UDim2.new(0, 0, 0, listlayout.AbsoluteContentSize.Y)
-	scroll_3.CanvasPosition = Vector2.new(0,scroll_2.CanvasPosition.Y+infoFrame.AbsoluteSize.Y)
-	wait()
-	local user = game:HttpGet("https://users.roblox.com/v1/users/"..ID)
-	local json = HttpService:JSONDecode(user)
-	local date = json["created"]:sub(1,10)
-	local splitDates = string.split(date,"-")
-	info2.Text = string.gsub(info2.Text, "加载中...",splitDates[2].."/"..splitDates[3].."/"..splitDates[1])
+function CreateJoinLabel(player, userId)
+    if #scroll_3:GetChildren() >= 2546 then
+        scroll_3:ClearAllChildren()
+    end
+    local infoFrame = Instance.new("Frame")
+    local info1 = Instance.new("TextLabel")
+    local info2 = Instance.new("TextLabel")
+    local ImageLabel_3 = Instance.new("ImageLabel")
+    infoFrame.Name = randomString()
+    infoFrame.Parent = scroll_3
+    infoFrame.BackgroundColor3 = Color3.new(1, 1, 1)
+    infoFrame.BackgroundTransparency = 1
+    infoFrame.BorderColor3 = Color3.new(0.105882, 0.164706, 0.207843)
+    infoFrame.Size = UDim2.new(1, 0, 0, 50)
+    info1.Name = randomString()
+    info1.Parent = infoFrame
+    info1.BackgroundTransparency = 1
+    info1.BorderSizePixel = 0
+    info1.Position = UDim2.new(0, 45, 0, 0)
+    info1.Size = UDim2.new(0, 135, 1, 0)
+    info1.ZIndex = 10
+    info1.Font = Enum.Font.SourceSans
+    info1.FontSize = Enum.FontSize.Size14
+    info1.Text = "用户名: " .. player.Name .. "\n加入服务器时间: " .. Time()
+    info1.TextColor3 = Color3.new(1, 1, 1)
+    info1.TextWrapped = true
+    info1.TextXAlignment = Enum.TextXAlignment.Left
+    info2.Name = randomString()
+    info2.Parent = infoFrame
+    info2.BackgroundTransparency = 1
+    info2.BorderSizePixel = 0
+    info2.Position = UDim2.new(0, 185, 0, 0)
+    info2.Size = UDim2.new(0, 140, 1, -5)
+    info2.ZIndex = 10
+    info2.Font = Enum.Font.SourceSans
+    info2.FontSize = Enum.FontSize.Size14
+    info2.Text = "用户ID: " .. userId .. "\n账户年龄: " .. player.AccountAge .. "\n加入Roblox: Loading..."
+    info2.TextColor3 = Color3.new(1, 1, 1)
+    info2.TextWrapped = true
+    info2.TextXAlignment = Enum.TextXAlignment.Left
+    info2.TextYAlignment = Enum.TextYAlignment.Center
+    ImageLabel_3.Parent = infoFrame
+    ImageLabel_3.BackgroundTransparency = 1
+    ImageLabel_3.BorderSizePixel = 0
+    ImageLabel_3.Size = UDim2.new(0, 45, 1, 0)
+    ImageLabel_3.Image = Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.AvatarThumbnail, Enum.ThumbnailSize.Size420x420)
+    scroll_3.CanvasSize = UDim2.new(0, 0, 0, listlayout.AbsoluteContentSize.Y)
+    scroll_3.CanvasPosition = Vector2.new(0, scroll_2.CanvasPosition.Y + infoFrame.AbsoluteSize.Y)
+    local date = os.date("!%Y-%m-%d", os.time() - (player.AccountAge * 86400))
+    local splitDates = string.split(date, "-")
+    info2.Text = string.gsub(info2.Text, "加载中...", splitDates[2] .. "/" .. splitDates[3] .. "/" .. splitDates[1])
 end
 
 IYMouse.KeyDown:Connect(function(Key)
@@ -5104,31 +5104,33 @@ local historyCount = 0
 local split=" "
 local lastBreakTime = 0
 function execCmd(cmdStr,speaker,store)
-	cmdStr = cmdStr:gsub("%s+$","")
+	cmdStr = cmdStr:gsub("%s+$", "")
 	task.spawn(function()
 		local rawCmdStr = cmdStr
-		cmdStr = string.gsub(cmdStr,"\\\\","%%BackSlash%%")
-		local commandsToRun = splitString(cmdStr,"\\")
-		for i,v in pairs(commandsToRun) do
-			v = string.gsub(v,"%%BackSlash%%","\\")
-			local x,y,num = v:find("^(%d+)%^")
+		cmdStr = string.gsub(cmdStr, "\\\\", "%%BackSlash%%")
+
+		local commandsToRun = splitString(cmdStr, "\\")
+		for i, v in pairs(commandsToRun) do
+			v = string.gsub(v, "%%BackSlash%%", "\\")
+			local x, y, num = v:find("^(%d+)%^")
 			local cmdDelay = 0
 			local infTimes = false
+
 			if num then
-				v = v:sub(y+1)
-				local x,y,del = v:find("^([%d%.]+)%^")
+				v = v:sub(y + 1)
+				local x, y, del = v:find("^([%d%.]+)%^")
 				if del then
-					v = v:sub(y+1)
+					v = v:sub(y + 1)
 					cmdDelay = tonumber(del) or 0
 				end
 			else
-				local x,y = v:find("^inf%^")
+				local x, y = v:find("^inf%^")
 				if x then
 					infTimes = true
-					v = v:sub(y+1)
-					local x,y,del = v:find("^([%d%.]+)%^")
+					v = v:sub(y + 1)
+					local x, y, del = v:find("^([%d%.]+)%^")
 					if del then
-						v = v:sub(y+1)
+						v = v:sub(y + 1)
 						del = tonumber(del) or 1
 						cmdDelay = (del > 0 and del or 1)
 					else
@@ -5138,45 +5140,49 @@ function execCmd(cmdStr,speaker,store)
 			end
 			num = tonumber(num or 1)
 
-			if v:sub(1,1) == "!" then
-				local chunks = splitString(v:sub(2),split)
+			if v:sub(1, 1) == "!" then
+				local chunks = splitString(v:sub(2), split)
 				if chunks[1] and lastCmds[chunks[1]] then v = lastCmds[chunks[1]] end
 			end
 
-			local args = splitString(v,split)
+			local args = splitString(v, split)
 			local cmdName = args[1]
 			local cmd = findCmd(cmdName)
 			if cmd then
-				table.remove(args,1)
+				table.remove(args, 1)
 				cargs = args
 				if not speaker then speaker = Players.LocalPlayer end
+				
 				if store then
 					if speaker == Players.LocalPlayer then
-						if cmdHistory[1] ~= rawCmdStr and rawCmdStr:sub(1,11) ~= 'lastcommand' and rawCmdStr:sub(1,7) ~= 'lastcmd' then
-							table.insert(cmdHistory,1,rawCmdStr)
+						if cmdHistory[1] ~= rawCmdStr and rawCmdStr:sub(1, 11) ~= "lastcommand" and rawCmdStr:sub(1, 7) ~= "lastcmd" then
+							table.insert(cmdHistory, 1, rawCmdStr)
 						end
 					end
 					if #cmdHistory > 30 then table.remove(cmdHistory) end
 
 					lastCmds[cmdName] = v
 				end
+
 				local cmdStartTime = tick()
 				if infTimes then
 					while lastBreakTime < cmdStartTime do
-						local success,err = pcall(cmd.FUNC,args, speaker)
+						local success, err = pcall(cmd.FUNC, args, speaker)
 						if not success and _G.IY_DEBUG then
 							warn("命令错误:", cmdName, err)
 						end
 						wait(cmdDelay)
 					end
 				else
-					for rep = 1,num do
+					for rep = 1, num do
 						if lastBreakTime > cmdStartTime then break end
-						local success,err = pcall(function()
-							cmd.FUNC(args, speaker)
-						end)
+						local success, err = pcall(cmd.FUNC, args, speaker)
 						if not success and _G.IY_DEBUG then
 							warn("命令错误:", cmdName, err)
+							notify("Command Error: " .. cmdName, "Check console")
+						end
+						if success and type(err) == "string" and not table.find(args, "nonotify") then
+							notify("Command: " .. cmdName, err)
 						end
 						if cmdDelay ~= 0 then wait(cmdDelay) end
 					end
@@ -5184,7 +5190,7 @@ function execCmd(cmdStr,speaker,store)
 			end
 		end
 	end)
-end	
+end
 
 function addcmd(name,alias,func,plgn)
 	cmds[#cmds+1]=
@@ -7484,7 +7490,7 @@ addcmd('swim',{},function(args, speaker)
 		Humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
 		swimbeat = RunService.Heartbeat:Connect(function()
 			pcall(function()
-				getRoot(speaker.Character).Humanoid.RootPart.Velocity = ((Humanoid.MoveDirection ~= Vector3.new() or UserInputService:IsKeyDown(Enum.KeyCode.Space)) and getRoot(speaker.Character).Humanoid.RootPart.Velocity or Vector3.new())
+				getRoot(speaker.Character).Velocity = ((Humanoid.MoveDirection ~= Vector3.new() or UserInputService:IsKeyDown(Enum.KeyCode.Space)) and getRoot(speaker.Character).Velocity or Vector3.new())
 			end)
 		end)
 		swimming = true
@@ -8837,13 +8843,12 @@ addcmd("antiafk", {"antiidle"}, function(args, speaker)
         end
     end
 
-    if antiAfkCon then
-        antiAfkCon:Disconnect()
-        antiAfkCon = nil
-    end
+    pcall(function() antiAfkCon:Disconnect() end)
     antiAfkCon = speaker.Idled:Connect(function()
-        Services.VirtualUser:CaptureController()
-        Services.VirtualUser:ClickButton2(Vector2.zero)
+        local VirtualInputManager = Instance.new("VirtualInputManager")
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+        VirtualInputManager:Destroy()
     end)
 
 	if not (args[1] and tostring(args[1]) == "nonotify") then notify("防挂机", "防挂机已启用") end
@@ -13063,9 +13068,8 @@ addcmd('removecmd',{'deletecmd'},function(args, speaker)
 end)
 
 addcmd("debug", {}, function(args, speaker)
-    local opt = parseBoolean(args[1], true)
-    _G.IY_DEBUG = opt
-    notify("调试", tostring(opt), 1)
+    _G.IY_DEBUG = parseBoolean(args[1], true)
+    return _G.IY_DEBUG and "Enabled" or "Disabled"
 end)
 
 if IsOnMobile then
@@ -13146,19 +13150,19 @@ eventEditor.RegisterEvent("OnChatted",{
 	{Type="String",Name="Message Filter ($2)"}
 })
 
-function hookCharEvents(plr,instant)
+function hookCharEvents(plr, instant)
 	task.spawn(function()
 		local char = plr.Character
 		if not char then return end
 
-		local humanoid = char:WaitForChild("Humanoid",10)
-		if not humanoid then return end
+		local humanoid = char:WaitForChild("Humanoid", 10)
+		if not humanoid or not humanoid:IsA("Humanoid") then return end
 
 		local oldHealth = humanoid.Health
 		humanoid.HealthChanged:Connect(function(health)
 			local change = math.abs(oldHealth - health)
 			if oldHealth > health then
-				eventEditor.FireEvent("OnDamage",plr.Name,tonumber(health))
+				eventEditor.FireEvent("OnDamage", plr.Name, tonumber(health))
 			end
 			oldHealth = health
 		end)
@@ -13167,8 +13171,8 @@ function hookCharEvents(plr,instant)
 			eventEditor.FireEvent("OnDied",plr.Name)
 
 			local killedBy = humanoid:FindFirstChild("creator")
-			if killedBy and killedBy.Value and killedBy.Value.Parent then
-				eventEditor.FireEvent("OnKilled",plr.Name,killedBy.Name)
+			if killedBy and killedBy:IsA("ObjectValue") and killedBy.Value and killedBy.Value.Parent then
+				eventEditor.FireEvent("OnKilled", plr.Name, killedBy.Name)
 			end
 		end)
 	end)
@@ -13177,7 +13181,7 @@ end
 Players.PlayerAdded:Connect(function(plr)
 	eventEditor.FireEvent("OnJoin",plr.Name)
 	if isLegacyChat then plr.Chatted:Connect(function(msg) eventEditor.FireEvent("OnChatted",tostring(plr),msg) end) end
-	plr.CharacterAdded:Connect(function() eventEditor.FireEvent("OnSpawn",tostring(plr)) hookCharEvents(plr) end)
+	plr.CharacterAdded:Connect(function() eventEditor.FireEvent("OnSpawn", tostring(plr)) hookCharEvents(plr) end)
 	JoinLog(plr)
 	if isLegacyChat then ChatLog(plr) end
 	if ESPenabled then
@@ -13191,19 +13195,22 @@ Players.PlayerAdded:Connect(function(plr)
 end)
 
 if not isLegacyChat then
-	TextChatService.MessageReceived:Connect(function(message)
-		if message.TextSource and message.Status ~= Enum.TextChatMessageStatus.InvalidTextChannelPermissions then
-			local player = Players:GetPlayerByUserId(message.TextSource.UserId)
+	TextChatService.MessageReceived:Connect(function(textChatMessage)
+		if textChatMessage.TextSource and textChatMessage.Status ~= Enum.TextChatMessageStatus.InvalidTextChannelPermissions then
+			local player = Players:GetPlayerByUserId(textChatMessage.TextSource.UserId)
 			if not player then return end
 
+            local message = textChatMessage.Text
+            pcall(function() if textChatMessage.WasRewritten == true then message = "(已编辑) " .. textChatMessage.RewrittenText end end)
+
 			if logsEnabled == true then
-				CreateLabel(player.Name, message.Text)
+				CreateLabel(player.Name, message)
 			end
 			if player.UserId == Players.LocalPlayer.UserId then
-				do_exec(message.Text, Players.LocalPlayer)
+				do_exec(message, Players.LocalPlayer)
 			end
-			eventEditor.FireEvent("OnChatted", player.Name, message.Text)
-			sendChatWebhook(player, message.Text)
+			eventEditor.FireEvent("OnChatted", player.Name, message)
+			sendChatWebhook(player, message)
 		end
 	end)
 end
